@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PersonalHub.Api/PersonalHub.Api.csproj" />
+    <Project Path="src/PersonalHub.Application/PersonalHub.Application.csproj" />
+    <Project Path="src/PersonalHub.Domain/PersonalHub.Domain.csproj" />
+    <Project Path="src/PersonalHub.Infrastructure/PersonalHub.Infrastructure.csproj" />
+    <Project Path="src/PersonalHub.Web/PersonalHub.Web.csproj" />
+  </Folder>
+</Solution>
