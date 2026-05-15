@@ -7,11 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />    
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PersonalHub.Application\PersonalHub.Application.csproj" />
+    <ProjectReference Include="..\PersonalHub.Infrastructure\PersonalHub.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

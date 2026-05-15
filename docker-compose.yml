@@ -1,0 +1,31 @@
+services:
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: personalhub-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "GSPBIie8OXawlAO8PekP*"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+  api:
+    build:
+      context: .
+      dockerfile: src/PersonalHub.Api/Dockerfile
+
+    container_name: personalhub-api
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      - sqlserver
+
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=PersonalHubDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True"
+
+volumes:
+  sqlserver_data:
