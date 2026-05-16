@@ -5,7 +5,7 @@ services:
     container_name: personalhub-sqlserver
     environment:
       ACCEPT_EULA: "Y"
-      SA_PASSWORD: "GSPBIie8OXawlAO8PekP*"
+      SA_PASSWORD: "TestPassword123!"
     ports:
       - "1433:1433"
     volumes:
