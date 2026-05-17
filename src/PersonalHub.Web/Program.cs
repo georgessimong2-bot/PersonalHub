@@ -1,9 +1,25 @@
 using MudBlazor.Services;
+using Microsoft.EntityFrameworkCore;
+using PersonalHub.Application;
+using PersonalHub.Application.Common.Interfaces;
+using PersonalHub.Infrastructure;
+using PersonalHub.Infrastructure.Data;
 using PersonalHub.Web.Components;
 using Serilog;
-using PersonalHub.Infrastructure;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(
+        typeof(AssemblyReference).Assembly));
+
+builder.Services.AddScoped<IAppDbContext>(
+    provider => provider.GetRequiredService<AppDbContext>());
 
 builder.Configuration.AddUserSecrets<Program>();
 
@@ -18,6 +34,11 @@ builder.Host.UseSerilog();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(
+        typeof(PersonalHub.Application.AssemblyReference).Assembly));
 
 builder.Services.AddInfrastructure(builder.Configuration);
 

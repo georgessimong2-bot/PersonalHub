@@ -12,7 +12,7 @@ public class Note
 
     public DateTime? UpdatedAt { get; set; }
 
-    private Note() { } // EF Core
+    public Note() { } // EF Core
 
     public Note(string title, string content)
     {

@@ -1,8 +1,42 @@
 @page "/test"
+@using MudBlazor
+@using MediatR
+@using PersonalHub.Application.Features.Notes.CreateNote
+
+@rendermode InteractiveServer
+
+@inject IConfiguration Configuration
+@inject ILogger<Test> Logger
+@inject IMediator Mediator
+
+
 
 <MudButton Variant="Variant.Filled"
-           Color="Color.Primary">
-    Test MudBlazor
+           Color="Color.Primary" 
+            @OnClick="CreateNote">
+    Create hardcoded note
 </MudButton>
 
-Log.Information("Application démarrée");
+<p>Valeur : @_secretValue</p>
+
+@code {
+
+    private string? _secretValue;
+
+    private async Task CreateNote()
+    {
+        var id = await Mediator.Send(
+            new CreateNoteCommand(
+                "Test",
+                "Ma première note"));
+
+        Console.WriteLine($"Note créée : {id}");
+    }
+
+    protected override void OnInitialized()
+    {
+        _secretValue = Configuration.GetConnectionString("DefaultConnection");
+        Logger.LogInformation("Page test chargée");  
+    }
+
+}
