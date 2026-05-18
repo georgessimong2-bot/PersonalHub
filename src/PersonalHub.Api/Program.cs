@@ -6,6 +6,7 @@ using PersonalHub.Application;
 using PersonalHub.Application.Common.Behaviors;
 using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Application.Features.Notes.CreateNote;
+using PersonalHub.Application.Features.Notes.GetNoteById;
 using PersonalHub.Application.Features.Notes.GetNotes;
 using PersonalHub.Infrastructure.Data;
 var builder = WebApplication.CreateBuilder(args);
