@@ -1,14 +1,20 @@
-using MudBlazor.Services;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor.Services;
 using PersonalHub.Application;
 using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Infrastructure;
 using PersonalHub.Infrastructure.Data;
 using PersonalHub.Web.Components;
+using PersonalHub.Web.Configuration;
 using Serilog;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddHttpClient();
+
+builder.Services.Configure<ApiSettings>(
+    builder.Configuration.GetSection("ApiSettings"));
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(

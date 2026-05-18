@@ -1,36 +1,72 @@
 @page "/test"
 @using MudBlazor
-@using MediatR
 @using PersonalHub.Application.Features.Notes.CreateNote
+@using PersonalHub.Application.Features.Notes.GetNotes
 
 @rendermode InteractiveServer
 
 @inject IConfiguration Configuration
 @inject ILogger<Test> Logger
-@inject IMediator Mediator
+@inject HttpClient Http
 
 
 
 <MudButton Variant="Variant.Filled"
            Color="Color.Primary" 
-            @OnClick="CreateNote">
+            OnClick="CreateNote">
     Create hardcoded note
 </MudButton>
+
+<MudButton Variant="Variant.Filled"
+           Color="Color.Primary"
+           OnClick="DisplayNotes">
+    List all notes
+</MudButton>
+@if(_notes is not null )
+{
+    @foreach (var note in _notes)
+    {
+        <MudPaper Class="pa-4 mb-2">
+            <MudText Typo="Typo.h6">
+                @note.Title
+            </MudText>
+
+            <MudText>
+                @note.Content
+            </MudText>
+        </MudPaper>
+    }
+}
+else
+{
+   <MudPaper Class="pa-4 mb-2">
+            <MudText Typo="Typo.h6">
+               Loading ...
+            </MudText>            
+        </MudPaper>
+}
+
 
 <p>Valeur : @_secretValue</p>
 
 @code {
 
     private string? _secretValue;
+    private List<NoteDto> _notes = [];
+    
 
     private async Task CreateNote()
     {
-        var id = await Mediator.Send(
-            new CreateNoteCommand(
-                "Test",
-                "Ma première note"));
 
-        Console.WriteLine($"Note créée : {id}");
+        await Http.PostAsJsonAsync(
+        "/api/notes",
+        new CreateNoteCommand("Test", "Ma première note"));
+    }
+
+    private async Task DisplayNotes()
+    {
+        var apiUrl = Configuration["ApiSettings:BaseUrl"];
+        _notes = await Http.GetFromJsonAsync<List<NoteDto>>($"{apiUrl}/api/notes")?? [];
     }
 
     protected override void OnInitialized()
