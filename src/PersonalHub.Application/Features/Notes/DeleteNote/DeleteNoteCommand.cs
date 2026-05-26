@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MediatR;
 
-namespace PersonalHub.Application.Features.Notes.DeleteNote
-{
-    internal class DeleteNoteCommand
-    {
-    }
-}
+namespace PersonalHub.Application.Features.Notes.DeleteNote;
+
+public record DeleteNoteCommand(Guid Id)
+    : IRequest;

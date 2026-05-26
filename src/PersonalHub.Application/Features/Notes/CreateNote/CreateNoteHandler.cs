@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using PersonalHub.Application.Common.Interfaces;
+using PersonalHub.Application.Features.Notes.Common;
 using PersonalHub.Domain.Entities;
 
 namespace PersonalHub.Application.Features.Notes.CreateNote;
@@ -19,12 +20,7 @@ public class CreateNoteHandler
         CreateNoteCommand request,
         CancellationToken cancellationToken)
     {
-        var note = new Note
-        {
-            Id = Guid.NewGuid(),
-            Title = request.Title,
-            Content = request.Content
-        };
+        var note = new Note(request.Title, request.Content);
 
         _context.Notes.Add(note);
 

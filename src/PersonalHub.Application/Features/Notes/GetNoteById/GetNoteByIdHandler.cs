@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PersonalHub.Application.Common.Interfaces;
-using PersonalHub.Application.Features.Notes.GetNotes;
+using PersonalHub.Application.Features.Notes.Common;
 
 namespace PersonalHub.Application.Features.Notes.GetNoteById;
 
@@ -26,6 +26,8 @@ public class GetNoteByIdHandler
                 Id = x.Id,
                 Title = x.Title,
                 Content = x.Content,
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt
             })
             .FirstOrDefaultAsync(cancellationToken);
     }

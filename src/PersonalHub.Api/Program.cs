@@ -5,15 +5,28 @@ using PersonalHub.Api.Middlewares;
 using PersonalHub.Application;
 using PersonalHub.Application.Common.Behaviors;
 using PersonalHub.Application.Common.Interfaces;
+using PersonalHub.Application.Features.Notes.Common;
 using PersonalHub.Application.Features.Notes.CreateNote;
+using PersonalHub.Application.Features.Notes.DeleteNote;
 using PersonalHub.Application.Features.Notes.GetNoteById;
 using PersonalHub.Application.Features.Notes.GetNotes;
+using PersonalHub.Application.Features.Notes.UpdateNote;
 using PersonalHub.Infrastructure.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
+    ?? new[] { "https://localhost:7001", "https://localhost:7002" };
+
+builder.Services.AddCors(options =>
+    options.AddDefaultPolicy(policy =>
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials()));
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -51,6 +64,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors();
+
 
 app.MapPost("/api/notes",
     async (
@@ -80,6 +95,33 @@ app.MapGet("/api/notes/{id:guid}",
         return note is null
             ? Results.NotFound()
             : Results.Ok(note);
+    });
+
+app.MapPut("/api/notes/{id:guid}",
+    async (
+        Guid id,
+        UpdateNoteCommand command,
+        IMediator mediator) =>
+    {
+        if (id != command.Id)
+        {
+            return Results.BadRequest();
+        }
+
+        await mediator.Send(command);
+
+        return Results.NoContent();
+    });
+
+app.MapDelete("/api/notes/{id:guid}",
+    async (
+        Guid id,
+        IMediator mediator) =>
+    {
+        await mediator.Send(
+            new DeleteNoteCommand(id));
+
+        return Results.NoContent();
     });
 
 app.Run();

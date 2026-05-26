@@ -1,0 +1,267 @@
+﻿@page "/notes/edit/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using Microsoft.Extensions.Options
+@using PersonalHub.Web.Configuration
+@using PersonalHub.Application.Features.Notes.Common
+@using PersonalHub.Application.Features.Notes.UpdateNote
+
+@inject HttpClient Http
+@inject IOptions<ApiSettings> ApiSettings
+@inject ILogger<Edit> Logger
+@inject NavigationManager Navigation
+
+<PageTitle>Edit Note</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center rounded-xl">
+
+            <MudProgressCircular Color="Color.Primary"
+                                 Indeterminate="true"
+                                 Size="Size.Large" />
+
+            <MudText Class="mt-4">
+                Loading note...
+            </MudText>
+
+        </MudPaper>
+    }
+    else if (_note is null)
+    {
+        <MudPaper Class="pa-8 text-center rounded-xl">
+
+            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline"
+                     Style="font-size: 64px; width:64px; height:64px;"
+                     Color="Color.Error" />
+
+            <MudText Typo="Typo.h5" Class="mt-4">
+                Note Not Found
+            </MudText>
+
+            <MudText Class="mt-2 mb-6">
+                The note you're looking for doesn't exist.
+            </MudText>
+
+            <MudButton Href="/index"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary">
+                Back to Notes
+            </MudButton>
+
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-6 rounded-xl" Elevation="2">
+
+            <MudStack Row="true"
+                      Justify="Justify.SpaceBetween"
+                      AlignItems="AlignItems.Center"
+                      Class="mb-6">
+
+                <div>
+                    <MudText Typo="Typo.h4">
+                        Edit Note
+                    </MudText>
+
+                    <MudText Typo="Typo.body2" Color="Color.Default" Class="mt-2">
+                        Update your note
+                    </MudText>
+                </div>
+
+            </MudStack>
+
+            <div style="margin-bottom: 1rem;">
+                <label for="title">Title:</label><br />
+                <input type="text" id="title" @bind="_title" style="width: 100%; padding: 0.5rem; font-size: 1rem;" />
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label for="content">Content:</label><br />
+                <textarea id="content" @bind="_content" rows="6" style="width: 100%; padding: 0.5rem; font-size: 1rem;"></textarea>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div style="padding: 1rem; margin-bottom: 1rem; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 4px;">
+                    @_error
+                </div>
+            }
+
+            <div style="text-align: right;">
+                <button type="button" @onclick="Cancel" style="padding: 0.5rem 1rem; margin-right: 0.5rem; cursor: pointer;">
+                    Cancel
+                </button>
+                <button type="button" @onclick="@(async () => await HandleUpdateNote())" disabled="@_isSubmitting" style="padding: 0.5rem 1rem; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px;">
+                    @if (_isSubmitting)
+                    {
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save Changes</span>
+                    }
+                </button>
+            </div>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private string _title = string.Empty;
+    private string _content = string.Empty;
+    private NoteDto? _note;
+    private bool _isLoading = true;
+    private bool _isSubmitting = false;
+    private string? _error;
+
+    private string ApiUrl =>
+        ApiSettings.Value.BaseUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNote();
+    }
+
+    private async Task LoadNote()
+    {
+        try
+        {
+            _isLoading = true;
+
+            Logger.LogInformation(
+                "Loading note {Id}",
+                Id);
+
+            _note =
+                await Http.GetFromJsonAsync<NoteDto>(
+                    $"{ApiUrl}/api/notes/{Id}");
+
+            if (_note is not null)
+            {
+                _title = _note.Title;
+                _content = _note.Content;
+
+                Logger.LogInformation(
+                    "Note {Id} loaded",
+                    Id);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            Logger.LogError(
+                ex,
+                "Error loading note {Id}",
+                Id);
+
+            _error = "Failed to load note.";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(
+                ex,
+                "Unexpected error loading note {Id}",
+                Id);
+
+            _error = "An unexpected error occurred.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleUpdateNote()
+    {
+        try
+        {
+            _isSubmitting = true;
+            _error = null;
+
+            Logger.LogInformation(
+                "Updating note {Id}",
+                Id);
+
+            // Validation manuelle
+            if (string.IsNullOrWhiteSpace(_title))
+            {
+                _error = "Title is required";
+                _isSubmitting = false;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_content))
+            {
+                _error = "Content is required";
+                _isSubmitting = false;
+                return;
+            }
+
+            var command = new UpdateNoteCommand(Id, _title.Trim(), _content.Trim());
+
+            Logger.LogInformation(
+                "Sending update command to API: Title='{Title}'",
+                command.Title);
+
+            var response =
+                await Http.PutAsJsonAsync(
+                    $"{ApiUrl}/api/notes/{Id}",
+                    command);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Logger.LogError(
+                    "API Error {StatusCode}: {ErrorContent}",
+                    response.StatusCode,
+                    errorContent);
+
+                _error = $"Failed to update note: {response.StatusCode} - {errorContent}";
+                return;
+            }
+
+            Logger.LogInformation(
+                "Note {Id} updated successfully",
+                Id);
+
+            Navigation.NavigateTo("/index");
+        }
+        catch (HttpRequestException ex)
+        {
+            Logger.LogError(
+                ex,
+                "Error updating note {Id}",
+                Id);
+
+            _error = $"Failed to update note: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(
+                ex,
+                "Unexpected error updating note {Id}",
+                Id);
+
+            _error = $"An unexpected error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/index");
+    }
+}

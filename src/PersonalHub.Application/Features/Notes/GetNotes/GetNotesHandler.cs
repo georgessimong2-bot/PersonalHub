@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PersonalHub.Application.Common.Interfaces;
+using PersonalHub.Application.Features.Notes.Common;
 
 namespace PersonalHub.Application.Features.Notes.GetNotes;
 
@@ -19,11 +20,14 @@ public class GetNotesHandler
         CancellationToken cancellationToken)
     {
         return await _context.Notes
+            .OrderByDescending(x => x.CreatedAt)
             .Select(x => new NoteDto
             {
                 Id = x.Id,
                 Title = x.Title,
-                Content = x.Content
+                Content = x.Content,
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt
             })
             .ToListAsync(cancellationToken);
     }

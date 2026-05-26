@@ -1,0 +1,50 @@
+
+<div class="modal fade @(IsVisible ? "show" : "")" style="display: @(IsVisible ? "block" : "none"); background-color: rgba(0,0,0,0.5);" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@Title</h5>
+                <button type="button" class="btn-close" @onclick="() => Cancel()"></button>
+            </div>
+            <div class="modal-body">
+                @Message
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="() => Cancel()">Annuler</button>
+                <button type="button" class="btn btn-danger" @onclick="() => Confirm()">@ConfirmButtonText</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "Confirmation";
+
+    [Parameter]
+    public string Message { get; set; } = "Êtes-vous sûr ?";
+
+    [Parameter]
+    public string ConfirmButtonText { get; set; } = "Confirmer";
+
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback OnConfirm { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    public async Task Confirm()
+    {
+        IsVisible = false;
+        await OnConfirm.InvokeAsync();
+    }
+
+    public async Task Cancel()
+    {
+        IsVisible = false;
+        await OnCancel.InvokeAsync();
+    }
+}

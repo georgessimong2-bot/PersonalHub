@@ -24,29 +24,40 @@ public class ExceptionMiddleware
         }
         catch (ValidationException ex)
         {
+            _logger.LogWarning(
+                "Validation error: {Errors}",
+                string.Join(", ", ex.Errors.Select(e => e.ErrorMessage)));
+
             context.Response.StatusCode = 400;
+            context.Response.ContentType = "application/json";
 
-            var errors = ex.Errors
-                .Select(x => x.ErrorMessage)
-                .ToList();
+            var response = new
+            {
+                errors = ex.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(e => e.ErrorMessage).ToArray())
+            };
 
-            await context.Response.WriteAsJsonAsync(
-                new
-                {
-                    Errors = errors
-                });
+            var options = new JsonSerializerOptions 
+            { 
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+            };
+
+            await context.Response.WriteAsJsonAsync(response, options);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception");
 
             context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
 
             await context.Response.WriteAsJsonAsync(
                 new
                 {
-                    Message =
-                        "An unexpected error occurred"
+                    message = "An unexpected error occurred"
                 });
         }
     }

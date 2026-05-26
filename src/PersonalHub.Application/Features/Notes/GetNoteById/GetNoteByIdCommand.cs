@@ -1,5 +1,5 @@
 ﻿using MediatR;
-using PersonalHub.Application.Features.Notes.GetNotes;
+using PersonalHub.Application.Features.Notes.Common;
 
 namespace PersonalHub.Application.Features.Notes.GetNoteById;
 

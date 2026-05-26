@@ -2,24 +2,22 @@
 
 public class Note
 {
-    public Guid Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     public string Title { get; set; } = string.Empty;
 
     public string Content { get; set; } = string.Empty;
 
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAt { get; set; }
 
-    public Note() { } // EF Core
+    public Note() { }
 
     public Note(string title, string content)
     {
-        Id = Guid.NewGuid();
         Title = title;
         Content = content;
-        CreatedAt = DateTime.UtcNow;
     }
 
     public void Update(string title, string content)

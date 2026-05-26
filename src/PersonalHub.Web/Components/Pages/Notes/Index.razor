@@ -1,0 +1,222 @@
+﻿
+@page "/index"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using Microsoft.Extensions.Options
+@using PersonalHub.Application.Features.Notes.GetNotes
+@using PersonalHub.Application.Features.Notes.Common
+@using PersonalHub.Web.Configuration
+
+@inject HttpClient Http
+@inject IOptions<ApiSettings> ApiSettings
+@inject ILogger<Index> Logger
+@inject NavigationManager Navigation
+
+<PageTitle>Notes</PageTitle>
+
+<ConfirmDialog @ref="_confirmDialog"
+               Title="Supprimer la note"
+               Message="Êtes-vous sûr de vouloir supprimer cette note ? Cette action ne peut pas être annulée."
+               ConfirmButtonText="Supprimer"
+               IsVisible="_showConfirmDialog"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center rounded-xl">
+            <MudProgressCircular Color="Color.Primary"
+                                 Indeterminate="true"
+                                 Size="Size.Large" />
+
+            <MudText Class="mt-4">
+                Loading notes...
+            </MudText>
+        </MudPaper>
+    }
+    else if (_notes.Count == 0)
+    {
+        <MudPaper Class="pa-10 text-center rounded-xl">
+
+            <MudIcon Icon="@Icons.Material.Filled.StickyNote2"
+                     Style="font-size: 64px; width:64px; height:64px;"
+                     Color="Color.Primary" />
+
+            <MudText Typo="Typo.h5" Class="mt-4">
+                No notes yet
+            </MudText>
+
+            <MudText Class="mt-2 mb-6">
+                Create your first note to get started.
+            </MudText>
+
+            <a href="/notes/create" style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                + Create Note
+            </a>
+
+        </MudPaper>
+    }
+    else
+    {
+        <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+            <!-- Header Section -->
+            <div style="background-color: #f8f9fa; padding: 1.5rem; border-bottom: 2px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="margin: 0; font-size: 1.5rem; font-weight: bold; color: #333;">
+                        Personal Notes
+                    </h2>
+                    <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
+                        @_notes.Count note(s) - Organize your thoughts, ideas and tasks.
+                    </p>
+                </div>
+                <a href="/notes/create" style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; cursor: pointer; white-space: nowrap;">
+                    + Create Note
+                </a>
+            </div>
+
+            <!-- Table Section -->
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead style="background-color: #f0f0f0; border-bottom: 2px solid #ddd;">
+                    <tr>
+                        <th style="padding: 1rem; text-align: left; font-weight: bold;">Title</th>
+                        <th style="padding: 1rem; text-align: left; font-weight: bold;">Content</th>
+                        <th style="padding: 1rem; text-align: center; font-weight: bold; width: 200px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var note in _notes)
+                    {
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 1rem; vertical-align: top; font-weight: 500;">
+                                @note.Title
+                            </td>
+                            <td style="padding: 1rem; vertical-align: top; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                @note.Content
+                            </td>
+                            <td style="padding: 1rem; text-align: center; vertical-align: top;">
+                                <a href="/notes/edit/@note.Id" style="display: inline-block; padding: 0.5rem 1rem; margin-right: 0.5rem; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; cursor: pointer;">
+                                    Edit
+                                </a>
+                                <button type="button" @onclick="@(async () => await ShowDeleteConfirm(note.Id))" style="display: inline-block; padding: 0.5rem 1rem; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+</MudContainer>
+
+@code {
+
+    private ConfirmDialog? _confirmDialog;
+
+    private bool _showConfirmDialog = false;
+
+    private Guid _noteToDelete = Guid.Empty;
+
+    private List<NoteDto> _notes = [];
+
+    private bool _isLoading = true;
+
+    private string ApiUrl =>
+        ApiSettings.Value.BaseUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNotes();
+    }
+
+    private async Task LoadNotes()
+    {
+        _isLoading = true;
+
+        try
+        {
+            Logger.LogInformation(
+                "Loading notes from API");
+
+            _notes =
+                await Http.GetFromJsonAsync<List<NoteDto>>(
+                    $"{ApiUrl}/api/notes")
+                ?? [];
+
+            Logger.LogInformation(
+                "Loaded {Count} notes",
+                _notes.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(
+                ex,
+                "Error while loading notes");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task ShowDeleteConfirm(Guid id)
+    {
+        _noteToDelete = id;
+        _showConfirmDialog = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_noteToDelete == Guid.Empty)
+            return;
+
+        await Delete(_noteToDelete);
+        _noteToDelete = Guid.Empty;
+    }
+
+    private async Task CancelDelete()
+    {
+        _noteToDelete = Guid.Empty;
+    }
+
+    private async Task Delete(Guid id)
+    {
+        try
+        {
+            Logger.LogInformation(
+                "Deleting note {Id}",
+                id);
+
+            var response =
+                await Http.DeleteAsync(
+                    $"{ApiUrl}/api/notes/{id}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Logger.LogError(
+                    "Failed to delete note {Id}: {StatusCode}",
+                    id,
+                    response.StatusCode);
+                return;
+            }
+
+            _notes.RemoveAll(x => x.Id == id);
+
+            Logger.LogInformation(
+                "Note {Id} deleted",
+                id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(
+                ex,
+                "Error while deleting note {Id}",
+                id);
+        }
+    }
+}
