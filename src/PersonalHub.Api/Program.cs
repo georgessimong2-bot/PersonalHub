@@ -12,6 +12,12 @@ using PersonalHub.Application.Features.Notes.GetNoteById;
 using PersonalHub.Application.Features.Notes.GetNotes;
 using PersonalHub.Application.Features.Notes.UpdateNote;
 using PersonalHub.Infrastructure.Data;
+using PersonalHub.Infrastructure;
+using PersonalHub.Api;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using PersonalHub.Infrastructure.Auth;
+using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -49,6 +55,43 @@ builder.Services.AddTransient(
     typeof(IPipelineBehavior<,>),
     typeof(ValidationBehavior<,>));
 
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("JwtSettings"));
+
+var jwtSettings =
+    builder.Configuration
+        .GetSection("JwtSettings")
+        .Get<JwtSettings>()!;
+
+builder.Services
+    .AddAuthentication(
+        JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+
+                ValidIssuer = jwtSettings.Issuer,
+                ValidAudience = jwtSettings.Audience,
+
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(
+                            jwtSettings.Secret))
+            };
+    });
+
+builder.Services
+    .AddApplication()
+    .AddInfrastructure(builder.Configuration);
+
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 app.UseSwagger();
@@ -63,6 +106,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+
+app.UseAuthorization();
+
+app.MapEndpoints();
 
 app.UseCors();
 

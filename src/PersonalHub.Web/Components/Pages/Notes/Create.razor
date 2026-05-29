@@ -1,148 +1,127 @@
-﻿@page "/notes/create"
+@page "/notes/create"
 @rendermode InteractiveServer
 
 @using MudBlazor
 @using Microsoft.Extensions.Options
-@using PersonalHub.Web.Configuration
 @using PersonalHub.Application.Features.Notes.CreateNote
+@using PersonalHub.Web.Configuration
+@using PersonalHub.Web.Services
 
-@inject HttpClient Http
-@inject IOptions<ApiSettings> ApiSettings
 @inject ILogger<Create> Logger
 @inject NavigationManager Navigation
+@inject NotesService NotesService
 
 <PageTitle>Create Note</PageTitle>
 
-<div style="max-width: 600px; margin: 2rem auto; padding: 1.5rem; border: 1px solid #ccc; border-radius: 8px;">
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudPaper Class="pa-8 rounded-xl">
+        <MudText Typo="Typo.h4" Class="mb-6">
+            Créer une nouvelle note
+        </MudText>
 
-    <h2>Create Note</h2>
-    <p>Add a new note to your collection</p>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">
+                @_error
+                <MudIconButton Icon="@Icons.Material.Filled.Close" 
+                               Size="Size.Small" 
+                               OnClick="@(() => _error = string.Empty)" />
+            </MudAlert>
+        }
 
-    <div style="margin-bottom: 1rem;">
-        <label for="title">Title:</label><br />
-        <input type="text" id="title" @bind="_title" style="width: 100%; padding: 0.5rem; font-size: 1rem;" />
-    </div>
+        <form>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Titre</label>
+                <input type="text"
+                       @bind="_title"
+                       placeholder="Entrez le titre de la note"
+                       style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;" />
+            </div>
 
-    <div style="margin-bottom: 1rem;">
-        <label for="content">Content:</label><br />
-        <textarea id="content" @bind="_content" rows="6" style="width: 100%; padding: 0.5rem; font-size: 1rem;"></textarea>
-    </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Contenu</label>
+                <textarea @bind="_content"
+                          placeholder="Entrez le contenu de la note"
+                          rows="8"
+                          style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; font-family: monospace;"></textarea>
+            </div>
 
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <div style="padding: 1rem; margin-bottom: 1rem; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 4px;">
-            @_error
-        </div>
-    }
+            <div style="display: flex; gap: 1rem;">
+                <button type="button"
+                        @onclick="HandleCreateNote"
+                        disabled="@_isSubmitting"
+                        style="padding: 0.75rem 2rem; background-color: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: @(_isSubmitting ? "not-allowed" : "pointer"); opacity: @(_isSubmitting ? "0.6" : "1");">
+                    @if (_isSubmitting)
+                    {
+                        <span>⏳ Création en cours...</span>
+                    }
+                    else
+                    {
+                        <span>✅ Créer la note</span>
+                    }
+                </button>
 
-    <div style="text-align: right;">
-        <button type="button" @onclick="Cancel" style="padding: 0.5rem 1rem; margin-right: 0.5rem; cursor: pointer;">
-            Cancel
-        </button>
-
-        <button type="button" @onclick="@(async () => await HandleCreateNote())" disabled="@_isSubmitting" style="padding: 0.5rem 1rem; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px;">
-            @if (_isSubmitting)
-            {
-                <span>Creating...</span>
-            }
-            else
-            {
-                <span>Create Note</span>
-            }
-        </button>
-    </div>
-
-</div>
+                <a href="/index"
+                   style="display: inline-block; padding: 0.75rem 2rem; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                    ❌ Annuler
+                </a>
+            </div>
+        </form>
+    </MudPaper>
+</MudContainer>
 
 @code {
-
     private string _title = string.Empty;
-    private string _content = string.Empty;
-    private bool _isSubmitting = false;
-    private string? _error;
 
-    private string ApiUrl =>
-        ApiSettings.Value.BaseUrl;
+    private string _content = string.Empty;
+
+    private string _error = string.Empty;
+
+    private bool _isSubmitting = false;
 
     private async Task HandleCreateNote()
     {
+        _error = string.Empty;
+
+        // Validation
+        if (string.IsNullOrWhiteSpace(_title))
+        {
+            _error = "Le titre est obligatoire.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_content))
+        {
+            _error = "Le contenu est obligatoire.";
+            return;
+        }
+
+        _isSubmitting = true;
+
         try
         {
-            _isSubmitting = true;
-            _error = null;
+            Logger.LogInformation("Création d'une nouvelle note: Title={Title}", _title);
 
-            Logger.LogInformation(
-                "Creating note with title: '{Title}', content length: {ContentLength}",
-                _title,
-                _content?.Length ?? 0);
+            var success = await NotesService.CreateAsync(_title, _content);
 
-            // Validation manuelle
-            if (string.IsNullOrWhiteSpace(_title))
+            if (!success)
             {
-                _error = "Title is required";
-                _isSubmitting = false;
+                Logger.LogError("Erreur lors de la création de la note");
+                _error = "Erreur lors de la création de la note";
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(_content))
-            {
-                _error = "Content is required";
-                _isSubmitting = false;
-                return;
-            }
-
-            var command = new CreateNoteCommand(_title.Trim(), _content.Trim());
-
-            Logger.LogInformation(
-                "Sending command to API: Title='{Title}', ContentLength={Length}",
-                command.Title,
-                command.Content.Length);
-
-            var response =
-                await Http.PostAsJsonAsync(
-                    $"{ApiUrl}/api/notes",
-                    command);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Logger.LogError(
-                    "API Error {StatusCode}: {ErrorContent}",
-                    response.StatusCode,
-                    errorContent);
-
-                _error = $"Failed to create note: {response.StatusCode} - {errorContent}";
-                return;
-            }
-
-            Logger.LogInformation("Note created successfully");
-
+            Logger.LogInformation("Note créée avec succès");
             Navigation.NavigateTo("/index");
-        }
-        catch (HttpRequestException ex)
-        {
-            Logger.LogError(
-                ex,
-                "Error creating note");
-
-            _error = $"Failed to create note: {ex.Message}";
         }
         catch (Exception ex)
         {
-            Logger.LogError(
-                ex,
-                "Unexpected error creating note");
-
-            _error = $"An unexpected error occurred: {ex.Message}";
+            Logger.LogError(ex, "Erreur lors de la création de la note");
+            _error = $"Une erreur est survenue: {ex.Message}";
         }
         finally
         {
             _isSubmitting = false;
         }
-    }
-
-    private void Cancel()
-    {
-        Navigation.NavigateTo("/index");
     }
 }

@@ -6,11 +6,11 @@
 @using PersonalHub.Web.Configuration
 @using PersonalHub.Application.Features.Notes.Common
 @using PersonalHub.Application.Features.Notes.UpdateNote
+@using PersonalHub.Web.Services
 
-@inject HttpClient Http
-@inject IOptions<ApiSettings> ApiSettings
 @inject ILogger<Edit> Logger
 @inject NavigationManager Navigation
+@inject NotesService NotesService
 
 <PageTitle>Edit Note</PageTitle>
 
@@ -125,9 +125,6 @@
     private bool _isSubmitting = false;
     private string? _error;
 
-    private string ApiUrl =>
-        ApiSettings.Value.BaseUrl;
-
     protected override async Task OnInitializedAsync()
     {
         await LoadNote();
@@ -144,8 +141,7 @@
                 Id);
 
             _note =
-                await Http.GetFromJsonAsync<NoteDto>(
-                    $"{ApiUrl}/api/notes/{Id}");
+                await NotesService.GetNoteAsync(Id);
 
             if (_note is not null)
             {
@@ -210,23 +206,18 @@
             var command = new UpdateNoteCommand(Id, _title.Trim(), _content.Trim());
 
             Logger.LogInformation(
-                "Sending update command to API: Title='{Title}'",
-                command.Title);
+                "Sending update to service: Title='{Title}'",
+                _title);
 
-            var response =
-                await Http.PutAsJsonAsync(
-                    $"{ApiUrl}/api/notes/{Id}",
-                    command);
+            var success = await NotesService.UpdateAsync(Id, _title.Trim(), _content.Trim());
 
-            if (!response.IsSuccessStatusCode)
+            if (!success)
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
                 Logger.LogError(
-                    "API Error {StatusCode}: {ErrorContent}",
-                    response.StatusCode,
-                    errorContent);
+                    "Failed to update note {Id}",
+                    Id);
 
-                _error = $"Failed to update note: {response.StatusCode} - {errorContent}";
+                _error = "Failed to update note";
                 return;
             }
 

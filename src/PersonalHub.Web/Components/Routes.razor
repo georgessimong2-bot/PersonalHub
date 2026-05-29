@@ -4,3 +4,12 @@
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>
+
+@inject PersonalHub.Web.Services.AuthService AuthService
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.InitializeAsync();
+    }
+}

@@ -1,21 +1,18 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Domain.Entities;
+using PersonalHub.Infrastructure.Identity;
 
 namespace PersonalHub.Infrastructure.Data;
 
-public class AppDbContext : DbContext, IAppDbContext
+public class AppDbContext
+    : IdentityDbContext<AppUser>, IAppDbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options)
+    public AppDbContext(
+        DbContextOptions<AppDbContext> options)
         : base(options)
     {
-    }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-
-        base.OnModelCreating(modelBuilder);
     }
 
     public DbSet<Note> Notes => Set<Note>();

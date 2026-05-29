@@ -20,7 +20,7 @@ public class CreateNoteHandler
         CreateNoteCommand request,
         CancellationToken cancellationToken)
     {
-        var note = new Note(request.Title, request.Content);
+        var note = new Note(request.Title, request.Content, string.Empty);
 
         _context.Notes.Add(note);
 

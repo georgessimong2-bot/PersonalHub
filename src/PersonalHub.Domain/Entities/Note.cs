@@ -12,12 +12,17 @@ public class Note
 
     public DateTime? UpdatedAt { get; set; }
 
-    public Note() { }
+    public string UserId { get; private set; } = string.Empty;
 
-    public Note(string title, string content)
+    private Note()
+    {
+    }
+
+    public Note(string title, string content, string userId)
     {
         Title = title;
         Content = content;
+        UserId = userId;
     }
 
     public void Update(string title, string content)

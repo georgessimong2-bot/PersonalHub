@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Infrastructure.Data;
+using PersonalHub.Infrastructure.Identity;
 
 namespace PersonalHub.Infrastructure;
 
@@ -13,7 +15,26 @@ public static class DependencyInjection
     {
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection")));
+                configuration.GetConnectionString(
+                    "DefaultConnection")));
+
+        services
+            .AddIdentityCore<AppUser>()
+            .AddEntityFrameworkStores<AppDbContext>();
+
+        services.AddHttpContextAccessor();
+
+        services.AddScoped<ICurrentUserService,
+    CurrentUserService>();
+
+        services.AddScoped<IAppDbContext>(
+            provider =>
+                provider.GetRequiredService<AppDbContext>());
+
+        services.AddScoped<IIdentityService,
+            IdentityService>();
+
+        
 
         return services;
     }

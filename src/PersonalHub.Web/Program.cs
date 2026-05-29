@@ -1,6 +1,7 @@
 using MudBlazor.Services;
 using PersonalHub.Web.Components;
 using PersonalHub.Web.Configuration;
+using PersonalHub.Web.Services;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,9 @@ builder.Host.UseSerilog();
 builder.Services.AddHttpClient();
 
 builder.Services.AddMudServices();
+
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<NotesService>();
 
 builder.Services
     .AddRazorComponents()
