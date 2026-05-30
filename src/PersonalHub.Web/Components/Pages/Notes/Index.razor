@@ -8,6 +8,8 @@
 @using PersonalHub.Web.Configuration
 @using PersonalHub.Web.Services
 @using OfficeOpenXml
+@using PersonalHub.Web.Services.Auth
+
 
 @inject HttpClient Http
 @inject IOptions<ApiSettings> ApiSettings
@@ -15,6 +17,7 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject NotesService NotesService
+@inject PersonalHub.Web.Services.Auth.AuthService AuthService
 
 <PageTitle>Notes</PageTitle>
 
@@ -28,7 +31,14 @@
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
-    @if (_isLoading)
+    @if (!_isAuthenticated)
+{
+    <MudAlert Severity="Severity.Warning">
+        Please login first
+    </MudAlert>
+}
+
+    else if (_isLoading)
     {
         <MudPaper Class="pa-8 text-center rounded-xl">
             <MudProgressCircular Color="Color.Primary"
@@ -249,12 +259,26 @@
 
     private string _hoverColumn = "";
 
+    private bool _isAuthenticated = false;
+
+    private bool _initialized = false;
+
     private string ApiUrl =>
         ApiSettings.Value.BaseUrl;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadNotes();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            _initialized = true;
+            _isAuthenticated = await AuthService.IsAuthenticatedAsync();
+            StateHasChanged();
+        }
     }
 
     private async Task LoadNotes()

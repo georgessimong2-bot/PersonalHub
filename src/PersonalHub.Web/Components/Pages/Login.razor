@@ -1,0 +1,51 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+@using MudBlazor
+@using PersonalHub.Web.Services.Auth
+
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<MudTextField @bind-Value="_email"
+              Label="Email" />
+
+<MudTextField @bind-Value="_password"
+              Label="Password"
+              InputType="InputType.Password" />
+
+<MudButton OnClick="@(async () => await LoginClicked())">
+    Login
+</MudButton> 
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <MudAlert Severity="Severity.Error">
+        @_error
+    </MudAlert>
+}
+
+@code {
+
+    private string _email = string.Empty;
+
+    private string _password = string.Empty;
+
+    private string? _error;
+
+    private async Task LoginClicked()
+    {
+        var success =
+            await AuthService.LoginAsync(
+                _email,
+                _password);
+
+        if (!success)
+        {
+            _error = "Invalid credentials";
+            return;
+        }
+
+        Navigation.NavigateTo("/");
+    }
+}
+

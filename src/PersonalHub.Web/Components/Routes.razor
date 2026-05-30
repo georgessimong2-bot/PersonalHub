@@ -5,11 +5,17 @@
     </Found>
 </Router>
 
-@inject PersonalHub.Web.Services.AuthService AuthService
+@inject PersonalHub.Web.Services.Auth.AuthService AuthService
 
 @code {
-    protected override async Task OnInitializedAsync()
+    private bool _initialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await AuthService.InitializeAsync();
+        if (firstRender && !_initialized)
+        {
+            _initialized = true;
+            await AuthService.InitializeAsync();
+        }
     }
 }

@@ -2,6 +2,7 @@ using MudBlazor.Services;
 using PersonalHub.Web.Components;
 using PersonalHub.Web.Configuration;
 using PersonalHub.Web.Services;
+using PersonalHub.Web.Services.Auth;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +31,12 @@ builder.Services.AddScoped<NotesService>();
 builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions>(
+    options =>
+    {
+        options.DetailedErrors = true;
+    });
 
 var app = builder.Build();
 

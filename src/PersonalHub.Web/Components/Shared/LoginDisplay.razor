@@ -1,0 +1,40 @@
+﻿@using MudBlazor
+@using PersonalHub.Web.Services.Auth
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+@if (_isAuthenticated)
+{
+    <MudButton OnClick="Logout">
+        Logout
+    </MudButton>
+}
+else
+{
+    <MudButton Href="/login">
+        Login
+    </MudButton>
+}
+
+@code {
+
+    private bool _isAuthenticated;
+    private bool _initialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            _initialized = true;
+            _isAuthenticated = await AuthService.IsAuthenticatedAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+
+        Navigation.NavigateTo("/login", true);
+    }
+}

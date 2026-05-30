@@ -3,7 +3,7 @@ using Microsoft.JSInterop;
 using System.Net.Http.Headers;
 using PersonalHub.Web.Configuration;
 
-namespace PersonalHub.Web.Services;
+namespace PersonalHub.Web.Services.Auth;
 
 public class AuthService
 {
@@ -78,5 +78,12 @@ public class AuthService
         return await _js.InvokeAsync<string?>(
             "localStorage.getItem",
             TokenKey);
+    }
+
+    public async Task<bool> IsAuthenticatedAsync()
+    {
+        var token = await GetTokenAsync();
+
+        return !string.IsNullOrWhiteSpace(token);
     }
 }
