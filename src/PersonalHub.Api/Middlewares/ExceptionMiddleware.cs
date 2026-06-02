@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using System.Text.Json;
+using Microsoft.Extensions.Hosting;
 
 namespace PersonalHub.Api.Middlewares;
 
@@ -7,13 +8,16 @@ public class ExceptionMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionMiddleware> _logger;
+    private readonly IHostEnvironment _env;
 
     public ExceptionMiddleware(
         RequestDelegate next,
-        ILogger<ExceptionMiddleware> logger)
+        ILogger<ExceptionMiddleware> logger,
+        IHostEnvironment env)
     {
         _next = next;
         _logger = logger;
+        _env = env;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -49,16 +53,28 @@ public class ExceptionMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception");
+            _logger.LogError(ex, "Unhandled exception: {Message}", ex.Message);
 
             context.Response.StatusCode = 500;
             context.Response.ContentType = "application/json";
 
-            await context.Response.WriteAsJsonAsync(
-                new
-                {
-                    message = "An unexpected error occurred"
-                });
+            var response = new Dictionary<string, object?>
+            {
+                { "message", "An unexpected error occurred" }
+            };
+
+            if (_env.IsDevelopment())
+            {
+                response["error"] = ex.Message;
+                response["stackTrace"] = ex.StackTrace;
+            }
+
+            var options = new JsonSerializerOptions 
+            { 
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+            };
+
+            await context.Response.WriteAsJsonAsync(response, options);
         }
     }
 }

@@ -5,13 +5,23 @@
 
 @if (_isAuthenticated)
 {
-    <MudButton OnClick="Logout">
+    <MudButton Variant="Variant.Outlined"
+               Color="Color.Inherit"
+               OnClick="Logout"
+               Size="Size.Medium"
+               StartIcon="@Icons.Material.Filled.Logout"
+               Class="text-white">
         Logout
     </MudButton>
 }
 else
 {
-    <MudButton Href="/login">
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Warning"
+               Href="/login"
+               Size="Size.Medium"
+               StartIcon="@Icons.Material.Filled.Login"
+               Class="font-weight-bold">
         Login
     </MudButton>
 }
@@ -26,14 +36,14 @@ else
         if (firstRender && !_initialized)
         {
             _initialized = true;
-            _isAuthenticated = await AuthService.IsAuthenticatedAsync();
+            _isAuthenticated = AuthService.IsAuthenticated();
             StateHasChanged();
         }
     }
 
     private async Task Logout()
     {
-        await AuthService.LogoutAsync();
+        AuthService.Logout();
 
         Navigation.NavigateTo("/login", true);
     }

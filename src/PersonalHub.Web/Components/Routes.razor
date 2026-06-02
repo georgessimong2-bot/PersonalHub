@@ -1,21 +1,16 @@
-﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+﻿@using MudBlazor
+<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        <RouteView RouteData="@routeData"
+                   DefaultLayout="@typeof(MainLayout)"
+                   @rendermode="new InteractiveServerRenderMode(prerender: false)" />
     </Found>
+
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <MudText T="string" Typo="Typo.h6" Class="mt-8">
+                Page introuvable
+            </MudText>
+        </LayoutView>
+    </NotFound>
 </Router>
-
-@inject PersonalHub.Web.Services.Auth.AuthService AuthService
-
-@code {
-    private bool _initialized = false;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && !_initialized)
-        {
-            _initialized = true;
-            await AuthService.InitializeAsync();
-        }
-    }
-}

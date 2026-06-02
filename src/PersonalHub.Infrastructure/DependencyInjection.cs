@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Identity;
 using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Infrastructure.Data;
 using PersonalHub.Infrastructure.Identity;
@@ -20,7 +21,8 @@ public static class DependencyInjection
 
         services
             .AddIdentityCore<AppUser>()
-            .AddEntityFrameworkStores<AppDbContext>();
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders();
 
         services.AddHttpContextAccessor();
 
@@ -34,7 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IIdentityService,
             IdentityService>();
 
-        
+
 
         return services;
     }

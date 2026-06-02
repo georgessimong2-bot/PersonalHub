@@ -1,17 +1,22 @@
+using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 using PersonalHub.Web.Components;
 using PersonalHub.Web.Configuration;
+using PersonalHub.Web.HttpHandlers;
 using PersonalHub.Web.Services;
 using PersonalHub.Web.Services.Auth;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+#region Configuration
 builder.Configuration.AddUserSecrets<Program>();
 
 builder.Services.Configure<ApiSettings>(
     builder.Configuration.GetSection("ApiSettings"));
+#endregion
 
+#region Logging (Serilog)
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .WriteTo.File(
@@ -20,25 +25,45 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+#endregion
 
-builder.Services.AddHttpClient();
+#region AUTH CORE SERVICES
+builder.Services.AddSingleton<AuthService>();
+#endregion
 
-builder.Services.AddMudServices();
+#region HTTP CLIENT (IMPORTANT)
+builder.Services.AddTransient<AuthHeaderHandler>();
 
-builder.Services.AddScoped<AuthService>();
+builder.Services.AddHttpClient("Api", (sp, client) =>
+{
+    var config = sp.GetRequiredService<IOptions<ApiSettings>>().Value;
+    client.BaseAddress = new Uri(config.BaseUrl);
+})
+.AddHttpMessageHandler<AuthHeaderHandler>();
+#endregion
+
+#region APP SERVICES
 builder.Services.AddScoped<NotesService>();
+#endregion
 
+#region MUD BLAZOR
+builder.Services.AddMudServices();
+#endregion
+
+#region BLAZOR SERVER
 builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions>(
-    options =>
-    {
-        options.DetailedErrors = true;
-    });
+builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions>(options =>
+{
+    options.DetailedErrors = true;
+});
+#endregion
 
 var app = builder.Build();
+
+#region PIPELINE
 
 if (!app.Environment.IsDevelopment())
 {
@@ -48,11 +73,15 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
+
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+#endregion
 
 app.Run();

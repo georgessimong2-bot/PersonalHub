@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Options;
-using Microsoft.JSInterop;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
+using System.Security.Claims;
+using Microsoft.Extensions.Options;
 using PersonalHub.Web.Configuration;
 
 namespace PersonalHub.Web.Services.Auth;
@@ -8,82 +9,92 @@ namespace PersonalHub.Web.Services.Auth;
 public class AuthService
 {
     private readonly HttpClient _http;
-    private readonly IJSRuntime _js;
     private readonly ApiSettings _apiSettings;
 
-    private const string TokenKey = "authToken";
+    private string? _token;
 
     public AuthService(
         HttpClient http,
-        IJSRuntime js,
         IOptions<ApiSettings> apiSettings)
     {
         _http = http;
-        _js = js;
         _apiSettings = apiSettings.Value;
     }
 
-    // LOGIN
+    #region LOGIN
+
     public async Task<bool> LoginAsync(string email, string password)
     {
         var response = await _http.PostAsJsonAsync(
             $"{_apiSettings.BaseUrl}/api/auth/login",
-            new { Email = email, Password = password });
+            new
+            {
+                Email = email,
+                Password = password
+            });
 
         if (!response.IsSuccessStatusCode)
             return false;
 
-        var token = await response.Content.ReadAsStringAsync();
-        token = token.Replace("\"", "");
+        var token = (await response.Content.ReadAsStringAsync())
+            .Replace("\"", "");
 
-        await SetTokenAsync(token);
+        SetToken(token);
 
         return true;
     }
 
-    // LOGOUT
-    public async Task LogoutAsync()
-    {
-        await _js.InvokeVoidAsync("localStorage.removeItem", TokenKey);
-        _http.DefaultRequestHeaders.Authorization = null;
-    }
+    #endregion
 
-    // INIT au chargement app
-    public async Task InitializeAsync()
-    {
-        var token = await GetTokenAsync();
+    #region TOKEN MANAGEMENT
 
-        if (!string.IsNullOrWhiteSpace(token))
-        {
-            _http.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-        }
-    }
-
-    // SET TOKEN
-    private async Task SetTokenAsync(string token)
+    public void SetToken(string token)
     {
-        await _js.InvokeVoidAsync(
-            "localStorage.setItem",
-            TokenKey,
-            token);
+        _token = token;
 
         _http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
     }
 
-    // GET TOKEN
-    private async Task<string?> GetTokenAsync()
+    public string? GetToken()
+        => _token;
+
+    #endregion
+
+    #region AUTH STATE
+
+    public bool IsAuthenticated()
+        => !string.IsNullOrWhiteSpace(_token);
+
+    public string? GetUserEmail()
     {
-        return await _js.InvokeAsync<string?>(
-            "localStorage.getItem",
-            TokenKey);
+        if (string.IsNullOrWhiteSpace(_token))
+            return null;
+
+        try
+        {
+            var jwt = new JwtSecurityTokenHandler()
+                .ReadJwtToken(_token);
+
+            return jwt.Claims.FirstOrDefault(c =>
+                c.Type == ClaimTypes.Email ||
+                c.Type == "email")?.Value;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
-    public async Task<bool> IsAuthenticatedAsync()
-    {
-        var token = await GetTokenAsync();
+    #endregion
 
-        return !string.IsNullOrWhiteSpace(token);
+    #region LOGOUT
+
+    public void Logout()
+    {
+        _token = null;
+        _http.DefaultRequestHeaders.Authorization = null;
     }
+
+    #endregion
 }

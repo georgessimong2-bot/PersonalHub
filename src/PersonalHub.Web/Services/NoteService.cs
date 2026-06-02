@@ -1,62 +1,44 @@
-﻿using Microsoft.Extensions.Options;
-using PersonalHub.Application.Features.Notes.Common;
-using PersonalHub.Web.Configuration;
-
-namespace PersonalHub.Web.Services;
+﻿using PersonalHub.Application.Features.Notes.Common;
 
 public class NotesService
 {
     private readonly HttpClient _http;
-    private readonly ApiSettings _apiSettings;
 
-    public NotesService(
-        HttpClient http,
-        IOptions<ApiSettings> apiSettings)
+    public NotesService(IHttpClientFactory factory)
     {
-        _http = http;
-        _apiSettings = apiSettings.Value;
+        _http = factory.CreateClient("Api");
     }
 
-    // GET ALL
     public async Task<List<NoteDto>?> GetNotesAsync()
-    {
-        return await _http.GetFromJsonAsync<List<NoteDto>>(
-            $"{_apiSettings.BaseUrl}/api/notes");
-    }
+        => await _http.GetFromJsonAsync<List<NoteDto>>("api/notes");
 
-    // GET BY ID
     public async Task<NoteDto?> GetNoteAsync(Guid id)
-    {
-        return await _http.GetFromJsonAsync<NoteDto>(
-            $"{_apiSettings.BaseUrl}/api/notes/{id}");
-    }
+        => await _http.GetFromJsonAsync<NoteDto>($"api/notes/{id}");
 
-    // CREATE
     public async Task<bool> CreateAsync(string title, string content)
     {
         var response = await _http.PostAsJsonAsync(
-            $"{_apiSettings.BaseUrl}/api/notes",
+            "api/notes",
             new { Title = title, Content = content });
+
+        Console.WriteLine("Authorization header:");
+        Console.WriteLine(_http.DefaultRequestHeaders.Authorization);
 
         return response.IsSuccessStatusCode;
     }
 
-    // UPDATE
     public async Task<bool> UpdateAsync(Guid id, string title, string content)
     {
         var response = await _http.PutAsJsonAsync(
-            $"{_apiSettings.BaseUrl}/api/notes/{id}",
+            $"api/notes/{id}",
             new { Id = id, Title = title, Content = content });
 
         return response.IsSuccessStatusCode;
     }
 
-    // DELETE
     public async Task<bool> DeleteAsync(Guid id)
     {
-        var response = await _http.DeleteAsync(
-            $"{_apiSettings.BaseUrl}/api/notes/{id}");
-
+        var response = await _http.DeleteAsync($"api/notes/{id}");
         return response.IsSuccessStatusCode;
     }
 }

@@ -86,5 +86,27 @@ public static class NotesEndpoints
 
                 return Results.NoContent();
             });
+
+        group.MapGet("/debug/me", (HttpContext httpContext) =>
+        {
+            var user = httpContext.User;
+
+            if (user?.Identity?.IsAuthenticated != true)
+            {
+                return Results.Unauthorized();
+            }
+
+            var claims = user.Claims.Select(c => new
+            {
+                c.Type,
+                c.Value
+            });
+
+            return Results.Ok(new
+            {
+                IsAuthenticated = true,
+                Claims = claims
+            });
+        });
     }
 }

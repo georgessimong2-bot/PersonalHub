@@ -6,46 +6,112 @@
 @inject AuthService AuthService
 @inject NavigationManager Navigation
 
-<MudTextField @bind-Value="_email"
-              Label="Email" />
+<PageTitle>Login - PersonalHub</PageTitle>
 
-<MudTextField @bind-Value="_password"
-              Label="Password"
-              InputType="InputType.Password" />
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="mt-16">
+    <MudPaper Class="pa-8 rounded-lg" Elevation="3">
 
-<MudButton OnClick="@(async () => await LoginClicked())">
-    Login
-</MudButton> 
+        <div class="text-center mb-6">
+            <MudText Typo="Typo.h4">Welcome Back</MudText>
+            <MudText Typo="Typo.body2">
+                Sign in to continue
+            </MudText>
+        </div>
 
-@if (!string.IsNullOrEmpty(_error))
-{
-    <MudAlert Severity="Severity.Error">
-        @_error
-    </MudAlert>
-}
+        <MudTextField @bind-Value="_email"
+                      Label="Email"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Disabled="_isLoading"
+                      Class="mb-4" />
+
+        <MudTextField @bind-Value="_password"
+                      Label="Password"
+                      Variant="Variant.Outlined"
+                      InputType="InputType.Password"
+                      FullWidth="true"
+                      Disabled="_isLoading"
+                      Class="mb-6" />
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">
+                @_error
+            </MudAlert>
+        }
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   FullWidth="true"
+                   Disabled="_isLoading"
+                   OnClick="LoginAsync">
+
+            @if (_isLoading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>Signing in...</span>
+            }
+            else
+            {
+                <span>Sign In</span>
+            }
+
+        </MudButton>
+
+        <div class="text-center mt-4">
+            <MudText Typo="Typo.body2">
+                Don't have an account?
+                <MudLink Href="/register">Create one</MudLink>
+            </MudText>
+        </div>
+
+    </MudPaper>
+</MudContainer>
 
 @code {
 
-    private string _email = string.Empty;
-
-    private string _password = string.Empty;
-
+    private string _email = "";
+    private string _password = "";
     private string? _error;
+    private bool _isLoading;
 
-    private async Task LoginClicked()
+    private async Task LoginAsync()
     {
-        var success =
-            await AuthService.LoginAsync(
-                _email,
-                _password);
+        _error = null;
 
-        if (!success)
+        if (string.IsNullOrWhiteSpace(_email))
         {
-            _error = "Invalid credentials";
+            _error = "Email is required";
             return;
         }
 
-        Navigation.NavigateTo("/");
+        if (string.IsNullOrWhiteSpace(_password))
+        {
+            _error = "Password is required";
+            return;
+        }
+
+        _isLoading = true;
+
+        try
+        {
+            var success = await AuthService.LoginAsync(_email.Trim(), _password);
+
+            if (!success)
+            {
+                _error = "Invalid email or password";
+                return;
+            }
+
+            Navigation.NavigateTo("/", true);
+        }
+        catch
+        {
+            _error = "Login error. Please try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 }
-

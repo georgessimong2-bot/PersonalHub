@@ -276,7 +276,7 @@
         if (firstRender && !_initialized)
         {
             _initialized = true;
-            _isAuthenticated = await AuthService.IsAuthenticatedAsync();
+            _isAuthenticated = AuthService.IsAuthenticated();
             StateHasChanged();
         }
     }

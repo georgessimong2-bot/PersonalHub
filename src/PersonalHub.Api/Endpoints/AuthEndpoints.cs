@@ -20,18 +20,25 @@ public static class AuthEndpoints
                     await mediator.Send(command);
 
                 return Results.Ok(result);
-            });
+            })
+            .WithName("Register")
+            .WithOpenApi()
+            .Produces<string>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest);
 
-        group.MapPost(
-    "/login",
-    async (
-        LoginCommand command,
-        IMediator mediator) =>
-    {
-        var result =
-            await mediator.Send(command);
+        group.MapPost("/login",
+            async (
+                LoginCommand command,
+                IMediator mediator) =>
+            {
+                var result =
+                    await mediator.Send(command);
 
-        return Results.Ok(result);
-    });
+                return Results.Ok(result);
+            })
+            .WithName("Login")
+            .WithOpenApi()
+            .Produces<string>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized);
     }
 }
