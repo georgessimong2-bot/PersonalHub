@@ -1,5 +1,7 @@
 ﻿@using MudBlazor
+@using PersonalHub.Web.Services.Auth
 @inherits LayoutComponentBase
+@inject AuthService AuthService
 
 <MudThemeProvider @rendermode="InteractiveServer" />
 <MudPopoverProvider @rendermode="InteractiveServer" />
@@ -47,7 +49,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine("MainLayout initialized");
+        await AuthService.InitializeAsync();
     }
 
     private bool _drawerOpen;

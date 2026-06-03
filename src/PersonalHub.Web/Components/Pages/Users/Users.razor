@@ -1,0 +1,216 @@
+﻿@page "/users"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+
+@using Microsoft.AspNetCore.Authorization
+@using PersonalHub.Application.Features.Users.Common
+@using OfficeOpenXml
+
+@inject UserService UsersService
+@inject ILogger<Users> Logger
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Utilisateurs</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+@if (_isLoading)
+{
+    <MudPaper Class="pa-8 text-center rounded-xl">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        <MudText Class="mt-4">Chargement des utilisateurs...</MudText>
+    </MudPaper>
+}
+else
+{
+    <div style="border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+
+        <!-- HEADER -->
+        <div style="background-color:#f8f9fa;padding:1.5rem;border-bottom:2px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <h2 style="margin:0;font-size:1.5rem;font-weight:bold;">
+                    Gestion des utilisateurs
+                </h2>
+
+                <p style="margin:0.5rem 0 0 0;color:#666;">
+                    @_filteredUsers.Count utilisateur(s)
+                </p>
+            </div>
+
+            <div style="display:flex;gap:0.75rem;">
+                <button @onclick="ExportToExcel"
+                        style="padding:0.75rem 1.5rem;background:#28a745;color:white;border:none;border-radius:4px;">
+                    📊 Export Excel
+                </button>
+
+                <a href="/users/create"
+                   style="padding:0.75rem 1.5rem;background:#007bff;color:white;border-radius:4px;text-decoration:none;">
+                    + Créer
+                </a>
+            </div>
+        </div>
+
+        <!-- SEARCH -->
+        <div style="padding:1.5rem;border-bottom:1px solid #ddd;">
+            <input type="text"
+                   placeholder="Rechercher..."
+                   @bind="Search"
+                   @bind:event="oninput"
+                   style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:4px;" />
+        </div>
+
+        <!-- TABLE -->
+        <table style="width:100%;border-collapse:collapse;">
+            <thead style="background:#f0f0f0;">
+                <tr>
+                    <th style="padding:1rem;text-align:left;">Email</th>
+                    <th style="padding:1rem;text-align:left;">Id</th>
+                    <th style="padding:1rem;text-align:center;">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var user in _paginatedUsers)
+                {
+                    <tr style="border-bottom:1px solid #ddd;">
+                        <td style="padding:1rem;">@user.Email</td>
+                        <td style="padding:1rem;color:#666;font-size:0.9rem;">@user.Id</td>
+
+                        <td style="padding:1rem;display:flex;gap:0.75rem;justify-content:center;">
+                            <a href="/users/edit/@user.Id">✏️</a>
+                            <button @onclick="() => Delete(user.Id)">🗑️</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- PAGINATION -->
+        <div style="padding:1rem;background:#f8f9fa;display:flex;justify-content:center;gap:0.5rem;align-items:center;">
+
+            <button @onclick="PrevPage" disabled="@(_currentPage == 1)">←</button>
+
+            <span>Page @_currentPage / @_totalPages</span>
+
+            <button @onclick="NextPage" disabled="@(_currentPage >= _totalPages)">→</button>
+
+        </div>
+
+    </div>
+}
+</MudContainer>
+
+@code {
+
+    private List<UserDto> _users = [];
+    private List<UserDto> _filteredUsers = [];
+    private List<UserDto> _paginatedUsers = [];
+
+    private bool _isLoading = true;
+
+    private string _search = "";
+
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+    private int _totalPages = 1;
+
+    // 🔥 SEARCH PROPERTY (IMPORTANT)
+    private string Search
+    {
+        get => _search;
+        set
+        {
+            _search = value;
+            _currentPage = 1;
+            ApplyFilters();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        _isLoading = true;
+
+        try
+        {
+            _users = await UsersService.GetUsersAsync() ?? [];
+            ApplyFilters();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        _filteredUsers = string.IsNullOrWhiteSpace(_search)
+            ? _users
+            : _users.Where(x =>
+                x.Email.Contains(_search, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+        _totalPages = Math.Max(1,
+            (int)Math.Ceiling((double)_filteredUsers.Count / _pageSize));
+
+        if (_currentPage > _totalPages)
+            _currentPage = 1;
+
+        _paginatedUsers = _filteredUsers
+            .Skip((_currentPage - 1) * _pageSize)
+            .Take(_pageSize)
+            .ToList();
+
+        StateHasChanged();
+    }
+
+    private void NextPage()
+    {
+        if (_currentPage < _totalPages)
+        {
+            _currentPage++;
+            ApplyFilters();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+            ApplyFilters();
+        }
+    }
+
+    private async Task Delete(string id)
+    {
+        _users.RemoveAll(x => x.Id == id);
+        ApplyFilters();
+    }
+
+    private async Task ExportToExcel()
+    {
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+        using var package = new ExcelPackage();
+        var ws = package.Workbook.Worksheets.Add("Users");
+
+        ws.Cells[1, 1].Value = "Email";
+        ws.Cells[1, 2].Value = "Id";
+
+        int row = 2;
+        foreach (var u in _filteredUsers)
+        {
+            ws.Cells[row, 1].Value = u.Email;
+            ws.Cells[row, 2].Value = u.Id;
+            row++;
+        }
+
+        var bytes = package.GetAsByteArray();
+        await JSRuntime.InvokeVoidAsync("downloadFile", bytes, "users.xlsx");
+    }
+}

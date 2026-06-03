@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using PersonalHub.Application.Common.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using PersonalHub.Application.Common.Interfaces;
+using PersonalHub.Application.Features.Users.Common;
 using PersonalHub.Infrastructure.Auth;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -38,6 +40,7 @@ public class IdentityService
                 user,
                 password);
 
+
         if (!result.Succeeded)
         {
             throw new Exception(
@@ -45,6 +48,8 @@ public class IdentityService
                     ", ",
                     result.Errors.Select(x => x.Description)));
         }
+
+        await _userManager.AddToRoleAsync(user, "User");
 
         return user.Id;
     }
@@ -71,10 +76,17 @@ public class IdentityService
         }
 
         var claims = new List<Claim>
-    {
-        new(ClaimTypes.NameIdentifier, user.Id),
-        new(JwtRegisteredClaimNames.Email, user.Email!)
-    };
+        {
+            new(ClaimTypes.NameIdentifier, user.Id),
+            new(ClaimTypes.Email, user.Email!),
+            new(ClaimTypes.Name, user.Email!)
+        };
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        claims.AddRange(
+            roles.Select(role =>
+                new Claim(ClaimTypes.Role, role)));
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_jwtSettings.Secret));
@@ -94,5 +106,16 @@ public class IdentityService
 
         return new JwtSecurityTokenHandler()
             .WriteToken(token);
+    }
+
+    public async Task<List<UserDto>> GetUsersAsync()
+    {
+        return await _userManager.Users
+            .Select(x => new UserDto
+            {
+                Id = x.Id,
+                Email = x.Email!
+            })
+            .ToListAsync();
     }
 }

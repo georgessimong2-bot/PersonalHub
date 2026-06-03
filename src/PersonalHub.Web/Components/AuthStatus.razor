@@ -1,36 +1,15 @@
-﻿@using MudBlazor
-@inject PersonalHub.Web.Services.Auth.AuthService AuthService
-
-@if (_initialized)
-{
-    if (_isAuthenticated)
-    {
-        <MudChip T="string" Color="Color.Success" Variant="Variant.Text">
-            👤 @_email
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using MudBlazor
+<AuthorizeView>
+    <Authorized Context="user">
+        <MudChip T="string" Color="Color.Success">
+            👤 @user.User.Identity?.Name
         </MudChip>
-    }
-    else
-    {
-        <MudChip T="string" Color="Color.Error" Variant="Variant.Text">
+    </Authorized>
+
+    <NotAuthorized>
+        <MudChip T="string" Color="Color.Error">
             ⚠️ Not logged in
         </MudChip>
-    }
-}
-
-@code {
-    private bool _initialized;
-    private bool _isAuthenticated;
-    private string? _email;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            _isAuthenticated = AuthService.IsAuthenticated();
-            _email = AuthService.GetUserEmail();
-
-            _initialized = true;
-            StateHasChanged();
-        }
-    }
-}
+    </NotAuthorized>
+</AuthorizeView>

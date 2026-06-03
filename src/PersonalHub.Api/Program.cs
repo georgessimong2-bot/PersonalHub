@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PersonalHub.Api;
@@ -11,6 +12,8 @@ using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Infrastructure;
 using PersonalHub.Infrastructure.Auth;
 using PersonalHub.Infrastructure.Data;
+using PersonalHub.Infrastructure.Identity;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,18 +35,18 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
     {
         policy.WithOrigins(allowedOrigins)
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 #endregion
 
-#region Database
+#region DATABASE
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 #endregion
 
-#region MediatR + App layers
+#region APPLICATION
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly));
 
@@ -51,11 +54,9 @@ builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration);
 
-builder.Services.AddScoped<IAppDbContext>(
-    sp => sp.GetRequiredService<AppDbContext>());
-#endregion
+builder.Services.AddScoped<IAppDbContext>(sp =>
+    sp.GetRequiredService<AppDbContext>());
 
-#region FluentValidation
 builder.Services.AddValidatorsFromAssembly(typeof(AssemblyReference).Assembly);
 
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
@@ -65,14 +66,16 @@ builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBeh
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
 
-var jwtSettings = builder.Configuration
-    .GetSection("JwtSettings")
-    .Get<JwtSettings>()!;
+var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
+#endregion
 
+#region AUTH
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -82,22 +85,43 @@ builder.Services
 
             ValidIssuer = jwtSettings.Issuer,
             ValidAudience = jwtSettings.Audience,
+
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtSettings.Secret)),
+
+            NameClaimType = ClaimTypes.Name,
+            RoleClaimType = ClaimTypes.Role,
 
             ClockSkew = TimeSpan.Zero
         };
 
         options.Events = new JwtBearerEvents
         {
-            OnAuthenticationFailed = context =>
+            OnMessageReceived = context =>
             {
-                Console.WriteLine("JWT FAILED: " + context.Exception.Message);
+                Console.WriteLine("➡️ AUTH HEADER:");
+                Console.WriteLine(context.Request.Headers.Authorization);
                 return Task.CompletedTask;
             },
+
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine("❌ JWT FAILED: " + context.Exception.Message);
+                return Task.CompletedTask;
+            },
+
             OnTokenValidated = context =>
             {
-                Console.WriteLine("JWT VALIDATED");
+                Console.WriteLine("✅ JWT VALIDATED");
+
+                foreach (var c in context.Principal.Claims)
+                {
+                    Console.WriteLine($"{c.Type} = {c.Value}");
+                }
+
+                Console.WriteLine("➡️ IsAdmin = " +
+                    context.Principal.IsInRole("Admin"));
+
                 return Task.CompletedTask;
             }
         };
@@ -108,8 +132,56 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-#region Middleware pipeline
+#region 🔥 SEED USERS + ROLES (IMPORTANT FIX)
+Console.WriteLine("🔥 SEED EXECUTING...");
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
+    // ROLE ADMIN
+    if (!await roleManager.RoleExistsAsync("Admin"))
+    {
+        await roleManager.CreateAsync(new IdentityRole("Admin"));
+    }
+
+    // ROLE USER
+    if (!await roleManager.RoleExistsAsync("User"))
+    {
+        await roleManager.CreateAsync(new IdentityRole("User"));
+    }
+
+    // DEFAULT USER
+    var email = "test@gmail.com";
+
+    var user = await userManager.FindByEmailAsync(email);
+
+    if (user == null)
+    {
+        user = new AppUser
+        {
+            UserName = email,
+            Email = email,
+            EmailConfirmed = true
+        };
+
+        var result = await userManager.CreateAsync(user, "Test123!");
+
+        if (result.Succeeded)
+        {
+            await userManager.AddToRoleAsync(user, "Admin");
+        }
+        else
+        {
+            foreach (var err in result.Errors)
+                Console.WriteLine("❌ USER CREATE ERROR: " + err.Description);
+        }
+    }
+}
+Console.WriteLine("🔥 USER CREATED OR EXISTS");
+#endregion
+
+#region PIPELINE
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
@@ -119,7 +191,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseCors();
 
 app.UseAuthentication();
@@ -127,6 +198,5 @@ app.UseAuthorization();
 
 app.MapEndpoints();
 
-#endregion
-
 app.Run();
+#endregion

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PersonalHub.Application.Common.Interfaces;
@@ -7,7 +8,7 @@ using PersonalHub.Infrastructure.Identity;
 namespace PersonalHub.Infrastructure.Data;
 
 public class AppDbContext
-    : IdentityDbContext<AppUser>, IAppDbContext
+    : IdentityDbContext<AppUser, IdentityRole, string>, IAppDbContext
 {
     public AppDbContext(
         DbContextOptions<AppDbContext> options)

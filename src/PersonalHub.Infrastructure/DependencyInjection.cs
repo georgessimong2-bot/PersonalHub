@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Identity;
 using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Infrastructure.Data;
 using PersonalHub.Infrastructure.Identity;
@@ -20,7 +20,7 @@ public static class DependencyInjection
                     "DefaultConnection")));
 
         services
-            .AddIdentityCore<AppUser>()
+            .AddIdentity<AppUser, IdentityRole>()
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
 

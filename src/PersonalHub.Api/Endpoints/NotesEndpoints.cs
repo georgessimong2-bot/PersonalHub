@@ -13,8 +13,7 @@ public static class NotesEndpoints
         this IEndpointRouteBuilder app)
     {
         var group = app
-            .MapGroup("/api/notes")
-            .RequireAuthorization();
+            .MapGroup("/api/notes");
 
         // GET ALL
 

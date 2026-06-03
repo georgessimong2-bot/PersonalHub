@@ -31,14 +31,7 @@
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
-    @if (!_isAuthenticated)
-{
-    <MudAlert Severity="Severity.Warning">
-        Please login first
-    </MudAlert>
-}
-
-    else if (_isLoading)
+   @if (_isLoading)
     {
         <MudPaper Class="pa-8 text-center rounded-xl">
             <MudProgressCircular Color="Color.Primary"

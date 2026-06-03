@@ -1,9 +1,9 @@
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 using PersonalHub.Web.Components;
 using PersonalHub.Web.Configuration;
 using PersonalHub.Web.HttpHandlers;
-using PersonalHub.Web.Services;
 using PersonalHub.Web.Services.Auth;
 using Serilog;
 
@@ -28,7 +28,11 @@ builder.Host.UseSerilog();
 #endregion
 
 #region AUTH CORE SERVICES
-builder.Services.AddSingleton<AuthService>();
+builder.Services.AddSingleton<TokenStore>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStateProvider>();
+builder.Services.AddAuthorizationCore();
+builder.Services.AddCascadingAuthenticationState();
 #endregion
 
 #region HTTP CLIENT (IMPORTANT)
@@ -44,6 +48,7 @@ builder.Services.AddHttpClient("Api", (sp, client) =>
 
 #region APP SERVICES
 builder.Services.AddScoped<NotesService>();
+builder.Services.AddScoped<UserService>();
 #endregion
 
 #region MUD BLAZOR

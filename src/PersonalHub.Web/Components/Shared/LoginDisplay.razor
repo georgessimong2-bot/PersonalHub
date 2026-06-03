@@ -1,50 +1,31 @@
-﻿@using MudBlazor
-@using PersonalHub.Web.Services.Auth
-@inject AuthService AuthService
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using MudBlazor
+@inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
 
-@if (_isAuthenticated)
-{
-    <MudButton Variant="Variant.Outlined"
-               Color="Color.Inherit"
-               OnClick="Logout"
-               Size="Size.Medium"
-               StartIcon="@Icons.Material.Filled.Logout"
-               Class="text-white">
-        Logout
-    </MudButton>
-}
-else
-{
-    <MudButton Variant="Variant.Filled"
-               Color="Color.Warning"
-               Href="/login"
-               Size="Size.Medium"
-               StartIcon="@Icons.Material.Filled.Login"
-               Class="font-weight-bold">
-        Login
-    </MudButton>
-}
+<AuthorizeView>
+    <Authorized>
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Inherit"
+                   OnClick="Logout"
+                   StartIcon="@Icons.Material.Filled.Logout">
+            Logout
+        </MudButton>
+    </Authorized>
+
+    <NotAuthorized>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Warning"
+                   Href="/login"
+                   StartIcon="@Icons.Material.Filled.Login">
+            Login
+        </MudButton>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
-
-    private bool _isAuthenticated;
-    private bool _initialized = false;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private void Logout()
     {
-        if (firstRender && !_initialized)
-        {
-            _initialized = true;
-            _isAuthenticated = AuthService.IsAuthenticated();
-            StateHasChanged();
-        }
-    }
-
-    private async Task Logout()
-    {
-        AuthService.Logout();
-
-        Navigation.NavigateTo("/login", true);
+        Navigation.NavigateTo("/logout", true);
     }
 }

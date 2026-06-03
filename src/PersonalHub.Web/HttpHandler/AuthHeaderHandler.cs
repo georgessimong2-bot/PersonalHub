@@ -1,22 +1,27 @@
-﻿using System.Net.Http.Headers;
-using PersonalHub.Web.Services.Auth;
+﻿using PersonalHub.Web.Services.Auth;
+using System.Net.Http.Headers;
 
 namespace PersonalHub.Web.HttpHandlers;
 
 public class AuthHeaderHandler : DelegatingHandler
 {
-    private readonly AuthService _authService;
+    private readonly IServiceProvider _sp;
 
-    public AuthHeaderHandler(AuthService authService)
+    public AuthHeaderHandler(IServiceProvider sp)
     {
-        _authService = authService;
+        _sp = sp;
     }
 
     protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        var token = _authService.GetToken();
+        var store = _sp.GetRequiredService<TokenStore>();
+
+        var token = store.Token;
+
+        Console.WriteLine("AUTH HEADER ADDED");
+        Console.WriteLine("TOKEN = " + token);
 
         if (!string.IsNullOrWhiteSpace(token))
         {

@@ -1,4 +1,6 @@
-﻿namespace PersonalHub.Application.Common.Interfaces;
+﻿using PersonalHub.Application.Features.Users.Common;
+
+namespace PersonalHub.Application.Common.Interfaces;
 
 public interface IIdentityService
 {
@@ -9,4 +11,8 @@ public interface IIdentityService
     Task<string> LoginAsync(
     string email,
     string password);
+
+    Task<List<UserDto>> GetUsersAsync();
+
+
 }
