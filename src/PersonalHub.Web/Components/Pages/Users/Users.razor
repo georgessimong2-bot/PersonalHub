@@ -3,6 +3,7 @@
 @attribute [Authorize(Roles = "Admin")]
 
 @using Microsoft.AspNetCore.Authorization
+@using MudBlazor
 @using PersonalHub.Application.Features.Users.Common
 @using OfficeOpenXml
 
@@ -11,6 +12,14 @@
 @inject IJSRuntime JSRuntime
 
 <PageTitle>Utilisateurs</PageTitle>
+
+<ConfirmDialog @ref="_confirmDialog"
+               Title="Supprimer l'utilisateur"
+               Message="Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action ne peut pas être annulée."
+               ConfirmButtonText="Supprimer"
+               IsVisible="_showConfirmDialog"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
@@ -78,7 +87,7 @@ else
 
                         <td style="padding:1rem;display:flex;gap:0.75rem;justify-content:center;">
                             <a href="/users/edit/@user.Id">✏️</a>
-                            <button @onclick="() => Delete(user.Id)">🗑️</button>
+                                <button @onclick="@(async () => await ShowDeleteConfirm(user.Id))">🗑️</button>
                         </td>
                     </tr>
                 }
@@ -102,9 +111,12 @@ else
 
 @code {
 
+    private ConfirmDialog? _confirmDialog;
+    private bool _showConfirmDialog = false;
     private List<UserDto> _users = [];
     private List<UserDto> _filteredUsers = [];
     private List<UserDto> _paginatedUsers = [];
+    private string _userToDelete = string.Empty;
 
     private bool _isLoading = true;
 
@@ -144,6 +156,13 @@ else
         {
             _isLoading = false;
         }
+    }
+
+    private async Task ShowDeleteConfirm(string id)
+    {
+        _userToDelete = id;
+        _showConfirmDialog = true;
+        StateHasChanged();
     }
 
     private void ApplyFilters()
@@ -186,11 +205,6 @@ else
         }
     }
 
-    private async Task Delete(string id)
-    {
-        _users.RemoveAll(x => x.Id == id);
-        ApplyFilters();
-    }
 
     private async Task ExportToExcel()
     {
@@ -212,5 +226,71 @@ else
 
         var bytes = package.GetAsByteArray();
         await JSRuntime.InvokeVoidAsync("downloadFile", bytes, "users.xlsx");
+    }
+
+ 
+    private async Task ConfirmDelete()
+    {
+        if (_userToDelete == string.Empty)
+            return;
+
+        await Delete(_userToDelete  );
+        _userToDelete = string.Empty;
+    }
+
+    private async Task Delete(string id)
+    {
+        try
+        {
+            Logger.LogInformation("Suppression de l'utilisateur {Id}", id);
+
+            var success = await UsersService.DeleteAsync(id);
+
+            if (!success)
+            {
+                Logger.LogError("Échec de la suppression de l'utilisateur {Id}", id);
+                return;
+            }
+
+            _users.RemoveAll(x => x.Id == id);
+            ApplyFiltersAndSort();
+
+            Logger.LogInformation("Utilisateur {Id} supprimé", id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de la suppression de l'utilisateur {Id}", id);
+        }
+    }
+
+    private async Task CancelDelete()
+    {
+        _userToDelete = string.Empty;
+    }
+
+    private void ApplyFiltersAndSort()
+    {
+        // Appliquer recherche par texte
+        _filteredUsers = string.IsNullOrWhiteSpace(_search)
+            ? _users
+            : _users.Where(x =>
+                x.Email.Contains(_search, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+       
+      
+
+        // Calculer pagination
+        _totalPages = (int)Math.Ceiling((double)_filteredUsers.Count / _pageSize);
+        if (_currentPage > _totalPages)
+            _currentPage = Math.Max(1, _totalPages);
+
+        // Appliquer pagination
+        _paginatedUsers = _filteredUsers
+            .Skip((_currentPage - 1) * _pageSize)
+            .Take(_pageSize)
+            .ToList();
+
+        StateHasChanged();
     }
 }

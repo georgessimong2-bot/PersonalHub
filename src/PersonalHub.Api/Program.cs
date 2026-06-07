@@ -1,7 +1,6 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PersonalHub.Api;
@@ -12,7 +11,6 @@ using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Infrastructure;
 using PersonalHub.Infrastructure.Auth;
 using PersonalHub.Infrastructure.Data;
-using PersonalHub.Infrastructure.Identity;
 using System.Security.Claims;
 using System.Text;
 
@@ -131,55 +129,6 @@ builder.Services.AddAuthorization();
 #endregion
 
 var app = builder.Build();
-
-#region 🔥 SEED USERS + ROLES (IMPORTANT FIX)
-Console.WriteLine("🔥 SEED EXECUTING...");
-using (var scope = app.Services.CreateScope())
-{
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
-    // ROLE ADMIN
-    if (!await roleManager.RoleExistsAsync("Admin"))
-    {
-        await roleManager.CreateAsync(new IdentityRole("Admin"));
-    }
-
-    // ROLE USER
-    if (!await roleManager.RoleExistsAsync("User"))
-    {
-        await roleManager.CreateAsync(new IdentityRole("User"));
-    }
-
-    // DEFAULT USER
-    var email = "test@gmail.com";
-
-    var user = await userManager.FindByEmailAsync(email);
-
-    if (user == null)
-    {
-        user = new AppUser
-        {
-            UserName = email,
-            Email = email,
-            EmailConfirmed = true
-        };
-
-        var result = await userManager.CreateAsync(user, "Test123!");
-
-        if (result.Succeeded)
-        {
-            await userManager.AddToRoleAsync(user, "Admin");
-        }
-        else
-        {
-            foreach (var err in result.Errors)
-                Console.WriteLine("❌ USER CREATE ERROR: " + err.Description);
-        }
-    }
-}
-Console.WriteLine("🔥 USER CREATED OR EXISTS");
-#endregion
 
 #region PIPELINE
 app.UseMiddleware<ExceptionMiddleware>();

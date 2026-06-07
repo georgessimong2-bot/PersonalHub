@@ -1,5 +1,10 @@
-﻿using PersonalHub.Application.Common.Interfaces;
+﻿using MediatR;
+using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Application.Features.Users.Common;
+using PersonalHub.Application.Features.Users.CreateUser;
+using PersonalHub.Application.Features.Users.DeleteUser;
+using PersonalHub.Application.Features.Users.GetUserById;
+using PersonalHub.Application.Features.Users.UpdateUser;
 
 namespace PersonalHub.Api.Endpoints;
 
@@ -19,5 +24,62 @@ public static class UsersEndpoints
                 Email = u.Email!
             });
         });
+
+        //DELETE
+
+        group.MapDelete("/{id}",
+            async (
+                string id,
+                IMediator mediator) =>
+            {
+                await mediator.Send(
+                    new DeleteUserCommand(id));
+
+                return Results.NoContent();
+            });
+
+        // GET BY ID
+
+        group.MapGet("/{id}",
+            async (
+                string id,
+                IMediator mediator) =>
+            {
+                var user =
+                    await mediator.Send(
+                        new GetUserByIdCommand(id));
+
+                return user is null
+                    ? Results.NotFound()
+                    : Results.Ok(user);
+            });
+
+        // CREATE
+
+        group.MapPost("/",
+            async (
+                CreateUserCommand command,
+                IMediator mediator) =>
+            {
+                var result =
+                    await mediator.Send(command);
+
+                return Results.Ok(result);
+            });
+
+        // UPDATE
+
+        group.MapPut("/{id}",
+            async (
+                string id,
+                UpdateUserCommand command,
+                IMediator mediator) =>
+            {
+                command.Id = id;
+
+                await mediator.Send(command);
+
+                return Results.NoContent();
+            });
     }
 }

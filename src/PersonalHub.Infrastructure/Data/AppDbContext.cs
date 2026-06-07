@@ -17,4 +17,5 @@ public class AppDbContext
     }
 
     public DbSet<Note> Notes => Set<Note>();
+
 }

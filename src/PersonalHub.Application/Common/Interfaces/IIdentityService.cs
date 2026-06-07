@@ -14,5 +14,19 @@ public interface IIdentityService
 
     Task<List<UserDto>> GetUsersAsync();
 
+    Task<string> CreateUserAsync(
+       string email,
+       string password,
+       string role);
 
+    Task<UserDto?> GetUserByIdAsync(
+       string id);
+
+    Task UpdateUserAsync(
+    string id,
+    string email,
+    string role);
+
+    Task DeleteUserAsync(
+    string id);
 }

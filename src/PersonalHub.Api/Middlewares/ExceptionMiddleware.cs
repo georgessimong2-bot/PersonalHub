@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
 using System.Text.Json;
-using Microsoft.Extensions.Hosting;
 
 namespace PersonalHub.Api.Middlewares;
 
@@ -44,9 +43,9 @@ public class ExceptionMiddleware
                         g => g.Select(e => e.ErrorMessage).ToArray())
             };
 
-            var options = new JsonSerializerOptions 
-            { 
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
 
             await context.Response.WriteAsJsonAsync(response, options);
@@ -54,7 +53,7 @@ public class ExceptionMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception: {Message}", ex.Message);
-
+            Console.WriteLine(ex.InnerException?.Message);
             context.Response.StatusCode = 500;
             context.Response.ContentType = "application/json";
 
@@ -69,9 +68,9 @@ public class ExceptionMiddleware
                 response["stackTrace"] = ex.StackTrace;
             }
 
-            var options = new JsonSerializerOptions 
-            { 
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
 
             await context.Response.WriteAsJsonAsync(response, options);

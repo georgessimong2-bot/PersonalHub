@@ -7,6 +7,7 @@ public interface IAppDbContext
 {
     DbSet<Note> Notes { get; }
 
+
     Task<int> SaveChangesAsync(
         CancellationToken cancellationToken);
 }

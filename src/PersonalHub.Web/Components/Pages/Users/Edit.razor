@@ -1,0 +1,111 @@
+﻿@page "/users/edit/{Id}"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+
+@using Microsoft.AspNetCore.Authorization
+@using MudBlazor
+@using PersonalHub.Application.Features.Users.UpdateUser
+
+@inject UserService UserService
+@inject NavigationManager Navigation
+
+<PageTitle>Modifier un utilisateur</PageTitle>
+
+@if (_isLoading)
+{
+    <MudContainer Class="mt-8 text-center">
+        <MudProgressCircular Indeterminate="true" />
+    </MudContainer>
+}
+else
+{
+    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+
+        <MudPaper Class="pa-6">
+
+            <MudText Typo="Typo.h5" Class="mb-4">
+                Modifier utilisateur
+            </MudText>
+
+            <MudTextField Label="Email"
+                          Variant="Variant.Outlined"
+                          @bind-Value="_model.Email" />
+
+            <MudSelect T="string"
+                       Label="Rôle"
+                       Variant="Variant.Outlined"
+                       Class="mt-4"
+                       @bind-Value="_model.Role">
+
+                <MudSelectItem T="string" Value="@("User")">
+                    User
+                </MudSelectItem>
+
+                <MudSelectItem T="string" Value="@("Admin")">
+                    Admin
+                </MudSelectItem>
+
+            </MudSelect>
+
+            <MudStack Row="true" Class="mt-6">
+
+                <MudButton Color="Color.Primary"
+                           Variant="Variant.Filled"
+                           OnClick="Save">
+                    Enregistrer
+                </MudButton>
+
+                <MudButton Color="Color.Secondary"
+                           Variant="Variant.Outlined"
+                           OnClick="Cancel">
+                    Annuler
+                </MudButton>
+
+            </MudStack>
+
+        </MudPaper>
+
+    </MudContainer>
+}
+
+@code {
+
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private bool _isLoading = true;
+
+    private UpdateUserCommand _model = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await UserService.GetByIdAsync(Id);
+
+        if (user is not null)
+        {
+            _model.Id = user.Id;
+            _model.Email = user.Email;
+            _model.Role = user.Role;
+        }
+
+        _isLoading = false;
+    }
+
+    private async Task Save()
+    {
+        var success =
+            await UserService.UpdateAsync(
+                Id,
+                _model);
+
+        if (success)
+        {
+            Navigation.NavigateTo("/users");
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/users");
+    }
+}
