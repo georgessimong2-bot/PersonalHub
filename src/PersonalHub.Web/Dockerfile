@@ -1,13 +1,13 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
-EXPOSE 8080
+EXPOSE 8081
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY . .
 
-RUN dotnet publish src/PersonalHub.Api/PersonalHub.Api.csproj \
+RUN dotnet publish src/PersonalHub.Web/PersonalHub.Web.csproj \
     -c Release \
     -o /out
 
@@ -16,4 +16,4 @@ WORKDIR /app
 
 COPY --from=build /out .
 
-ENTRYPOINT ["dotnet", "PersonalHub.Api.dll"]
+ENTRYPOINT ["dotnet", "PersonalHub.Web.dll"]

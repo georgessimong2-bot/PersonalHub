@@ -25,7 +25,25 @@ services:
       - sqlserver
 
     environment:
-      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=PersonalHubDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=PersonalHubDb;User Id=sa;Password=TestPassword123!;TrustServerCertificate=True"
+
+  web:
+    build:
+      context: .
+      dockerfile: src/PersonalHub.Web/Dockerfile
+
+    container_name: personalhub-web
+
+    ports:
+      - "8081:8081"
+
+    depends_on:
+      - api
+
+    environment:
+      ASPNETCORE_URLS: "http://+:8081"
+      ApiSettings__BaseUrl: "http://api:8080"
 
 volumes:
   sqlserver_data:
