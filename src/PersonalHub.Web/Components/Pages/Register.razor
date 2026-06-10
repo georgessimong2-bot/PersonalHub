@@ -1,0 +1,137 @@
+﻿@page "/register"
+@rendermode InteractiveServer
+@using MudBlazor
+@using PersonalHub.Web.Services.Auth
+
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Register - PersonalHub</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="mt-16">
+    <MudPaper Class="pa-8 rounded-lg" Elevation="3">
+
+        <div class="text-center mb-6">
+            <MudText Typo="Typo.h4">Create Account</MudText>
+            <MudText Typo="Typo.body2">
+                Sign up to start using PersonalHub
+            </MudText>
+        </div>
+
+        <MudTextField @bind-Value="_email"
+                      Label="Email"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Disabled="_isLoading"
+                      Class="mb-4" />
+
+        <MudTextField @bind-Value="_password"
+                      Label="Password"
+                      Variant="Variant.Outlined"
+                      InputType="InputType.Password"
+                      FullWidth="true"
+                      Disabled="_isLoading"
+                      Class="mb-4" />
+
+        <MudTextField @bind-Value="_confirmPassword"
+                      Label="Confirm Password"
+                      Variant="Variant.Outlined"
+                      InputType="InputType.Password"
+                      FullWidth="true"
+                      Disabled="_isLoading"
+                      Class="mb-6" />
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">
+                @_error
+            </MudAlert>
+        }
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   FullWidth="true"
+                   Disabled="_isLoading"
+                   OnClick="RegisterAsync">
+
+            @if (_isLoading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>Creating account...</span>
+            }
+            else
+            {
+                <span>Register</span>
+            }
+
+        </MudButton>
+
+        <div class="text-center mt-4">
+            <MudText Typo="Typo.body2">
+                Already have an account?
+                <MudLink Href="/login">Sign in</MudLink>
+            </MudText>
+        </div>
+
+    </MudPaper>
+</MudContainer>
+
+@code {
+
+    private string _email = "";
+    private string _password = "";
+    private string _confirmPassword = "";
+    private string? _error;
+    private bool _isLoading;
+
+    private async Task RegisterAsync()
+    {
+        _error = null;
+
+        if (string.IsNullOrWhiteSpace(_email))
+        {
+            _error = "Email is required";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_password))
+        {
+            _error = "Password is required";
+            return;
+        }
+
+        if (_password != _confirmPassword)
+        {
+            _error = "Passwords do not match";
+            return;
+        }
+
+        _isLoading = true;
+
+        try
+        {
+            var success = await AuthService.RegisterAsync(
+                _email.Trim(),
+                _password);
+
+            if (!success)
+            {
+                _error = "Registration failed";
+                return;
+            }
+
+            await AuthService.LoginAsync(_email.Trim(), _password);
+
+            Navigation.NavigateTo("/", true);
+        }
+        catch(Exception ex)
+        {
+            _error = "Registration error. Please try again.";
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

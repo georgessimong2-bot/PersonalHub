@@ -1,0 +1,93 @@
+﻿@page "/dashboard"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Authorization
+@using MudBlazor
+@using PersonalHub.Web.Services.Auth
+
+@inject AuthService AuthService
+@inject UserService UsersService
+@inject NotesService NotesService
+
+<PageTitle>Dashboard</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+
+    <MudText Typo="Typo.h4" Class="mb-4">
+        Dashboard
+    </MudText>
+
+    <MudText Typo="Typo.body1" Class="mb-6">
+        Bienvenue 👋 @Email
+    </MudText>
+
+    <MudGrid Spacing="3">
+
+        <!-- USERS CARD -->
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4 rounded-lg" Elevation="3">
+                <MudText Typo="Typo.h6">Utilisateurs</MudText>
+                <MudText Typo="Typo.h3">@_usersCount</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <!-- NOTES CARD -->
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4 rounded-lg" Elevation="3">
+                <MudText Typo="Typo.h6">Notes</MudText>
+                <MudText Typo="Typo.h3">@_notesCount</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <!-- TASKS CARD -->
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4 rounded-lg" Elevation="3">
+                <MudText Typo="Typo.h6">Tasks</MudText>
+                <MudText Typo="Typo.h3">
+                    @if (_loading)
+                    {
+                        <MudProgressCircular Indeterminate="true" />
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.h3">@_usersCount</MudText>
+                    }
+                </MudText>
+            </MudPaper>
+        </MudItem>
+
+        <!-- STATUS CARD -->
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4 rounded-lg" Elevation="3">
+                <MudText Typo="Typo.h6">Status</MudText>
+                <MudText Color="Color.Success">Online</MudText>
+            </MudPaper>
+        </MudItem>
+
+    </MudGrid>
+
+</MudContainer>
+
+
+@code {
+
+    private string? Email;
+    private int _usersCount;
+    private int _notesCount;
+    private bool _loading = true;
+
+    protected override void OnInitialized()
+    {
+        Email = AuthService.GetUserEmail();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var users = await UsersService.GetUsersAsync();
+        var notes = await NotesService.GetNotesAsync();
+
+        _usersCount = users?.Count ?? 0;
+        _notesCount = notes?.Count ?? 0;
+    }
+}

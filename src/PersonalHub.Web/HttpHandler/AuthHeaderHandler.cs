@@ -5,22 +5,18 @@ namespace PersonalHub.Web.HttpHandlers;
 
 public class AuthHeaderHandler : DelegatingHandler
 {
-    private readonly IServiceProvider _sp;
+    private readonly TokenStore _store;
 
-    public AuthHeaderHandler(IServiceProvider sp)
+    public AuthHeaderHandler(TokenStore store)
     {
-        _sp = sp;
+        _store = store;
     }
 
     protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        var store = _sp.GetRequiredService<TokenStore>();
-
-        var token = store.Token;
-
-        Console.WriteLine("AUTH HEADER ADDED");
+        var token = _store.Token;
         Console.WriteLine("TOKEN = " + token);
 
         if (!string.IsNullOrWhiteSpace(token))
@@ -28,6 +24,9 @@ public class AuthHeaderHandler : DelegatingHandler
             request.Headers.Authorization =
                 new AuthenticationHeaderValue("Bearer", token);
         }
+
+        Console.WriteLine("TOKEN LENGTH = " + (token?.Length ?? 0));
+        Console.WriteLine("AUTH HEADER = " + request.Headers.Authorization);
 
         return base.SendAsync(request, cancellationToken);
     }

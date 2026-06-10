@@ -21,13 +21,15 @@ public static class UsersEndpoints
             return users.Select(u => new UserDto
             {
                 Id = u.Id,
-                Email = u.Email!
+                Email = u.Email,
+                UserName = u.UserName,
+                Role = u.Role
             });
         });
 
         //DELETE
 
-        group.MapDelete("/{id}",
+        group.MapDelete("{id}",
             async (
                 string id,
                 IMediator mediator) =>
@@ -40,7 +42,7 @@ public static class UsersEndpoints
 
         // GET BY ID
 
-        group.MapGet("/{id}",
+        group.MapGet("{id}",
             async (
                 string id,
                 IMediator mediator) =>
@@ -56,7 +58,7 @@ public static class UsersEndpoints
 
         // CREATE
 
-        group.MapPost("/",
+        group.MapPost("",
             async (
                 CreateUserCommand command,
                 IMediator mediator) =>
@@ -69,7 +71,7 @@ public static class UsersEndpoints
 
         // UPDATE
 
-        group.MapPut("/{id}",
+        group.MapPut("{id}",
             async (
                 string id,
                 UpdateUserCommand command,

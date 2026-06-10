@@ -17,7 +17,7 @@ public static class NotesEndpoints
 
         // GET ALL
 
-        group.MapGet("/",
+        group.MapGet("",
             async (
                 IMediator mediator) =>
             {
@@ -30,7 +30,7 @@ public static class NotesEndpoints
 
         // GET BY ID
 
-        group.MapGet("/{id:guid}",
+        group.MapGet("{id:guid}",
             async (
                 Guid id,
                 IMediator mediator) =>
@@ -44,7 +44,7 @@ public static class NotesEndpoints
 
         // CREATE
 
-        group.MapPost("/",
+        group.MapPost("",
             async (
                 CreateNoteCommand command,
                 IMediator mediator) =>
@@ -57,7 +57,7 @@ public static class NotesEndpoints
 
         // UPDATE
 
-        group.MapPut("/{id:guid}",
+        group.MapPut("{id:guid}",
             async (
                 Guid id,
                 UpdateNoteCommand command,
@@ -75,7 +75,7 @@ public static class NotesEndpoints
 
         // DELETE
 
-        group.MapDelete("/{id:guid}",
+        group.MapDelete("{id:guid}",
             async (
                 Guid id,
                 IMediator mediator) =>

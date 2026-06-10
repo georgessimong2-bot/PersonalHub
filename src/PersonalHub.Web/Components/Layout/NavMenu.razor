@@ -2,10 +2,7 @@
 @using MudBlazor
 
 <MudNavMenu>
-    <MudNavLink Href="/login" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Login">
-        Login
-    </MudNavLink>
-
+    
     <AuthorizeView Roles="Admin">
         <Authorized>
             <MudNavLink Href="/users"
@@ -19,8 +16,13 @@
         📝 Notes
     </MudNavLink>
 
-    <MudNavLink Href="/mycode" Icon="@Icons.Material.Filled.Code">
-        💻 MyCode
-    </MudNavLink>
+    <AuthorizeView Roles="User, Admin">
+        <Authorized>
+            <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard">
+                Dashboard
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
 </MudNavMenu>
 

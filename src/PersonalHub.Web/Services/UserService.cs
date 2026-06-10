@@ -64,4 +64,24 @@ public class UserService
 
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<bool> UpdateProfileAsync(UpdateProfileDto dto)
+    {
+        Console.WriteLine("CALLING API ACCOUNT PROFILE");
+        Console.WriteLine("REQUEST URI = " + _http.BaseAddress + "api/account/profile");
+
+        var response = await _http.PutAsJsonAsync(
+            "api/account/profile",
+            dto);
+
+        Console.WriteLine("STATUS = " + response.StatusCode);
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        Console.WriteLine("BODY = " + content);
+
+        return response.IsSuccessStatusCode;
+    }
+
+
 }

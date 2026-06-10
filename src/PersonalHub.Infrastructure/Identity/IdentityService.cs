@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Application.Features.Users.Common;
 using PersonalHub.Infrastructure.Auth;
+using PersonalHub.Infrastructure.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -17,15 +18,18 @@ public class IdentityService
     private readonly UserManager<AppUser> _userManager;
     private readonly JwtSettings _jwtSettings;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly AppDbContext _context;
 
     public IdentityService(
-        UserManager<AppUser> userManager,
-        IOptions<JwtSettings> jwtSettings,
-         RoleManager<IdentityRole> roleManager)
+    UserManager<AppUser> userManager,
+    IOptions<JwtSettings> jwtSettings,
+    RoleManager<IdentityRole> roleManager,
+    AppDbContext context)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _jwtSettings = jwtSettings.Value;
+        _context = context;
     }
     public async Task<string> RegisterAsync(
         string email,
@@ -79,16 +83,15 @@ public class IdentityService
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, user.Id),
-            new(ClaimTypes.Email, user.Email!),
-            new(ClaimTypes.Name, user.Email!)
+            new Claim("sub", user.Id),
+            new Claim("email", user.Email!)
         };
 
         var roles = await _userManager.GetRolesAsync(user);
 
         claims.AddRange(
             roles.Select(role =>
-                new Claim(ClaimTypes.Role, role)));
+                new Claim("role", role)));
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_jwtSettings.Secret));
@@ -112,16 +115,62 @@ public class IdentityService
 
     public async Task<List<UserDto>> GetUsersAsync()
     {
-        return await _userManager.Users
-            .Select(x => new UserDto
+        var users = await _userManager.Users.ToListAsync();
+
+        var result = new List<UserDto>();
+
+        foreach (var user in users)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+
+            result.Add(new UserDto
             {
-                Id = x.Id,
-                Email = x.Email!
-            })
-            .ToListAsync();
+                Id = user.Id,
+                Email = user.Email ?? string.Empty,
+                UserName = user.UserName,
+                Role = roles.FirstOrDefault() ?? string.Empty
+            });
+        }
+
+        return result;
     }
 
+    public async Task UpdateProfileAsync(
+     string userId,
+     string firstName,
+     string lastName,
+     string address,
+     string phoneNumber)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
 
+        if (user is null)
+            throw new Exception("User not found");
+
+        Console.WriteLine("BEFORE:");
+        Console.WriteLine($"FN={user.FirstName}, LN={user.LastName}");
+
+        user.FirstName = firstName;
+        user.LastName = lastName;
+        user.Address = address;
+        user.PhoneNumber = phoneNumber;
+
+
+        Console.WriteLine("AFTER:");
+        Console.WriteLine($"FN={user.FirstName}");
+        Console.WriteLine($"LN={user.LastName}");
+        Console.WriteLine($"ADDRESS={user.Address}");
+        Console.WriteLine($"PHONE={user.PhoneNumber}");
+        var result = await _userManager.UpdateAsync(user);
+
+        Console.WriteLine("UPDATED = " + result.Succeeded);
+
+        if (!result.Succeeded)
+        {
+            foreach (var e in result.Errors)
+                Console.WriteLine(e.Description);
+        }
+    }
 
     public async Task<string> CreateUserAsync(
        string email,
@@ -191,6 +240,13 @@ public class IdentityService
         {
             Id = user.Id,
             Email = user.Email ?? string.Empty,
+            UserName = user.UserName,
+
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Address = user.Address,
+            PhoneNumber = user.PhoneNumber,
+
             Role = roles.FirstOrDefault() ?? string.Empty
         };
     }

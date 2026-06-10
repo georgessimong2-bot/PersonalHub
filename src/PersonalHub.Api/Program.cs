@@ -11,7 +11,6 @@ using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Infrastructure;
 using PersonalHub.Infrastructure.Auth;
 using PersonalHub.Infrastructure.Data;
-using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -65,6 +64,15 @@ builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
+
+Console.WriteLine("JWT SECRET LENGTH = " +
+    (jwtSettings.Secret?.Length ?? 0));
+
+Console.WriteLine("JWT ISSUER = " +
+    jwtSettings.Issuer);
+
+Console.WriteLine("JWT AUDIENCE = " +
+    jwtSettings.Audience);
 #endregion
 
 #region AUTH
@@ -87,8 +95,8 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtSettings.Secret)),
 
-            NameClaimType = ClaimTypes.Name,
-            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = "email",
+            RoleClaimType = "role",
 
             ClockSkew = TimeSpan.Zero
         };
@@ -97,29 +105,20 @@ builder.Services
         {
             OnMessageReceived = context =>
             {
-                Console.WriteLine("➡️ AUTH HEADER:");
-                Console.WriteLine(context.Request.Headers.Authorization);
+                Console.WriteLine("JWT HEADER RECEIVED");
                 return Task.CompletedTask;
             },
 
             OnAuthenticationFailed = context =>
             {
-                Console.WriteLine("❌ JWT FAILED: " + context.Exception.Message);
+                Console.WriteLine("JWT FAILED");
+                Console.WriteLine(context.Exception.ToString());
                 return Task.CompletedTask;
             },
 
             OnTokenValidated = context =>
             {
-                Console.WriteLine("✅ JWT VALIDATED");
-
-                foreach (var c in context.Principal.Claims)
-                {
-                    Console.WriteLine($"{c.Type} = {c.Value}");
-                }
-
-                Console.WriteLine("➡️ IsAdmin = " +
-                    context.Principal.IsInRole("Admin"));
-
+                Console.WriteLine("JWT VALIDATED");
                 return Task.CompletedTask;
             }
         };
@@ -152,7 +151,7 @@ else
     app.UseHttpsRedirection();
 }
 app.UseCors();
-
+Console.WriteLine("AUTH CONFIGURED");
 app.UseAuthentication();
 app.UseAuthorization();
 

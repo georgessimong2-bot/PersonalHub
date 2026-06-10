@@ -19,12 +19,12 @@ public class AuthService
     public event Action? OnAuthStateChanged;
 
     public AuthService(
-        HttpClient http,
+        IHttpClientFactory factory,
         IOptions<ApiSettings> apiSettings,
         IJSRuntime js,
         TokenStore store)
     {
-        _http = http;
+        _http = factory.CreateClient("Api");
         _apiSettings = apiSettings.Value;
         _js = js;
         _store = store;
@@ -46,9 +46,11 @@ public class AuthService
 
     public async Task<bool> LoginAsync(string email, string password)
     {
-        var response = await _http.PostAsJsonAsync(
-            $"{_apiSettings.BaseUrl}/api/auth/login",
-            new { Email = email, Password = password });
+        var response = await _http.PostAsJsonAsync("api/auth/login", new
+        {
+            Email = email,
+            Password = password
+        });
 
         if (!response.IsSuccessStatusCode)
             return false;
@@ -59,6 +61,22 @@ public class AuthService
         await SetToken(token);
 
         NotifyStateChanged();
+
+        return true;
+    }
+
+    public async Task<bool> RegisterAsync(string email, string password)
+    {
+        var response = await _http.PostAsJsonAsync("api/auth/register", new
+        {
+            email,
+            password
+        });
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            throw new Exception(content);
 
         return true;
     }
@@ -78,6 +96,18 @@ public class AuthService
 
     public bool IsAuthenticated()
         => !string.IsNullOrWhiteSpace(_store.Token);
+
+    public string? GetUserRole()
+    {
+        if (string.IsNullOrWhiteSpace(_store.Token))
+            return null;
+
+        var jwt = new JwtSecurityTokenHandler()
+            .ReadJwtToken(_store.Token);
+
+        return jwt.Claims.FirstOrDefault(c =>
+            c.Type == ClaimTypes.Role || c.Type == "role")?.Value;
+    }
 
     public string? GetUserEmail()
     {
@@ -113,4 +143,16 @@ public class AuthService
 
     private void NotifyStateChanged()
         => OnAuthStateChanged?.Invoke();
+
+    public string? GetUserId()
+    {
+        if (string.IsNullOrWhiteSpace(_store.Token))
+            return null;
+
+        var jwt = new JwtSecurityTokenHandler()
+            .ReadJwtToken(_store.Token);
+
+        return jwt.Claims.FirstOrDefault(c =>
+            c.Type == "sub")?.Value;
+    }
 }

@@ -506,7 +506,7 @@
         try
         {
             // Définir la licence EPPlus
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            ExcelPackage.License.SetNonCommercialPersonal("Georges Simon");
 
             using (var package = new ExcelPackage())
             {

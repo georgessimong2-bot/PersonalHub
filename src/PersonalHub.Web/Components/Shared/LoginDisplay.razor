@@ -1,31 +1,71 @@
-﻿@using Microsoft.AspNetCore.Components.Authorization
+﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
 @using MudBlazor
+@using PersonalHub.Web.Services.Auth
+
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
+@inject AuthService AuthService
 
-<AuthorizeView>
+
+<AuthorizeView Context="auth">
     <Authorized>
-        <MudButton Variant="Variant.Outlined"
-                   Color="Color.Inherit"
-                   OnClick="Logout"
-                   StartIcon="@Icons.Material.Filled.Logout">
-            Logout
-        </MudButton>
+
+        @{
+            var email =
+                auth.User.FindFirst(ClaimTypes.Email)?.Value
+                ?? auth.User.FindFirst("email")?.Value
+                ?? auth.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value
+                ?? auth.User.Identity?.Name
+                ?? "unknown";
+        }
+
+        <MudMenu Icon="@Icons.Material.Filled.AccountCircle">
+
+            <MudText Class="px-3 py-2">
+                @email
+            </MudText>
+
+            <MudDivider />
+
+            <MudMenuItem OnClick="GoToAccount">
+                Mon compte
+            </MudMenuItem>
+
+            <MudMenuItem OnClick="Logout">
+                Déconnexion
+            </MudMenuItem>
+
+        </MudMenu>
+
     </Authorized>
 
     <NotAuthorized>
-        <MudButton Variant="Variant.Filled"
+        <MudButton Href="/login"
+                   Variant="Variant.Filled"
                    Color="Color.Warning"
-                   Href="/login"
                    StartIcon="@Icons.Material.Filled.Login">
             Login
         </MudButton>
     </NotAuthorized>
 </AuthorizeView>
 
+
 @code {
-    private void Logout()
+
+    private void GoToProfile()
     {
-        Navigation.NavigateTo("/logout", true);
+        Navigation.NavigateTo("/account");
+    }
+
+    private void GoToAccount()
+    {
+        Navigation.NavigateTo("/account");
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login", true);
     }
 }

@@ -1,0 +1,114 @@
+﻿@page "/account"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Web.Services.Auth
+@using Microsoft.AspNetCore.Authorization
+@using PersonalHub.Application.Features.Users.Common
+
+@inject UserService UserService
+@inject AuthService AuthService
+
+<PageTitle>Mon compte</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
+
+    <MudText Typo="Typo.h4" Class="mb-6">
+        👤 Mon profil
+    </MudText>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else
+    {
+        <MudPaper Class="pa-6 rounded-lg" Elevation="3">
+
+            <MudStack Spacing="3">
+
+                <MudTextField @bind-Value="_model.FirstName"
+                              Label="Prénom"
+                              Variant="Variant.Outlined" />
+
+                <MudTextField @bind-Value="_model.LastName"
+                              Label="Nom"
+                              Variant="Variant.Outlined" />
+
+                <MudTextField @bind-Value="_model.Address"
+                              Label="Adresse"
+                              Variant="Variant.Outlined" />
+
+                <MudTextField @bind-Value="_model.PhoneNumber"
+                              Label="Téléphone"
+                              Variant="Variant.Outlined" />
+
+                <MudButton Color="Color.Primary"
+                           Variant="Variant.Filled"
+                           OnClick="SaveAsync">
+                    💾 Enregistrer
+                </MudButton>
+
+                @if (!string.IsNullOrWhiteSpace(_message))
+                {
+                    <MudAlert Severity="Severity.Success">
+                        @_message
+                    </MudAlert>
+                }
+
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+
+@code {
+
+    private bool _loading = true;
+    private string? _message;
+
+    private UpdateProfileDto _model = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var userId = AuthService.GetUserId();
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                _loading = false;
+                return;
+            }
+
+            var user = await UserService.GetByIdAsync(userId);
+
+            if (user is not null)
+            {
+                _model = new UpdateProfileDto
+                {
+                    FirstName = user.FirstName ?? "",
+                    LastName = user.LastName ?? "",
+                    Address = user.Address ?? "",
+                    PhoneNumber = user.PhoneNumber ?? ""
+                };
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        var success = await UserService.UpdateProfileAsync(_model);
+
+        _message = success
+            ? "Profil mis à jour ✔"
+            : "Erreur lors de la mise à jour";
+    }
+}

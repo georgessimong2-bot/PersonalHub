@@ -20,9 +20,11 @@ public static class DependencyInjection
                     "DefaultConnection")));
 
         services
-            .AddIdentity<AppUser, IdentityRole>()
-            .AddEntityFrameworkStores<AppDbContext>()
-            .AddDefaultTokenProviders();
+     .AddIdentityCore<AppUser>()
+     .AddRoles<IdentityRole>()
+     .AddEntityFrameworkStores<AppDbContext>()
+     .AddSignInManager()
+     .AddDefaultTokenProviders();
 
         services.AddHttpContextAccessor();
 

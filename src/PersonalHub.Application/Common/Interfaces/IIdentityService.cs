@@ -29,4 +29,6 @@ public interface IIdentityService
 
     Task DeleteUserAsync(
     string id);
+
+    Task UpdateProfileAsync(string userId, string firstName, string lastName, string address, string phoneNumber);
 }
