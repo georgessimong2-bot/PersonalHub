@@ -11,7 +11,7 @@ public static class AccountEndpoints
     public static void MapAccountEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/account")
-            .RequireAuthorization();
+                       .RequireAuthorization();
 
         group.MapGet("/profile", async (
             ClaimsPrincipal user,
@@ -30,39 +30,42 @@ public static class AccountEndpoints
         });
 
         group.MapPut("/profile", async (
-        UpdateProfileDto dto,
-        ClaimsPrincipal user,
-        HttpContext httpContext,
-        IMediator mediator) =>
+            UpdateProfileDto dto,
+            ClaimsPrincipal user,
+            IMediator mediator) =>
         {
-            Console.WriteLine("===== CLAIMS =====");
-            Console.WriteLine("Authenticated = " + user.Identity?.IsAuthenticated);
-            Console.WriteLine("Name = " + user.Identity?.Name);
-            Console.WriteLine("Claims count = " + user.Claims.Count());
-            foreach (var c in user.Claims)
-            {
-                Console.WriteLine($"{c.Type} = {c.Value}");
-            }
-
-            Console.WriteLine("==================");
-
             var userId = user.FindFirst("sub")?.Value;
 
-            Console.WriteLine("USER ID IN API = " + userId);
-
-            if (userId is null)
+            if (string.IsNullOrWhiteSpace(userId))
                 return Results.Unauthorized();
 
-            await mediator.Send(new UpdateProfileCommand
+            try
             {
-                UserId = userId,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                Address = dto.Address,
-                PhoneNumber = dto.PhoneNumber
-            });
+                await mediator.Send(new UpdateProfileCommand
+                {
+                    UserId = userId,
+                    FirstName = dto.FirstName,
+                    LastName = dto.LastName,
+                    Address = dto.Address,
+                    PhoneNumber = dto.PhoneNumber
+                });
 
-            return Results.NoContent();
+                return Results.NoContent();
+            }
+            catch (FluentValidation.ValidationException ex)
+            {
+                return Results.BadRequest(new
+                {
+                    Errors = ex.Errors.Select(e => e.ErrorMessage)
+                });
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    title: "Error updating profile",
+                    detail: ex.Message,
+                    statusCode: 500);
+            }
         });
     }
 }

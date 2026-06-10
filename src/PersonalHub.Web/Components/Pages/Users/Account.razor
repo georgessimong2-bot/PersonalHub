@@ -9,6 +9,7 @@
 
 @inject UserService UserService
 @inject AuthService AuthService
+@inject ISnackbar Snackbar
 
 <PageTitle>Mon compte</PageTitle>
 
@@ -46,7 +47,8 @@
 
                 <MudButton Color="Color.Primary"
                            Variant="Variant.Filled"
-                           OnClick="SaveAsync">
+                           OnClick="SaveAsync"
+                           Disabled="_saving">
                     💾 Enregistrer
                 </MudButton>
 
@@ -69,6 +71,7 @@
 
     private bool _loading = true;
     private string? _message;
+    private bool _saving;
 
     private UpdateProfileDto _model = new();
 
@@ -94,7 +97,7 @@
                     LastName = user.LastName ?? "",
                     Address = user.Address ?? "",
                     PhoneNumber = user.PhoneNumber ?? ""
-                };
+                };  
             }
         }
         finally
@@ -105,10 +108,16 @@
 
     private async Task SaveAsync()
     {
+        _saving = true;
+
         var success = await UserService.UpdateProfileAsync(_model);
 
-        _message = success
-            ? "Profil mis à jour ✔"
-            : "Erreur lors de la mise à jour";
+        _saving = false;
+
+        Snackbar.Add(
+            success ? "Profil mis à jour ✔" : "Erreur",
+            success ? Severity.Success : Severity.Error);
+
+        var user = await UserService.GetByIdAsync(AuthService.GetUserId());
     }
 }
