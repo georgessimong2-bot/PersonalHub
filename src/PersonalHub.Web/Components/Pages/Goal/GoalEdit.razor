@@ -1,0 +1,171 @@
+﻿@page "/goals/edit/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Goals.Common
+@using PersonalHub.Application.Features.Goals.UpdateGoal
+@using PersonalHub.Web.Services
+
+@inject GoalService GoalService
+@inject NavigationManager Navigation
+@inject ILogger<GoalEdit> Logger
+
+<PageTitle>Edit Goal</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+
+            
+            <MudProgressCircular Indeterminate="true" />
+
+            <MudText Class="mt-4">
+                Loading goal...
+            </MudText>
+
+        </MudPaper>
+
+
+}
+    else if (_goal is null)
+    {
+
+        <MudAlert Severity="Severity.Error">
+            Goal not found.
+        </MudAlert>
+    }
+    else
+    {
+
+        <MudPaper Class="pa-8 rounded-xl">
+
+            
+            <MudText Typo="Typo.h4" Class="mb-6">
+                Edit Goal
+            </MudText>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">
+                    @_error
+                </MudAlert>
+            }
+
+            <MudTextField @bind-Value="_title"
+                          Label="Title"
+                          Variant="Variant.Outlined"
+                          FullWidth="true"
+                          Class="mb-4" />
+
+            <MudTextField @bind-Value="_description"
+                          Label="Description"
+                          Variant="Variant.Outlined"
+                          Lines="4"
+                          FullWidth="true"
+                          Class="mb-4" />
+
+            <MudNumericField T="decimal"
+                             Label="Target Value"
+                             Variant="Variant.Outlined"
+                             @bind-Value="_targetValue"
+                             Class="mb-4" />
+
+            <MudNumericField T="decimal"
+                             Label="Current Value"
+                             Variant="Variant.Outlined"
+                             @bind-Value="_currentValue"
+                             Class="mb-4" />
+
+            <MudDatePicker Label="Deadline"
+                           Editable="true"
+                           @bind-Date="_deadline"
+                           Class="mb-6" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd">
+
+                <MudButton Variant="Variant.Outlined"
+                           OnClick="Cancel">
+                    Cancel
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="HandleSave"
+                           Disabled="_isSubmitting">
+                    Save Changes
+                </MudButton>
+
+            </MudStack>
+
+        </MudPaper>
+
+
+}
+
+</MudContainer>
+
+@code {
+
+
+[Parameter]
+    public Guid Id { get; set; }
+
+    private GoalDto? _goal;
+
+    private string _title = string.Empty;
+    private string? _description;
+    private decimal _targetValue;
+    private decimal _currentValue;
+    private DateTime? _deadline;
+
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGoal();
+    }
+
+    private async Task LoadGoal()
+    {
+        _goal = await GoalService.GetGoalByIdAsync(Id);
+
+        if (_goal is not null)
+        {
+            _title = _goal.Title;
+            _description = _goal.Description;
+            _targetValue = _goal.TargetValue;
+            _currentValue = _goal.CurrentValue;
+            _deadline = _goal.Deadline;
+        }
+
+        _isLoading = false;
+    }
+
+    private async Task HandleSave()
+    {
+        var command = new UpdateGoalCommand(
+            Id,
+            _title,
+            _description ?? string.Empty,
+            _targetValue,
+            _currentValue,
+            _deadline);
+
+        await GoalService.UpdateGoalAsync(
+            Id,
+            command);
+
+        Navigation.NavigateTo("/goals");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/goals");
+    }
+
+
+}

@@ -1,0 +1,142 @@
+﻿@page "/goals/create"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Goals.CreateGoal
+@using PersonalHub.Web.Services
+
+@inject GoalService GoalService
+@inject NavigationManager Navigation
+@inject ILogger<GoalCreate> Logger
+
+<PageTitle>Create Goal</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+
+    
+    <MudPaper Class="pa-8 rounded-xl">
+
+        <MudText Typo="Typo.h4" Class="mb-6">
+            Create Goal
+        </MudText>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">
+                @_error
+            </MudAlert>
+        }
+
+        <MudTextField @bind-Value="_title"
+                      Label="Title"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Class="mb-4" />
+
+        <MudTextField @bind-Value="_description"
+                      Label="Description"
+                      Variant="Variant.Outlined"
+                      Lines="4"
+                      FullWidth="true"
+                      Class="mb-4" />
+
+        <MudNumericField T="decimal"
+                         Label="Target Value"
+                         Variant="Variant.Outlined"
+                         @bind-Value="_targetValue"
+                         Class="mb-4" />
+
+        <MudDatePicker Label="Deadline"
+                       Editable="true"
+                       @bind-Date="_deadline"
+                       Class="mb-6" />
+
+        <MudStack Row="true" Justify="Justify.FlexEnd">
+
+            <MudButton Variant="Variant.Outlined"
+                       OnClick="Cancel">
+                Cancel
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="HandleCreateGoal"
+                       Disabled="_isSubmitting">
+
+                @if (_isSubmitting)
+                {
+                    <MudProgressCircular Size="Size.Small"
+                                         Indeterminate="true" />
+                    <span class="ml-2">Creating...</span>
+                }
+                else
+                {
+                    <span>Create Goal</span>
+                }
+
+            </MudButton>
+
+        </MudStack>
+
+    </MudPaper>
+    
+
+</MudContainer>
+
+@code {
+
+
+private string _title = string.Empty;
+    private string? _description;
+    private decimal _targetValue = 1;
+    private DateTime? _deadline;
+
+    private bool _isSubmitting;
+    private string? _error;
+
+    private async Task HandleCreateGoal()
+    {
+        try
+        {
+            _error = null;
+            _isSubmitting = true;
+
+            if (string.IsNullOrWhiteSpace(_title))
+            {
+                _error = "Title is required";
+                return;
+            }
+
+            if (_targetValue <= 0)
+            {
+                _error = "Target value must be greater than zero";
+                return;
+            }
+
+            await GoalService.CreateGoalAsync(
+                new CreateGoalCommand(
+                    _title.Trim(),
+                    _description,
+                    _targetValue,
+                    _deadline));
+
+            Navigation.NavigateTo("/goals");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Goal creation failed");
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/goals");
+    }
+
+
+}

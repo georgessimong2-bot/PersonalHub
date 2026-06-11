@@ -1,0 +1,120 @@
+﻿@page "/goals/details/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Goals.Common
+@using PersonalHub.Web.Services
+
+@inject GoalService GoalService
+
+<PageTitle>Goal Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+
+            
+            <MudProgressCircular Indeterminate="true" />
+
+            <MudText Class="mt-4">
+                Loading goal...
+            </MudText>
+
+        </MudPaper>
+
+
+}
+    else if (_goal is null)
+    {
+
+        <MudAlert Severity="Severity.Error">
+            Goal not found.
+        </MudAlert>
+    }
+    else
+    {
+
+        <MudPaper Class="pa-8 rounded-xl">
+
+            
+            <MudText Typo="Typo.h4">
+                @_goal.Title
+            </MudText>
+
+            <MudText Class="mt-4">
+                @_goal.Description
+            </MudText>
+
+            <MudDivider Class="my-6" />
+
+            <MudText Typo="Typo.h6">
+                Progress
+            </MudText>
+
+            <MudProgressLinear Value="@((double)_goal.ProgressPercentage)" />
+
+            <MudText>
+                @_goal.CurrentValue / @_goal.TargetValue
+                (@_goal.ProgressPercentage.ToString("0")%)
+            </MudText>
+
+            <MudDivider Class="my-6" />
+
+            <MudGrid>
+
+                <MudItem xs="12" sm="6">
+                    <MudText><b>Status</b></MudText>
+                    <MudChip T="string" Color="Color.Info">
+                        @_goal.Status
+                    </MudChip>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudText><b>Deadline</b></MudText>
+                    <MudText>
+                        @_goal.Deadline?.ToShortDateString()
+                    </MudText>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudText><b>Remaining</b></MudText>
+                    <MudText>
+                        @(_goal.TargetValue - _goal.CurrentValue)
+                    </MudText>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudText><b>Days Remaining</b></MudText>
+                    <MudText>
+                        @_goal.DaysRemaining
+                    </MudText>
+                </MudItem>
+
+            </MudGrid>
+
+        </MudPaper>
+
+
+}
+
+</MudContainer>
+
+@code {
+
+
+[Parameter]
+    public Guid Id { get; set; }
+
+    private GoalDto? _goal;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _goal = await GoalService.GetGoalByIdAsync(Id);
+        _isLoading = false;
+    }
+
+
+}

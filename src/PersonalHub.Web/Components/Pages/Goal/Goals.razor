@@ -1,0 +1,161 @@
+﻿@page "/goals"
+@rendermode InteractiveServer
+
+@using PersonalHub.Application.Features.Goals.Common
+@using PersonalHub.Web.Services
+@using MudBlazor
+
+@inject GoalService GoalService
+
+<PageTitle>Goals</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+
+    <MudStack Row="true"
+              Justify="Justify.SpaceBetween"
+              AlignItems="AlignItems.Center"
+              Class="mb-6">
+
+        <MudText Typo="Typo.h4">
+            Goals
+        </MudText>
+
+        <MudButton Href="/goals/create"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add">
+            New Goal
+        </MudButton>
+
+    </MudStack>
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+
+            <MudProgressCircular Indeterminate="true" />
+
+            <MudText Class="mt-4">
+                Loading goals...
+            </MudText>
+
+        </MudPaper>
+    }
+    else
+    {
+        <MudTable Items="_goals"
+                  Hover="true"
+                  Dense="true">
+
+            <HeaderContent>
+                <MudTh>Title</MudTh>
+                <MudTh>Progress</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Deadline</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+
+                <MudTd>@context.Title</MudTd>
+
+                <MudTd>
+
+                    <MudProgressLinear Value="@((double)context.ProgressPercentage)" />
+
+                    <MudText Typo="Typo.caption">
+                        @context.CurrentValue / @context.TargetValue
+                        (@context.ProgressPercentage.ToString("0")%)
+                    </MudText>
+
+                </MudTd>
+
+                <MudTd>
+
+                    @if (context.Status == "Completed")
+                    {
+                        <MudChip T="string" Color="Color.Success">
+                            Completed
+                        </MudChip>
+                    }
+                    else if (context.Status == "Expired")
+                    {
+                        <MudChip T="string" Color="Color.Error">
+                            Expired
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Info">
+                            Active
+                        </MudChip>
+                    }
+
+                </MudTd>
+
+                <MudTd>
+                    @context.Deadline?.ToShortDateString()
+                </MudTd>
+
+                <MudTd>
+
+                    <MudStack Row="true">
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                       Href="@($"/goals/details/{context.Id}")" />
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Href="@($"/goals/edit/{context.Id}")" />
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                       Color="Color.Success"
+                                       OnClick="@(() => IncrementGoal(context.Id))" />
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => DeleteGoal(context.Id))" />
+
+                    </MudStack>
+
+                </MudTd>
+
+            </RowTemplate>
+
+        </MudTable>
+    }
+
+</MudContainer>
+
+@code {
+
+    private List<GoalDto> _goals = [];
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGoals();
+    }
+
+    private async Task LoadGoals()
+    {
+        _isLoading = true;
+
+        _goals = await GoalService.GetGoalsAsync();
+
+        _isLoading = false;
+    }
+
+    private async Task IncrementGoal(Guid id)
+    {
+        await GoalService.IncrementGoalAsync(id);
+
+        await LoadGoals();
+    }
+
+    private async Task DeleteGoal(Guid id)
+    {
+        await GoalService.DeleteGoalAsync(id);
+
+        await LoadGoals();
+    }
+}

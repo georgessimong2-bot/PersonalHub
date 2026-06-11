@@ -17,5 +17,5 @@ public class AppDbContext
     }
 
     public DbSet<Note> Notes => Set<Note>();
-
+    public DbSet<Goal> Goals => Set<Goal>();
 }

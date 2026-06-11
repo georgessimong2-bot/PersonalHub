@@ -6,7 +6,7 @@ namespace PersonalHub.Application.Common.Interfaces;
 public interface IAppDbContext
 {
     DbSet<Note> Notes { get; }
-
+    DbSet<Goal> Goals { get; }
 
     Task<int> SaveChangesAsync(
         CancellationToken cancellationToken);

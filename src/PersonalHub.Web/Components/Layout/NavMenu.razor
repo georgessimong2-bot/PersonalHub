@@ -24,5 +24,13 @@
         </Authorized>
     </AuthorizeView>
 
+     <AuthorizeView Roles="User, Admin">
+        <Authorized>
+            <MudNavLink Href="/goals"
+                        Icon="@Icons.Material.Filled.Flag">
+                Goals
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
 </MudNavMenu>
 

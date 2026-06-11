@@ -4,6 +4,7 @@ using MudBlazor.Services;
 using PersonalHub.Web.Components;
 using PersonalHub.Web.Configuration;
 using PersonalHub.Web.HttpHandlers;
+using PersonalHub.Web.Services;
 using PersonalHub.Web.Services.Auth;
 using Serilog;
 
@@ -49,6 +50,7 @@ builder.Services.AddHttpClient("Api", (sp, client) =>
 #region APP SERVICES
 builder.Services.AddScoped<NotesService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<GoalService>();
 #endregion
 
 #region MUD BLAZOR
