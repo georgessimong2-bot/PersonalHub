@@ -1,6 +1,6 @@
 ﻿@page "/users/create"
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "ADMIN")]
 
 @using Microsoft.AspNetCore.Authorization
 @using MudBlazor
@@ -35,11 +35,11 @@
                    Class="mt-4"
                    @bind-Value="_model.Role">
 
-            <MudSelectItem T="string" Value="@("User")">
+            <MudSelectItem T="string" Value="@("USER")">
                 User
             </MudSelectItem>
 
-            <MudSelectItem T="string" Value="@("Admin")">
+            <MudSelectItem T="string" Value="@("ADMIN")">
                 Admin
             </MudSelectItem>
 

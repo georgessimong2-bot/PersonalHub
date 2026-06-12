@@ -15,6 +15,6 @@ Welcome to your new app.
         var state = await Auth.GetAuthenticationStateAsync();
 
         Console.WriteLine("IsAuthenticated: " + state.User.Identity?.IsAuthenticated);
-        Console.WriteLine("IsInRole Admin: " + state.User.IsInRole("Admin"));
+        Console.WriteLine("IsInRole ADMIN: " + state.User.IsInRole("ADMIN"));
     }
 }

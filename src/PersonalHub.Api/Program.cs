@@ -12,6 +12,7 @@ using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Infrastructure;
 using PersonalHub.Infrastructure.Auth;
 using PersonalHub.Infrastructure.Data;
+using System.Security.Claims;
 using System.Text;
 
 
@@ -98,8 +99,8 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtSettings.Secret)),
 
-            NameClaimType = "email",
-            RoleClaimType = "role",
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.Email,
 
             ClockSkew = TimeSpan.Zero
         };
