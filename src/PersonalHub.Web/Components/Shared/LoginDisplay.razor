@@ -47,13 +47,11 @@
                    StartIcon="@Icons.Material.Filled.Login">
             Login
         </MudButton>
-    </NotAuthorized>
-    <NotAuthorized>
         <MudButton Href="/register"
                    Variant="Variant.Filled"
                    Color="Color.Warning"
                    StartIcon="@Icons.Material.Filled.AppRegistration">
-            S'inscrire
+            S'inscrire'
         </MudButton>
     </NotAuthorized>
 </AuthorizeView>
@@ -61,10 +59,7 @@
 
 @code {
 
-    private void GoToProfile()
-    {
-        Navigation.NavigateTo("/account");
-    }
+ 
 
     private void GoToAccount()
     {
