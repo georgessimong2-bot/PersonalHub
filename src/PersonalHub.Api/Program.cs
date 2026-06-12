@@ -47,6 +47,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly));
 
+
 builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration);
@@ -129,6 +130,14 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    await db.Database.MigrateAsync();
+}
+
+
 #region PIPELINE
 app.UseMiddleware<ExceptionMiddleware>();
 
@@ -157,12 +166,7 @@ app.UseAuthorization();
 
 app.MapEndpoints();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    db.Database.Migrate();
-}
 
 app.Run();
 #endregion

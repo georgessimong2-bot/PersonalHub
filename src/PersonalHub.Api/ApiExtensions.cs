@@ -12,5 +12,6 @@ public static class ApiExtensions
         app.MapUsersEndpoints();
         app.MapAccountEndpoints();
         app.MapGoalEndpoints();
+        app.MapAiEndpoints();
     }
 }

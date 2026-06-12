@@ -57,4 +57,23 @@ public class GoalService
             $"api/goals/{id}",
             command);
     }
+
+    public async Task<string> GenerateAdviceAsync(Guid goalId)
+    {
+        var response =
+            await _http.PostAsync(
+                $"api/ai/goals/{goalId}/advice",
+                null);
+
+        Console.WriteLine("STATUS = " + response.StatusCode);
+
+        var content =
+            await response.Content.ReadAsStringAsync();
+
+        Console.WriteLine("BODY = " + content);
+
+        response.EnsureSuccessStatusCode();
+
+        return content;
+    }
 }

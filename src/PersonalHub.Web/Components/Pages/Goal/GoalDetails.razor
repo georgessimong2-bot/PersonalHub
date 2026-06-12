@@ -6,115 +6,209 @@
 @using PersonalHub.Web.Services
 
 @inject GoalService GoalService
+@inject NavigationManager Navigation
+@inject ILogger<GoalDetails> Logger
 
 <PageTitle>Goal Details</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+<MudContainer MaxWidth="MaxWidth.Medium"
+              Class="mt-8 mb-8">
 
     @if (_isLoading)
     {
         <MudPaper Class="pa-8 text-center">
 
-            
-            <MudProgressCircular Indeterminate="true" />
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary" />
 
             <MudText Class="mt-4">
                 Loading goal...
             </MudText>
 
         </MudPaper>
-
-
-}
+    }
     else if (_goal is null)
     {
+        <MudPaper Class="pa-8 text-center">
 
-        <MudAlert Severity="Severity.Error">
-            Goal not found.
-        </MudAlert>
+            <MudText Typo="Typo.h5">
+                Goal not found
+            </MudText>
+
+        </MudPaper>
     }
     else
     {
+        <MudPaper Class="pa-6">
 
-        <MudPaper Class="pa-8 rounded-xl">
-
-            
             <MudText Typo="Typo.h4">
                 @_goal.Title
             </MudText>
 
-            <MudText Class="mt-4">
+            <MudText Class="mt-2">
                 @_goal.Description
             </MudText>
 
-            <MudDivider Class="my-6" />
-
-            <MudText Typo="Typo.h6">
-                Progress
-            </MudText>
-
-            <MudProgressLinear Value="@((double)_goal.ProgressPercentage)" />
+            <MudDivider Class="my-4" />
 
             <MudText>
-                @_goal.CurrentValue / @_goal.TargetValue
-                (@_goal.ProgressPercentage.ToString("0")%)
+                Current Progress
             </MudText>
 
-            <MudDivider Class="my-6" />
+            <MudProgressLinear Value="@GetProgress()"
+                               Color="Color.Success"
+                               Class="mt-2 mb-2" />
 
-            <MudGrid>
+            <MudText>
+                @_goal.CurrentValue /
+                @_goal.TargetValue
+            </MudText>
 
-                <MudItem xs="12" sm="6">
-                    <MudText><b>Status</b></MudText>
-                    <MudChip T="string" Color="Color.Info">
-                        @_goal.Status
-                    </MudChip>
-                </MudItem>
+            <MudText>
+                @_goal.ProgressPercentage.ToString("0")%
+            </MudText>
 
-                <MudItem xs="12" sm="6">
-                    <MudText><b>Deadline</b></MudText>
-                    <MudText>
-                        @_goal.Deadline?.ToShortDateString()
+            <MudDivider Class="my-4" />
+
+            <MudText>
+                Status:
+                @_goal.Status
+            </MudText>
+
+            <MudText>
+                Deadline:
+                @_goal.Deadline?.ToShortDateString()
+            </MudText>
+
+            <MudText>
+                Remaining:
+                @(Math.Max(0, _goal.TargetValue - _goal.CurrentValue))
+            </MudText>
+
+            @if (_goal.DaysRemaining.HasValue)
+            {
+                <MudText>
+                    Days remaining:
+                    @_goal.DaysRemaining
+                </MudText>
+            }
+
+            <MudDivider Class="my-4" />
+
+            <MudButton Color="Color.Secondary"
+                       Variant="Variant.Filled"
+                       OnClick="GenerateAdvice">
+
+                Generate AI Advice
+
+            </MudButton>
+
+            @if (_isGenerating)
+            {
+                <MudProgressCircular Indeterminate="true"
+                                     Class="mt-4" />
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_advice))
+            {
+                <MudPaper Class="pa-4 mt-4"
+                          Outlined="true">
+
+                    <MudText Typo="Typo.h6">
+                        AI Coach
                     </MudText>
-                </MudItem>
 
-                <MudItem xs="12" sm="6">
-                    <MudText><b>Remaining</b></MudText>
-                    <MudText>
-                        @(_goal.TargetValue - _goal.CurrentValue)
+                    <MudText Class="mt-2">
+                        @_advice
                     </MudText>
-                </MudItem>
 
-                <MudItem xs="12" sm="6">
-                    <MudText><b>Days Remaining</b></MudText>
-                    <MudText>
-                        @_goal.DaysRemaining
-                    </MudText>
-                </MudItem>
+                </MudPaper>
+            }
 
-            </MudGrid>
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Spacing="2">
+
+                <MudButton Color="Color.Primary"
+                           Variant="Variant.Filled"
+                           Href="@($"/goals/edit/{Id}")">
+
+                    Edit
+
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           OnClick="Back">
+
+                    Back
+
+                </MudButton>
+
+            </MudStack>
 
         </MudPaper>
-
-
-}
+    }
 
 </MudContainer>
 
 @code {
 
-
-[Parameter]
+    [Parameter]
     public Guid Id { get; set; }
 
     private GoalDto? _goal;
+
     private bool _isLoading = true;
+
+    private bool _isGenerating;
+
+    private string? _advice;
 
     protected override async Task OnInitializedAsync()
     {
-        _goal = await GoalService.GetGoalByIdAsync(Id);
-        _isLoading = false;
+        await LoadGoal();
     }
 
+    private async Task LoadGoal()
+    {
+        try
+        {
+            _goal =
+                await GoalService.GetGoalByIdAsync(Id);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
 
+    private double GetProgress()
+    {
+        return _goal is null
+            ? 0
+            : (double)_goal.ProgressPercentage;
+    }
+
+    private async Task GenerateAdvice()
+    {
+        try
+        {
+            Console.WriteLine("CALLING AI");
+
+            _advice =
+                await GoalService.GenerateAdviceAsync(Id);
+
+            Console.WriteLine("AI RESPONSE = " + _advice);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("AI ERROR = " + ex.Message);
+            throw;
+        }
+    }
+
+    private void Back()
+    {
+        Navigation.NavigateTo("/goals");
+    }
 }

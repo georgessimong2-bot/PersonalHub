@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PersonalHub.Application.Common.Interfaces;
+using PersonalHub.Infrastructure.AI;
 using PersonalHub.Infrastructure.Data;
 using PersonalHub.Infrastructure.Identity;
 
@@ -28,8 +29,9 @@ public static class DependencyInjection
 
         services.AddHttpContextAccessor();
 
-        services.AddScoped<ICurrentUserService,
-    CurrentUserService>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        services.AddScoped<IAiService, OpenAiService>();
 
         services.AddScoped<IAppDbContext>(
             provider =>
