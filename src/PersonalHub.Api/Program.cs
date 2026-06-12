@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PersonalHub.Api;
@@ -12,6 +13,7 @@ using PersonalHub.Infrastructure;
 using PersonalHub.Infrastructure.Auth;
 using PersonalHub.Infrastructure.Data;
 using System.Text;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -130,6 +132,8 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -137,6 +141,24 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
 }
 
+await SeedRoles(app);
+
+async Task SeedRoles(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+    string[] roles = ["USER", "ADMIN"];
+
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+        {
+            await roleManager.CreateAsync(new IdentityRole(role));
+        }
+    }
+}
 
 #region PIPELINE
 app.UseMiddleware<ExceptionMiddleware>();
