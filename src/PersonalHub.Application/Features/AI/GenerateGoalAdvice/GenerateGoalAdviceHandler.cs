@@ -5,7 +5,7 @@ using PersonalHub.Application.Common.Interfaces;
 namespace PersonalHub.Application.Features.AI.GenerateGoalAdvice;
 
 public class GenerateGoalAdviceHandler
-    : IRequestHandler<GenerateGoalAdviceCommand, string>
+    : IRequestHandler<GenerateGoalAdviceCommand, AiGoalAdvice>
 {
     private readonly IAppDbContext _context;
     private readonly IAiService _aiService;
@@ -18,7 +18,7 @@ public class GenerateGoalAdviceHandler
         _aiService = aiService;
     }
 
-    public async Task<string> Handle(
+    public async Task<AiGoalAdvice> Handle(
         GenerateGoalAdviceCommand request,
         CancellationToken cancellationToken)
     {
@@ -28,9 +28,7 @@ public class GenerateGoalAdviceHandler
                 cancellationToken);
 
         if (goal is null)
-        {
             throw new Exception("Goal not found");
-        }
 
         var percentage =
             goal.TargetValue <= 0
@@ -65,32 +63,29 @@ Current:
 Progress:
 {percentage}%
 
-Deadline:
-{goal.Deadline}
-
 Remaining:
 {remaining}
 
 Days remaining:
 {daysRemaining}
 
-Provide:
-- Progress analysis
-- Risks
-- Weekly action plan
-- Recommendations
+Provide structured coaching advice.
 
-Keep the answer concise.
+Return ONLY JSON with:
+- summary
+- keyInsights (array)
+- actions (array)
+- warning (nullable)
+- confidenceScore (0-100)
 """;
 
         Console.WriteLine("PROMPT:");
         Console.WriteLine(prompt);
 
-        var result =
-            await _aiService.GenerateGoalAdviceAsync(prompt);
+        var result = await _aiService.GenerateGoalAdviceAsync(prompt);
 
-        Console.WriteLine("OPENAI RESULT:");
-        Console.WriteLine(result);
+        Console.WriteLine("AI RESULT:");
+        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(result));
 
         return result;
     }

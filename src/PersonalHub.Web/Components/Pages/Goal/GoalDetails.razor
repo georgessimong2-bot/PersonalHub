@@ -2,7 +2,9 @@
 @rendermode InteractiveServer
 
 @using MudBlazor
+@using PersonalHub.Application.Features.AI
 @using PersonalHub.Application.Features.Goals.Common
+
 @using PersonalHub.Web.Services
 
 @inject GoalService GoalService
@@ -11,36 +13,26 @@
 
 <PageTitle>Goal Details</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium"
-              Class="mt-8 mb-8">
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
 
     @if (_isLoading)
     {
         <MudPaper Class="pa-8 text-center">
-
-            <MudProgressCircular Indeterminate="true"
-                                 Color="Color.Primary" />
-
-            <MudText Class="mt-4">
-                Loading goal...
-            </MudText>
-
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading goal...</MudText>
         </MudPaper>
     }
     else if (_goal is null)
     {
         <MudPaper Class="pa-8 text-center">
-
-            <MudText Typo="Typo.h5">
-                Goal not found
-            </MudText>
-
+            <MudText Typo="Typo.h5">Goal not found</MudText>
         </MudPaper>
     }
     else
     {
         <MudPaper Class="pa-6">
 
+            <!-- TITLE -->
             <MudText Typo="Typo.h4">
                 @_goal.Title
             </MudText>
@@ -51,17 +43,15 @@
 
             <MudDivider Class="my-4" />
 
-            <MudText>
-                Current Progress
-            </MudText>
+            <!-- PROGRESS -->
+            <MudText>Current Progress</MudText>
 
             <MudProgressLinear Value="@GetProgress()"
                                Color="Color.Success"
                                Class="mt-2 mb-2" />
 
             <MudText>
-                @_goal.CurrentValue /
-                @_goal.TargetValue
+                @_goal.CurrentValue / @_goal.TargetValue
             </MudText>
 
             <MudText>
@@ -70,63 +60,113 @@
 
             <MudDivider Class="my-4" />
 
+            <!-- METADATA -->
+            <MudText>Status: @_goal.Status</MudText>
+
             <MudText>
-                Status:
-                @_goal.Status
+                Deadline: @_goal.Deadline?.ToShortDateString()
             </MudText>
 
             <MudText>
-                Deadline:
-                @_goal.Deadline?.ToShortDateString()
-            </MudText>
-
-            <MudText>
-                Remaining:
-                @(Math.Max(0, _goal.TargetValue - _goal.CurrentValue))
+                Remaining: @(Math.Max(0, _goal.TargetValue - _goal.CurrentValue))
             </MudText>
 
             @if (_goal.DaysRemaining.HasValue)
             {
                 <MudText>
-                    Days remaining:
-                    @_goal.DaysRemaining
+                    Days remaining: @_goal.DaysRemaining
                 </MudText>
             }
 
             <MudDivider Class="my-4" />
 
+            <!-- AI BUTTON -->
             <MudButton Color="Color.Secondary"
                        Variant="Variant.Filled"
+                       Disabled="_isGenerating"
                        OnClick="GenerateAdvice">
 
                 Generate AI Advice
-
             </MudButton>
 
             @if (_isGenerating)
             {
-                <MudProgressCircular Indeterminate="true"
-                                     Class="mt-4" />
+                <MudProgressCircular Indeterminate="true" Class="mt-3" />
             }
 
-            @if (!string.IsNullOrWhiteSpace(_advice))
+            <!-- AI RESULT STRUCTURED -->
+            @if (_advice is not null)
             {
-                <MudPaper Class="pa-4 mt-4"
-                          Outlined="true">
+                <MudPaper Class="pa-4 mt-4" Outlined="true">
 
                     <MudText Typo="Typo.h6">
                         AI Coach
                     </MudText>
 
+                    <!-- SUMMARY -->
                     <MudText Class="mt-2">
-                        @_advice
+                        @_advice.Summary
                     </MudText>
+
+                    <!-- INSIGHTS -->
+                    @if (_advice.KeyInsights.Any())
+                    {
+                        <MudDivider Class="my-3" />
+
+                        <MudText Typo="Typo.subtitle2">
+                            Key Insights
+                        </MudText>
+
+                        <MudList T="string" Dense="true">
+                            @foreach (var insight in _advice.KeyInsights)
+                            {
+                                <MudListItem>@insight</MudListItem>
+                            }
+                        </MudList>
+                    }
+
+                    <!-- ACTIONS -->
+                    @if (_advice.Actions.Any())
+                    {
+                        <MudDivider Class="my-3" />
+
+                        <MudText Typo="Typo.subtitle2">
+                            Recommended Actions
+                        </MudText>
+
+                        <MudList T="string" Dense="true">
+                            @foreach (var action in _advice.Actions)
+                            {
+                                <MudListItem>@action</MudListItem>
+                            }
+                        </MudList>
+                    }
+
+                    <!-- WARNING -->
+                    @if (!string.IsNullOrWhiteSpace(_advice.Warning))
+                    {
+                        <MudAlert Severity="Severity.Warning" Class="mt-3">
+                            @_advice.Warning
+                        </MudAlert>
+                    }
+
+                    <!-- CONFIDENCE -->
+                    <MudDivider Class="my-3" />
+
+                    <MudText Typo="Typo.caption">
+                        Confidence: @_advice.ConfidenceScore%
+                    </MudText>
+
+                    <MudProgressLinear Value="@_advice.ConfidenceScore"
+                                       Color="Color.Info"
+                                       Class="mt-2" />
 
                 </MudPaper>
             }
 
             <MudDivider Class="my-4" />
 
+            <!-- ACTIONS -->
             <MudStack Row="true" Spacing="2">
 
                 <MudButton Color="Color.Primary"
@@ -134,14 +174,12 @@
                            Href="@($"/goals/edit/{Id}")">
 
                     Edit
-
                 </MudButton>
 
                 <MudButton Variant="Variant.Outlined"
                            OnClick="Back">
 
                     Back
-
                 </MudButton>
 
             </MudStack>
@@ -159,10 +197,9 @@
     private GoalDto? _goal;
 
     private bool _isLoading = true;
-
     private bool _isGenerating;
 
-    private string? _advice;
+    private AiGoalAdvice? _advice;
 
     protected override async Task OnInitializedAsync()
     {
@@ -173,8 +210,7 @@
     {
         try
         {
-            _goal =
-                await GoalService.GetGoalByIdAsync(Id);
+            _goal = await GoalService.GetGoalByIdAsync(Id);
         }
         finally
         {
@@ -183,27 +219,23 @@
     }
 
     private double GetProgress()
-    {
-        return _goal is null
-            ? 0
-            : (double)_goal.ProgressPercentage;
-    }
+        => _goal is null ? 0 : (double)_goal.ProgressPercentage;
 
     private async Task GenerateAdvice()
     {
         try
         {
-            Console.WriteLine("CALLING AI");
+            _isGenerating = true;
 
-            _advice =
-                await GoalService.GenerateAdviceAsync(Id);
-
-            Console.WriteLine("AI RESPONSE = " + _advice);
+            _advice = await GoalService.GenerateAdviceAsync(Id);
         }
         catch (Exception ex)
         {
-            Console.WriteLine("AI ERROR = " + ex.Message);
-            throw;
+            Logger.LogError(ex, "AI generation failed for goal {GoalId}", Id);
+        }
+        finally
+        {
+            _isGenerating = false;
         }
     }
 

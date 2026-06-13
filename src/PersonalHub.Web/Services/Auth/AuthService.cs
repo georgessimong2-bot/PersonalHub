@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using Microsoft.JSInterop;
+using PersonalHub.Web.Components.Shared;
 using PersonalHub.Web.Configuration;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
@@ -63,7 +64,7 @@ public class AuthService
         return true;
     }
 
-    public async Task<bool> RegisterAsync(string email, string password)
+    public async Task<RegisterResult> RegisterAsync(string email, string password)
     {
         var response = await _http.PostAsJsonAsync("api/auth/register", new
         {
@@ -73,10 +74,40 @@ public class AuthService
 
         var content = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
-            throw new Exception(content);
+        if (response.IsSuccessStatusCode)
+        {
+            return new RegisterResult
+            {
+                Success = true
+            };
+        }
 
-        return true;
+        // try parse structured errors first
+        try
+        {
+            var result = System.Text.Json.JsonSerializer.Deserialize<RegisterResult>(
+                content,
+                new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+            if (result != null)
+            {
+                result.Success = false;
+                return result;
+            }
+        }
+        catch
+        {
+
+        }
+
+        return new RegisterResult
+        {
+            Success = false,
+            Error = content
+        };
     }
 
     public async Task SetToken(string token)

@@ -1,5 +1,6 @@
 ﻿@page "/register"
 @rendermode InteractiveServer
+
 @using MudBlazor
 @using PersonalHub.Web.Services.Auth
 
@@ -12,20 +13,36 @@
     <MudPaper Class="pa-8 rounded-lg" Elevation="3">
 
         <div class="text-center mb-6">
-            <MudText Typo="Typo.h4">Create Account</MudText>
+            <MudText Typo="Typo.h4">
+                Create Account
+            </MudText>
+
             <MudText Typo="Typo.body2">
                 Sign up to start using PersonalHub
             </MudText>
         </div>
 
-        <MudTextField @bind-Value="_email"
+        @if (_errors.Any())
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">
+                <ul class="mb-0 ps-3">
+                    @foreach (var error in _errors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </MudAlert>
+        }
+
+        <MudTextField T="string" @bind-Value="_email"
                       Label="Email"
                       Variant="Variant.Outlined"
                       FullWidth="true"
                       Disabled="_isLoading"
+                      Immediate="true"
                       Class="mb-4" />
 
-        <MudTextField @bind-Value="_password"
+        <MudTextField T="string" @bind-Value="_password"
                       Label="Password"
                       Variant="Variant.Outlined"
                       InputType="InputType.Password"
@@ -33,20 +50,13 @@
                       Disabled="_isLoading"
                       Class="mb-4" />
 
-        <MudTextField @bind-Value="_confirmPassword"
+        <MudTextField T="string" @bind-Value="_confirmPassword"
                       Label="Confirm Password"
                       Variant="Variant.Outlined"
                       InputType="InputType.Password"
                       FullWidth="true"
                       Disabled="_isLoading"
                       Class="mb-6" />
-
-        @if (!string.IsNullOrWhiteSpace(_error))
-        {
-            <MudAlert Severity="Severity.Error" Class="mb-4">
-                @_error
-            </MudAlert>
-        }
 
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
@@ -56,7 +66,9 @@
 
             @if (_isLoading)
             {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <MudProgressCircular Size="Size.Small"
+                                     Indeterminate="true"
+                                     Class="mr-2" />
                 <span>Creating account...</span>
             }
             else
@@ -69,7 +81,9 @@
         <div class="text-center mt-4">
             <MudText Typo="Typo.body2">
                 Already have an account?
-                <MudLink Href="/login">Sign in</MudLink>
+                <MudLink Href="/login">
+                    Sign in
+                </MudLink>
             </MudText>
         </div>
 
@@ -78,60 +92,94 @@
 
 @code {
 
-    private string _email = "";
-    private string _password = "";
-    private string _confirmPassword = "";
-    private string? _error;
+    private string _email = string.Empty;
+    private string _password = string.Empty;
+    private string _confirmPassword = string.Empty;
+
     private bool _isLoading;
+
+    private readonly List<string> _errors = [];
 
     private async Task RegisterAsync()
     {
-        _error = null;
+        _errors.Clear();
 
-        if (string.IsNullOrWhiteSpace(_email))
-        {
-            _error = "Email is required";
-            return;
-        }
+        ValidateForm();
 
-        if (string.IsNullOrWhiteSpace(_password))
-        {
-            _error = "Password is required";
+        if (_errors.Count > 0)
             return;
-        }
-
-        if (_password != _confirmPassword)
-        {
-            _error = "Passwords do not match";
-            return;
-        }
 
         _isLoading = true;
 
         try
         {
-            var success = await AuthService.RegisterAsync(
+            var result = await AuthService.RegisterAsync(
                 _email.Trim(),
                 _password);
 
-            if (!success)
+            if (!result.Success)
             {
-                _error = "Registration failed";
+                if (result.ValidationErrors?.Any() == true)
+                {
+                    _errors.AddRange(result.ValidationErrors);
+                }
+                else if (!string.IsNullOrWhiteSpace(result.Error))
+                {
+                    _errors.Add(result.Error);
+                }
+                else
+                {
+                    _errors.Add("Registration failed.");
+                }
+
                 return;
             }
 
-            await AuthService.LoginAsync(_email.Trim(), _password);
+            await AuthService.LoginAsync(
+                _email.Trim(),
+                _password);
 
             Navigation.NavigateTo("/", true);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            _error = "Registration error. Please try again.";
-            _error = ex.Message;
+            _errors.Add(ex.Message);
         }
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private void ValidateForm()
+    {
+        if (string.IsNullOrWhiteSpace(_email))
+        {
+            _errors.Add("Email is required.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(_email)
+            && !new System.ComponentModel.DataAnnotations.EmailAddressAttribute()
+                .IsValid(_email))
+        {
+            _errors.Add("Invalid email address.");
+        }
+
+        if (string.IsNullOrWhiteSpace(_password))
+        {
+            _errors.Add("Password is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(_confirmPassword))
+        {
+            _errors.Add("Password confirmation is required.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(_password)
+            && !string.IsNullOrWhiteSpace(_confirmPassword)
+            && _password != _confirmPassword)
+        {
+            _errors.Add("Passwords do not match.");
         }
     }
 }

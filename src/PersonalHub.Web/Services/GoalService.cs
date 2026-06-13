@@ -1,17 +1,23 @@
-﻿using PersonalHub.Application.Features.Goals.Common;
+﻿using PersonalHub.Application.Features.AI;
+using PersonalHub.Application.Features.Goals.Common;
 using PersonalHub.Application.Features.Goals.CreateGoal;
 using PersonalHub.Application.Features.Goals.UpdateGoal;
+using PersonalHub.Web.Services.Auth;
+using System.Text.Json;
 
 namespace PersonalHub.Web.Services;
 
 public class GoalService
 {
+    private readonly AuthService _auth;
     private readonly HttpClient _http;
 
     public GoalService(
-        IHttpClientFactory factory)
+     IHttpClientFactory factory,
+     AuthService auth)
     {
         _http = factory.CreateClient("Api");
+        _auth = auth;
     }
 
     public async Task<List<GoalDto>> GetGoalsAsync()
@@ -59,22 +65,31 @@ public class GoalService
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<string> GenerateAdviceAsync(Guid goalId)
+    public async Task<AiGoalAdvice?> GenerateAdviceAsync(Guid goalId)
     {
-        var response =
-            await _http.PostAsync(
-                $"api/ai/goals/{goalId}/advice",
-                null);
+        var token = _auth.GetToken();
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"api/ai/goals/{goalId}/advice");
+
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _http.SendAsync(request);
+
+        var content = await response.Content.ReadAsStringAsync();
 
         Console.WriteLine("STATUS = " + response.StatusCode);
-
-        var content =
-            await response.Content.ReadAsStringAsync();
-
         Console.WriteLine("BODY = " + content);
 
         response.EnsureSuccessStatusCode();
 
-        return content;
+        return JsonSerializer.Deserialize<AiGoalAdvice>(
+            content,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
     }
 }

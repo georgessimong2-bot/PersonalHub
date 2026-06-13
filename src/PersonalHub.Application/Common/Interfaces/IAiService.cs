@@ -1,7 +1,8 @@
-﻿namespace PersonalHub.Application.Common.Interfaces;
+﻿using PersonalHub.Application.Features.AI;
+
+namespace PersonalHub.Application.Common.Interfaces;
 
 public interface IAiService
 {
-    Task<string> GenerateGoalAdviceAsync(
-        string prompt);
+    Task<AiGoalAdvice> GenerateGoalAdviceAsync(string prompt);
 }
