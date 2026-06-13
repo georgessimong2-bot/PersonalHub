@@ -81,7 +81,6 @@ public class AuthService
 
     public async Task SetToken(string token)
     {
-        _token = token;
         _store.Token = token;
 
         await _js.InvokeVoidAsync("authStorage.set", "token", token);
@@ -129,7 +128,6 @@ public class AuthService
 
     public async Task LogoutAsync()
     {
-        _token = null;
         _store.Token = null;
 
         await _js.InvokeVoidAsync("authStorage.remove", "token");
