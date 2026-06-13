@@ -1,4 +1,4 @@
-﻿@page "/index"
+﻿@page "/notes"
 @rendermode InteractiveServer
 
 @using MudBlazor
@@ -13,7 +13,7 @@
 
 @inject HttpClient Http
 @inject IOptions<ApiSettings> ApiSettings
-@inject ILogger<Index> Logger
+@inject ILogger<Notes> Logger
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject NotesService NotesService

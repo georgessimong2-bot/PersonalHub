@@ -29,7 +29,7 @@ builder.Host.UseSerilog();
 #endregion
 
 #region AUTH CORE SERVICES
-builder.Services.AddSingleton<TokenStore>();
+builder.Services.AddScoped<TokenStore>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStateProvider>();
 builder.Services.AddAuthorizationCore();
@@ -51,6 +51,8 @@ builder.Services.AddHttpClient("Api", (sp, client) =>
 builder.Services.AddScoped<NotesService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<GoalService>();
+builder.Services.AddScoped<FundService>();
+builder.Services.AddScoped<FundTypeService>();
 #endregion
 
 #region MUD BLAZOR

@@ -1,0 +1,218 @@
+﻿@page "/fundtypes/edit/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.FundTypes.Common
+@using PersonalHub.Application.Features.FundTypes.UpdateFundType
+@using PersonalHub.Web.Services
+
+@inject FundTypeService FundTypeService
+@inject NavigationManager Navigation
+@inject ILogger<FundTypeEdit> Logger
+
+<PageTitle>Edit Fund Type</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center rounded-xl">
+
+            <MudProgressCircular Color="Color.Primary"
+                                 Indeterminate="true"
+                                 Size="Size.Large" />
+
+            <MudText Class="mt-4">
+                Loading fund type...
+            </MudText>
+
+        </MudPaper>
+    }
+    else if (_fundType is null)
+    {
+        <MudPaper Class="pa-8 text-center rounded-xl">
+
+            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline"
+                     Style="font-size:64px;width:64px;height:64px;"
+                     Color="Color.Error" />
+
+            <MudText Typo="Typo.h5" Class="mt-4">
+                Fund Type Not Found
+            </MudText>
+
+            <MudText Class="mt-2 mb-6">
+                The fund type you're looking for doesn't exist.
+            </MudText>
+
+            <MudButton Href="/fundtypes"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary">
+                Back to Fund Types
+            </MudButton>
+
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-6 rounded-xl" Elevation="2">
+
+            <!-- HEADER -->
+            <MudStack Row="true"
+                      Justify="Justify.SpaceBetween"
+                      AlignItems="AlignItems.Center"
+                      Class="mb-6">
+
+                <div>
+                    <MudText Typo="Typo.h4">
+                        Edit Fund Type
+                    </MudText>
+
+                    <MudText Typo="Typo.body2" Class="mt-2">
+                        Update fund type information
+                    </MudText>
+                </div>
+
+            </MudStack>
+
+            <!-- ERROR -->
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">
+                    @_error
+                </MudAlert>
+            }
+
+            <!-- FORM -->
+            <MudTextField @bind-Value="_name"
+                          Label="Name"
+                          Variant="Variant.Outlined"
+                          FullWidth="true"
+                          Class="mb-4" />
+
+            <MudTextField @bind-Value="_description"
+                          Label="Description"
+                          Variant="Variant.Outlined"
+                          Lines="4"
+                          FullWidth="true"
+                          Class="mb-4" />
+
+            <!-- ACTIONS -->
+            <MudStack Row="true"
+                      Justify="Justify.FlexEnd"
+                      Spacing="2">
+
+                <MudButton Variant="Variant.Outlined"
+                           OnClick="Cancel">
+                    Cancel
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="HandleSave"
+                           Disabled="_isSubmitting">
+
+                    @if (_isSubmitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        <span class="ml-2">Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save Changes</span>
+                    }
+
+                </MudButton>
+
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private FundTypeDto? _fundType;
+
+    private string _name = string.Empty;
+    private string? _description;
+
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        try
+        {
+            Logger.LogInformation("Loading FundType Id = {Id}", Id);
+
+            _fundType = await FundTypeService.GetFundTypeByIdAsync(Id);
+
+            if (_fundType is not null)
+            {
+                _name = _fundType.Name;
+                _description = _fundType.Description;
+            }
+            else
+            {
+                Logger.LogWarning("FundType not found for Id = {Id}", Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading FundType {Id}", Id);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleSave()
+    {
+        try
+        {
+            _isSubmitting = true;
+            _error = null;
+
+            if (string.IsNullOrWhiteSpace(_name))
+            {
+                _error = "Name is required";
+                return;
+            }
+
+            var command = new UpdateFundTypeCommand(
+                Id,
+                _name.Trim(),
+                _description
+            );
+
+            await FundTypeService.UpdateFundTypeAsync(Id, command);
+
+            Navigation.NavigateTo("/fundtypes");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating fund type {Id}", Id);
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/fundtypes");
+    }
+}

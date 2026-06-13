@@ -14,7 +14,6 @@ public class AuthService
     private readonly IJSRuntime _js;
     private readonly TokenStore _store;
     public string? AccessToken => _store.Token;
-    private string? _token;
 
     public event Action? OnAuthStateChanged;
 
@@ -36,7 +35,6 @@ public class AuthService
 
         if (!string.IsNullOrWhiteSpace(token))
         {
-            _token = token;
             _store.Token = token;
 
             _http.DefaultRequestHeaders.Authorization =

@@ -1,161 +1,217 @@
 ﻿@page "/goals"
 @rendermode InteractiveServer
 
+@using MudBlazor
 @using PersonalHub.Application.Features.Goals.Common
 @using PersonalHub.Web.Services
-@using MudBlazor
+@using OfficeOpenXml
 
 @inject GoalService GoalService
+@inject IJSRuntime JSRuntime
+@inject ILogger<Goals> Logger
 
 <PageTitle>Goals</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
-    <MudStack Row="true"
-              Justify="Justify.SpaceBetween"
-              AlignItems="AlignItems.Center"
-              Class="mb-6">
+@if (_isLoading)
+{
+    <MudPaper Class="pa-8 text-center rounded-xl">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        <MudText Class="mt-4">Chargement des goals...</MudText>
+    </MudPaper>
+}
+else if (_filteredGoals.Count == 0 && _goals.Count == 0)
+{
+    <MudPaper Class="pa-10 text-center rounded-xl">
+        <MudText Typo="Typo.h5">Aucun goal</MudText>
 
-        <MudText Typo="Typo.h4">
-            Goals
-        </MudText>
+        <a href="/goals/create"
+           style="display:inline-block;padding:0.75rem 1.5rem;background:#007bff;color:white;border-radius:4px;">
+            + Créer un goal
+        </a>
+    </MudPaper>
+}
+else
+{
+<div style="border:1px solid #ddd;border-radius:8px;overflow:hidden;">
 
-        <MudButton Href="/goals/create"
-                   Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Add">
-            New Goal
-        </MudButton>
+    <!-- HEADER -->
+    <div style="background:#f8f9fa;padding:1.5rem;border-bottom:2px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <h2 style="margin:0;">Goals</h2>
+            <p style="margin:0.5rem 0 0 0;color:#666;">
+                @_filteredGoals.Count goal(s)
+            </p>
+        </div>
 
-    </MudStack>
+        <div style="display:flex;gap:0.75rem;">
+            <button @onclick="ExportToExcel"
+                    style="padding:0.75rem 1.5rem;background:#28a745;color:white;border:none;border-radius:4px;">
+                📊 Excel
+            </button>
 
-    @if (_isLoading)
-    {
-        <MudPaper Class="pa-8 text-center">
+            <a href="/goals/create"
+               style="padding:0.75rem 1.5rem;background:#007bff;color:white;border-radius:4px;">
+                + Create
+            </a>
+        </div>
+    </div>
 
-            <MudProgressCircular Indeterminate="true" />
+    <!-- SEARCH -->
+    <div style="padding:1.5rem;border-bottom:1px solid #ddd;">
+        <input style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:4px;"
+               placeholder="Search goals..."
+               @bind="_searchTerm"
+               @bind:event="oninput" />
+    </div>
 
-            <MudText Class="mt-4">
-                Loading goals...
-            </MudText>
+    <!-- TABLE -->
+    <table style="width:100%;border-collapse:collapse;">
+        <thead style="background:#f0f0f0;">
+        <tr>
+            <th style="padding:1rem;">Title</th>
+            <th style="padding:1rem;">Progress</th>
+            <th style="padding:1rem;">Status</th>
+            <th style="padding:1rem;">Deadline</th>
+            <th style="padding:1rem;">Actions</th>
+        </tr>
+        </thead>
 
-        </MudPaper>
-    }
-    else
-    {
-        <MudTable Items="_goals"
-                  Hover="true"
-                  Dense="true">
+        <tbody>
+        @foreach (var g in _paginatedGoals)
+        {
+            <tr style="border-bottom:1px solid #ddd;">
+                <td style="padding:1rem;">@g.Title</td>
 
-            <HeaderContent>
-                <MudTh>Title</MudTh>
-                <MudTh>Progress</MudTh>
-                <MudTh>Status</MudTh>
-                <MudTh>Deadline</MudTh>
-                <MudTh></MudTh>
-            </HeaderContent>
+                <td style="padding:1rem;">
+                    @g.CurrentValue / @g.TargetValue (@g.ProgressPercentage%)
+                </td>
 
-            <RowTemplate>
+                <td style="padding:1rem;">@g.Status</td>
 
-                <MudTd>@context.Title</MudTd>
+                <td style="padding:1rem;">@g.Deadline?.ToShortDateString()</td>
 
-                <MudTd>
+                <td style="padding:1rem;">
+                    <a href="/goals/details/@g.Id">👁</a>
+                    <a href="/goals/edit/@g.Id">✏️</a>
+                    <button @onclick="() => Delete(g.Id)">🗑</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
 
-                    <MudProgressLinear Value="@((double)context.ProgressPercentage)" />
+    <!-- PAGINATION (IDENTIQUE NOTES) -->
+    <div style="background:#f8f9fa;padding:1.5rem;border-top:1px solid #ddd;display:flex;justify-content:center;gap:0.5rem;align-items:center;">
 
-                    <MudText Typo="Typo.caption">
-                        @context.CurrentValue / @context.TargetValue
-                        (@context.ProgressPercentage.ToString("0")%)
-                    </MudText>
+        <button @onclick="PreviousPage"
+                disabled="@(_currentPage == 1)"
+                style="padding:0.5rem 1rem;background:@(_currentPage == 1 ? "#e0e0e0" : "#007bff");color:white;border:none;border-radius:4px;">
+            ←
+        </button>
 
-                </MudTd>
+        @for (int i = 1; i <= _totalPages && i <= 5; i++)
+        {
+            int page = i;
 
-                <MudTd>
+            <button @onclick="@(() => GoToPage(page))"
+                    style="padding:0.5rem 0.75rem;background:@(_currentPage == page ? "#007bff" : "#f0f0f0");color:@(_currentPage == page ? "white" : "black");border:1px solid #ddd;">
+                @i
+            </button>
+        }
 
-                    @if (context.Status == "Completed")
-                    {
-                        <MudChip T="string" Color="Color.Success">
-                            Completed
-                        </MudChip>
-                    }
-                    else if (context.Status == "Expired")
-                    {
-                        <MudChip T="string" Color="Color.Error">
-                            Expired
-                        </MudChip>
-                    }
-                    else
-                    {
-                        <MudChip T="string" Color="Color.Info">
-                            Active
-                        </MudChip>
-                    }
+        @if (_totalPages > 5)
+        {
+            <span>...</span>
+        }
 
-                </MudTd>
+        <button @onclick="NextPage"
+                disabled="@(_currentPage >= _totalPages)"
+                style="padding:0.5rem 1rem;background:@(_currentPage >= _totalPages ? "#e0e0e0" : "#007bff");color:white;border:none;border-radius:4px;">
+            →
+        </button>
 
-                <MudTd>
-                    @context.Deadline?.ToShortDateString()
-                </MudTd>
+    </div>
 
-                <MudTd>
-
-                    <MudStack Row="true">
-
-                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                       Href="@($"/goals/details/{context.Id}")" />
-
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                       Href="@($"/goals/edit/{context.Id}")" />
-
-                        <MudIconButton Icon="@Icons.Material.Filled.Add"
-                                       Color="Color.Success"
-                                       OnClick="@(() => IncrementGoal(context.Id))" />
-
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                       Color="Color.Error"
-                                       OnClick="@(() => DeleteGoal(context.Id))" />
-
-                    </MudStack>
-
-                </MudTd>
-
-            </RowTemplate>
-
-        </MudTable>
-    }
-
+</div>
+}
 </MudContainer>
 
 @code {
-
     private List<GoalDto> _goals = [];
+    private List<GoalDto> _filteredGoals = [];
+    private List<GoalDto> _paginatedGoals = [];
+
+    private string _searchTerm = "";
+
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+    private int _totalPages = 1;
+
     private bool _isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadGoals();
-    }
-
-    private async Task LoadGoals()
-    {
-        _isLoading = true;
-
         _goals = await GoalService.GetGoalsAsync();
-
+        Apply();
         _isLoading = false;
     }
 
-    private async Task IncrementGoal(Guid id)
+    private void Apply()
     {
-        await GoalService.IncrementGoalAsync(id);
+        _filteredGoals = string.IsNullOrWhiteSpace(_searchTerm)
+            ? _goals
+            : _goals.Where(x =>
+                x.Title.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
-        await LoadGoals();
+        _totalPages = (int)Math.Ceiling(_filteredGoals.Count / (double)_pageSize);
+
+        if (_currentPage > _totalPages)
+            _currentPage = Math.Max(1, _totalPages);
+
+        _paginatedGoals = _filteredGoals
+            .Skip((_currentPage - 1) * _pageSize)
+            .Take(_pageSize)
+            .ToList();
     }
 
-    private async Task DeleteGoal(Guid id)
+    private void OnSearchChanged(ChangeEventArgs _) { _currentPage = 1; Apply(); }
+
+    private void PreviousPage() { if (_currentPage > 1) _currentPage--; Apply(); }
+    private void NextPage() { if (_currentPage < _totalPages) _currentPage++; Apply(); }
+    private void GoToPage(int page) { _currentPage = page; Apply(); }
+
+    private async Task Delete(Guid id)
     {
         await GoalService.DeleteGoalAsync(id);
+        _goals.RemoveAll(x => x.Id == id);
+        Apply();
+    }
 
-        await LoadGoals();
+    private async Task ExportToExcel()
+    {
+        ExcelPackage.License.SetNonCommercialPersonal("PersonalHub");
+
+        using var package = new ExcelPackage();
+        var ws = package.Workbook.Worksheets.Add("Goals");
+
+        ws.Cells[1, 1].Value = "Title";
+        ws.Cells[1, 2].Value = "Progress";
+        ws.Cells[1, 3].Value = "Status";
+
+        int row = 2;
+
+        foreach (var g in _filteredGoals)
+        {
+            ws.Cells[row, 1].Value = g.Title;
+            ws.Cells[row, 2].Value = $"{g.CurrentValue}/{g.TargetValue}";
+            ws.Cells[row, 3].Value = g.Status;
+            row++;
+        }
+
+        var bytes = package.GetAsByteArray();
+        await JSRuntime.InvokeVoidAsync("downloadFile", bytes, "goals.xlsx");
     }
 }

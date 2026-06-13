@@ -6,52 +6,62 @@
 @using PersonalHub.Application.Features.Goals.UpdateGoal
 @using PersonalHub.Web.Services
 
-@inject GoalService GoalService
-@inject NavigationManager Navigation
 @inject ILogger<GoalEdit> Logger
+@inject NavigationManager Navigation
+@inject GoalService GoalService
 
 <PageTitle>Edit Goal</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8 mb-8">
 
     @if (_isLoading)
     {
-        <MudPaper Class="pa-8 text-center">
-
-            
-            <MudProgressCircular Indeterminate="true" />
-
-            <MudText Class="mt-4">
-                Loading goal...
-            </MudText>
-
+        <MudPaper Class="pa-8 text-center rounded-xl">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            <MudText Class="mt-4">Loading goal...</MudText>
         </MudPaper>
-
-
-}
+    }
     else if (_goal is null)
     {
+        <MudPaper Class="pa-8 text-center rounded-xl">
 
-        <MudAlert Severity="Severity.Error">
-            Goal not found.
-        </MudAlert>
+            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline"
+                     Style="font-size:64px;width:64px;height:64px;"
+                     Color="Color.Error" />
+
+            <MudText Typo="Typo.h5" Class="mt-4">
+                Goal Not Found
+            </MudText>
+
+            <MudText Class="mt-2 mb-6">
+                The goal you're looking for doesn't exist.
+            </MudText>
+
+            <MudButton Href="/goals"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary">
+                Back to Goals
+            </MudButton>
+
+        </MudPaper>
     }
     else
     {
+        <MudPaper Class="pa-6 rounded-xl" Elevation="2">
 
-        <MudPaper Class="pa-8 rounded-xl">
+            <MudStack Row="true"
+                      Justify="Justify.SpaceBetween"
+                      AlignItems="AlignItems.Center"
+                      Class="mb-6">
 
-            
-            <MudText Typo="Typo.h4" Class="mb-6">
-                Edit Goal
-            </MudText>
+                <div>
+                    <MudText Typo="Typo.h4">Edit Goal</MudText>
+                    <MudText Typo="Typo.body2" Class="mt-2">
+                        Update your goal
+                    </MudText>
+                </div>
 
-            @if (!string.IsNullOrWhiteSpace(_error))
-            {
-                <MudAlert Severity="Severity.Error" Class="mb-4">
-                    @_error
-                </MudAlert>
-            }
+            </MudStack>
 
             <MudTextField @bind-Value="_title"
                           Label="Title"
@@ -67,23 +77,27 @@
                           Class="mb-4" />
 
             <MudNumericField T="decimal"
+                             @bind-Value="_targetValue"
                              Label="Target Value"
                              Variant="Variant.Outlined"
-                             @bind-Value="_targetValue"
                              Class="mb-4" />
 
             <MudNumericField T="decimal"
+                             @bind-Value="_currentValue"
                              Label="Current Value"
                              Variant="Variant.Outlined"
-                             @bind-Value="_currentValue"
                              Class="mb-4" />
 
-            <MudDatePicker Label="Deadline"
-                           Editable="true"
-                           @bind-Date="_deadline"
-                           Class="mb-6" />
+            <MudDatePicker @bind-Date="_deadline"
+                           Label="Deadline"
+                           Class="mb-4" />
 
-            <MudStack Row="true" Justify="Justify.FlexEnd">
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+            }
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
 
                 <MudButton Variant="Variant.Outlined"
                            OnClick="Cancel">
@@ -92,29 +106,34 @@
 
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
-                           OnClick="HandleSave"
-                           Disabled="_isSubmitting">
-                    Save Changes
+                           Disabled="_isSubmitting"
+                           OnClick="HandleUpdateGoal">
+
+                    @if (_isSubmitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        <span class="ml-2">Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save Changes</span>
+                    }
+
                 </MudButton>
 
             </MudStack>
 
         </MudPaper>
-
-
-}
+    }
 
 </MudContainer>
 
 @code {
 
-
-[Parameter]
-    public Guid Id { get; set; }
+    [Parameter] public Guid Id { get; set; }
 
     private GoalDto? _goal;
-
-    private string _title = string.Empty;
+    private string _title = "";
     private string? _description;
     private decimal _targetValue;
     private decimal _currentValue;
@@ -124,6 +143,8 @@
     private bool _isSubmitting;
     private string? _error;
 
+
+
     protected override async Task OnInitializedAsync()
     {
         await LoadGoal();
@@ -131,41 +152,74 @@
 
     private async Task LoadGoal()
     {
-        _goal = await GoalService.GetGoalByIdAsync(Id);
-
-        if (_goal is not null)
+        try
         {
-            _title = _goal.Title;
-            _description = _goal.Description;
-            _targetValue = _goal.TargetValue;
-            _currentValue = _goal.CurrentValue;
-            _deadline = _goal.Deadline;
-        }
+            _goal = await GoalService.GetGoalByIdAsync(Id);
 
-        _isLoading = false;
+            if (_goal is not null)
+            {
+                _title = _goal.Title;
+                _description = _goal.Description;
+                _targetValue = _goal.TargetValue;
+                _currentValue = _goal.CurrentValue;
+                _deadline = _goal.Deadline;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading goal {Id}", Id);
+            _error = "Failed to load goal.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 
-    private async Task HandleSave()
+    private async Task HandleUpdateGoal()
     {
-        var command = new UpdateGoalCommand(
-            Id,
-            _title,
-            _description ?? string.Empty,
-            _targetValue,
-            _currentValue,
-            _deadline);
+        try
+        {
+            _isSubmitting = true;
+            _error = null;
 
-        await GoalService.UpdateGoalAsync(
-            Id,
-            command);
+            if (string.IsNullOrWhiteSpace(_title))
+            {
+                _error = "Title is required";
+                return;
+            }
 
-        Navigation.NavigateTo("/goals");
+            var cmd = new UpdateGoalCommand(
+                Id,
+                _title.Trim(),
+                _description ?? "",
+                _targetValue,
+                _currentValue,
+                _deadline);
+
+            var success = await GoalService.UpdateGoalAsync(Id, cmd);
+
+            if (!success)
+            {
+                _error = "Failed to update goal";
+                return;
+            }
+
+            Navigation.NavigateTo("/goals");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating goal {Id}", Id);
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
     }
 
     private void Cancel()
     {
         Navigation.NavigateTo("/goals");
     }
-
-
 }

@@ -1,0 +1,295 @@
+﻿@page "/fundtypes"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.FundTypes.Common
+@using PersonalHub.Web.Services
+@using OfficeOpenXml
+
+@inject FundTypeService FundTypeService
+@inject ILogger<FundTypes> Logger
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Fund Types</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+@if (_isLoading)
+{
+    <MudPaper Class="pa-8 text-center rounded-xl">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        <MudText Class="mt-4">Chargement des types de fonds...</MudText>
+    </MudPaper>
+}
+else if (_filteredFundTypes.Count == 0 && _fundTypes.Count == 0)
+{
+    <MudPaper Class="pa-10 text-center rounded-xl">
+        <MudText Typo="Typo.h5">Aucun Fund Type</MudText>
+        <MudText Class="mt-2 mb-6">Créez votre premier type de fonds.</MudText>
+
+        <a href="/fundtypes/create"
+           style="display:inline-block;padding:0.75rem 1.5rem;background:#007bff;color:white;border-radius:4px;text-decoration:none;">
+            + Créer un Fund Type
+        </a>
+    </MudPaper>
+}
+else
+{
+    <div style="border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+
+        <!-- HEADER -->
+        <div style="background:#f8f9fa;padding:1.5rem;border-bottom:2px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <h2 style="margin:0;">Fund Types</h2>
+                <p style="margin:0.5rem 0 0 0;color:#666;">
+                    @_filteredFundTypes.Count type(s)
+                </p>
+            </div>
+
+            <div style="display:flex;gap:0.75rem;">
+                <button @onclick="ExportToExcel"
+                        style="padding:0.75rem 1.5rem;background:#28a745;color:white;border:none;border-radius:4px;">
+                    📊 Excel
+                </button>
+
+                <a href="/fundtypes/create"
+                   style="padding:0.75rem 1.5rem;background:#007bff;color:white;border-radius:4px;text-decoration:none;">
+                    + New Fund Type
+                </a>
+            </div>
+        </div>
+
+        <!-- SEARCH + PAGINATION INFO -->
+        <div style="background:white;padding:1.5rem;border-bottom:1px solid #ddd;">
+
+            <input type="text"
+                   placeholder="Search fund types..."
+                   @bind="_searchTerm"
+                   @bind:event="oninput"
+                   style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:4px;" />
+
+            <div style="display:flex;justify-content:space-between;margin-top:1rem;">
+                <span>Page @_currentPage / @_totalPages</span>
+
+                <select @onchange="OnPageSizeChanged"
+                        style="padding:0.25rem;border:1px solid #ddd;border-radius:4px;">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                </select>
+            </div>
+
+        </div>
+
+        <!-- TABLE -->
+        <table style="width:100%;border-collapse:collapse;">
+
+            <thead style="background:#f0f0f0;">
+                <tr>
+                    <th style="padding:1rem;cursor:pointer;"
+                        @onclick="@(() => ToggleSort("Name"))">
+                        Name @GetSort("Name")
+                    </th>
+
+                    <th style="padding:1rem;">
+                        Description
+                    </th>
+
+                    <th style="width:200px;text-align:center;">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var ft in _paginatedFundTypes)
+                {
+                    <tr style="border-bottom:1px solid #ddd;">
+                        <td style="padding:1rem;">@ft.Name</td>
+                        <td style="padding:1rem;color:#666;">@ft.Description</td>
+
+                        <td style="text-align:center;">
+                            <a href="/fundtypes/edit/@ft.Id">✏️</a>
+                            <a href="/fundtypes/details/@ft.Id">👁️</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+
+        </table>
+
+        <!-- PAGINATION (IDENTIQUE NOTES) -->
+        <div style="background:#f8f9fa;padding:1.5rem;border-top:1px solid #ddd;display:flex;justify-content:center;gap:0.5rem;align-items:center;">
+
+            <button @onclick="PreviousPage"
+                    disabled="@(_currentPage == 1)"
+                    style="padding:0.5rem 1rem;background:@(_currentPage == 1 ? "#e0e0e0" : "#007bff");color:white;border:none;border-radius:4px;">
+                ← Précédent
+            </button>
+
+            @for (int i = 1; i <= _totalPages && i <= 5; i++)
+            {
+                int page = i;
+                <button @onclick="@(() => GoToPage(page))"
+                        style="padding:0.5rem 0.75rem;
+                               background:@(_currentPage == page ? "#007bff" : "#f0f0f0");
+                               color:@(_currentPage == page ? "white" : "black");
+                               border:1px solid #ddd;
+                               border-radius:4px;">
+                    @i
+                </button>
+            }
+
+            @if (_totalPages > 5)
+            {
+                <span style="color:#999;">...</span>
+            }
+
+            <button @onclick="NextPage"
+                    disabled="@(_currentPage >= _totalPages)"
+                    style="padding:0.5rem 1rem;background:@(_currentPage >= _totalPages ? "#e0e0e0" : "#007bff");color:white;border:none;border-radius:4px;">
+                Suivant →
+            </button>
+
+        </div>
+
+    </div>
+}
+
+</MudContainer>
+
+@code {
+    @code {
+
+        private List<FundTypeDto> _fundTypes = [];
+        private List<FundTypeDto> _filteredFundTypes = [];
+        private List<FundTypeDto> _paginatedFundTypes = [];
+
+        private bool _isLoading = true;
+
+        private string _searchTerm = "";
+
+        private int _currentPage = 1;
+        private int _pageSize = 10;
+        private int _totalPages = 1;
+
+        private string _sortBy = "Name";
+        private bool _asc = true;
+
+        protected override async Task OnInitializedAsync()
+        {
+            _fundTypes = await FundTypeService.GetFundTypesAsync();
+            Apply();
+            _isLoading = false;
+        }
+
+        private void Apply()
+        {
+            // SEARCH
+            _filteredFundTypes = string.IsNullOrWhiteSpace(_searchTerm)
+                ? _fundTypes
+                : _fundTypes.Where(x =>
+                    x.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    (x.Description ?? "").Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+                ).ToList();
+
+            // SORT
+            _filteredFundTypes = (_sortBy, _asc) switch
+            {
+                ("Name", true) => _filteredFundTypes.OrderBy(x => x.Name).ToList(),
+                ("Name", false) => _filteredFundTypes.OrderByDescending(x => x.Name).ToList(),
+                _ => _filteredFundTypes
+            };
+
+            // PAGINATION
+            _totalPages = (int)Math.Ceiling((double)_filteredFundTypes.Count / _pageSize);
+
+            if (_currentPage > _totalPages)
+                _currentPage = 1;
+
+            _paginatedFundTypes = _filteredFundTypes
+                .Skip((_currentPage - 1) * _pageSize)
+                .Take(_pageSize)
+                .ToList();
+
+            StateHasChanged();
+        }
+
+        private void OnSearchChanged(ChangeEventArgs e)
+        {
+            _currentPage = 1;
+            Apply();
+        }
+
+        private void OnPageSizeChanged(ChangeEventArgs e)
+        {
+            _pageSize = int.Parse(e.Value!.ToString()!);
+            _currentPage = 1;
+            Apply();
+        }
+
+        private void ToggleSort(string col)
+        {
+            if (_sortBy == col)
+                _asc = !_asc;
+            else
+            {
+                _sortBy = col;
+                _asc = true;
+            }
+
+            Apply();
+        }
+
+        private string GetSort(string col)
+            => _sortBy == col ? (_asc ? "↑" : "↓") : "";
+
+        private void PreviousPage()
+        {
+            if (_currentPage > 1)
+            {
+                _currentPage--;
+                Apply();
+            }
+        }
+
+        private void NextPage()
+        {
+            if (_currentPage < _totalPages)
+            {
+                _currentPage++;
+                Apply();
+            }
+        }
+
+        private void GoToPage(int page)
+        {
+            _currentPage = page;
+            Apply();
+        }
+
+        private async Task ExportToExcel()
+        {
+            ExcelPackage.License.SetNonCommercialPersonal("User");
+
+            using var package = new ExcelPackage();
+            var ws = package.Workbook.Worksheets.Add("FundTypes");
+
+            ws.Cells[1, 1].Value = "Name";
+            ws.Cells[1, 2].Value = "Description";
+
+            int row = 2;
+
+            foreach (var ft in _filteredFundTypes)
+            {
+                ws.Cells[row, 1].Value = ft.Name;
+                ws.Cells[row, 2].Value = ft.Description;
+                row++;
+            }
+
+            var bytes = package.GetAsByteArray();
+            await JSRuntime.InvokeVoidAsync("downloadFile", bytes, "FundTypes.xlsx");
+        }
+    }
+}

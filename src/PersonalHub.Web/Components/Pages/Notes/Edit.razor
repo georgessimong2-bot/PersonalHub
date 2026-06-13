@@ -46,7 +46,7 @@
                 The note you're looking for doesn't exist.
             </MudText>
 
-            <MudButton Href="/index"
+            <MudButton Href="/notes"
                        Variant="Variant.Filled"
                        Color="Color.Primary">
                 Back to Notes
@@ -233,7 +233,7 @@
                 "Note {Id} updated successfully",
                 Id);
 
-            Navigation.NavigateTo("/index");
+            Navigation.NavigateTo("/notes");
         }
         catch (HttpRequestException ex)
         {

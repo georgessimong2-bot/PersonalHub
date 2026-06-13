@@ -13,5 +13,7 @@ public static class ApiExtensions
         app.MapAccountEndpoints();
         app.MapGoalEndpoints();
         app.MapAiEndpoints();
+        app.MapFundEndpoints();
+        app.MapFundTypeEndpoints();
     }
 }

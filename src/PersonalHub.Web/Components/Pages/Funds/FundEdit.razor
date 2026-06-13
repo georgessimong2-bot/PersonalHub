@@ -1,0 +1,227 @@
+﻿@page "/funds/edit/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Funds.Common
+@using PersonalHub.Application.Features.FundTypes.Common
+@using PersonalHub.Application.Features.Funds.UpdateFund
+@using PersonalHub.Web.Services
+
+@inject FundService FundService
+@inject FundTypeService FundTypeService
+@inject NavigationManager Navigation
+@inject ILogger<FundEdit> Logger
+
+<PageTitle>Edit Fund</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center rounded-xl">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            <MudText Class="mt-4">Loading fund...</MudText>
+        </MudPaper>
+    }
+    else if (_fund is null)
+    {
+        <MudPaper Class="pa-8 text-center rounded-xl">
+            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline"
+                     Style="font-size: 64px; width:64px; height:64px;"
+                     Color="Color.Error" />
+
+            <MudText Typo="Typo.h5" Class="mt-4">
+                Fund Not Found
+            </MudText>
+
+            <MudText Class="mt-2 mb-6">
+                The fund you're looking for doesn't exist.
+            </MudText>
+
+            <MudButton Href="/funds"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary">
+                Back to Funds
+            </MudButton>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-6 rounded-xl" Elevation="2">
+
+            <MudStack Row="true"
+                      Justify="Justify.SpaceBetween"
+                      AlignItems="AlignItems.Center"
+                      Class="mb-6">
+
+                <div>
+                    <MudText Typo="Typo.h4">Edit Fund</MudText>
+                    <MudText Typo="Typo.body2" Class="mt-2">
+                        Update fund information
+                    </MudText>
+                </div>
+
+            </MudStack>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">
+                    @_error
+                </MudAlert>
+            }
+
+            <!-- NAME -->
+            <MudTextField @bind-Value="_name"
+                          Label="Name"
+                          Variant="Variant.Outlined"
+                          FullWidth="true"
+                          Class="mb-4" />
+
+            <!-- FUND TYPE DROPDOWN -->
+            <MudSelect T="Guid"
+                       Label="Fund Type"
+                       Variant="Variant.Outlined"
+                       FullWidth="true"
+                       @bind-Value="_fundTypeId"
+                       Class="mb-4">
+
+                @foreach (var ft in _fundTypes)
+                {
+                    <MudSelectItem T="Guid" Value="@ft.Id">
+                        @ft.Name
+                    </MudSelectItem>
+                }
+
+            </MudSelect>
+
+            <!-- ACTIONS -->
+            <MudStack Row="true"
+                      Justify="Justify.FlexEnd"
+                      Spacing="2">
+
+                <MudButton Variant="Variant.Outlined"
+                           OnClick="Cancel">
+                    Cancel
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="HandleSave"
+                           Disabled="_isSubmitting">
+
+                    @if (_isSubmitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        <span class="ml-2">Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save Changes</span>
+                    }
+
+                </MudButton>
+
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private FundDto? _fund;
+
+    private List<FundTypeDto> _fundTypes = [];
+
+    private string _name = string.Empty;
+    private Guid _fundTypeId;
+
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            _isLoading = true;
+
+            var fundTask = FundService.GetFundByIdAsync(Id);
+            var typesTask = FundTypeService.GetFundTypesAsync();
+
+            await Task.WhenAll(fundTask, typesTask);
+
+            _fund = fundTask.Result;
+            _fundTypes = typesTask.Result;
+
+            if (_fund is not null)
+            {
+                _name = _fund.Name;
+                _fundTypeId = _fund.FundTypeId;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading fund {Id}", Id);
+            _error = "Failed to load fund.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleSave()
+    {
+        try
+        {
+            _isSubmitting = true;
+            _error = null;
+
+            if (string.IsNullOrWhiteSpace(_name))
+            {
+                _error = "Name is required";
+                return;
+            }
+
+            if (_fundTypeId == Guid.Empty)
+            {
+                _error = "Please select a fund type";
+                return;
+            }
+
+            var command = new UpdateFundCommand(
+                Id,
+                _name.Trim(),
+                _fundTypeId
+            );
+
+            await FundService.UpdateFundAsync(Id, command);
+
+            Navigation.NavigateTo("/funds");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating fund {Id}", Id);
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/funds");
+    }
+}

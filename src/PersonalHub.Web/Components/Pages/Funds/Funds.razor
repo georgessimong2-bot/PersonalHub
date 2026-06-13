@@ -1,0 +1,232 @@
+﻿@page "/funds"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Funds.Common
+@using PersonalHub.Web.Services
+@using OfficeOpenXml
+@using PersonalHub.Web.Services.Auth
+
+@inject FundService FundService
+@inject ILogger<Funds> Logger
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject AuthService AuthService
+
+<PageTitle>Funds</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+@if (_isLoading)
+{
+    <MudPaper Class="pa-8 text-center rounded-xl">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        <MudText Class="mt-4">Chargement des fonds...</MudText>
+    </MudPaper>
+}
+else if (_filteredFunds.Count == 0 && _funds.Count == 0)
+{
+    <MudPaper Class="pa-10 text-center rounded-xl">
+        <MudText Typo="Typo.h5">Aucun fonds</MudText>
+        <MudText Class="mt-2 mb-6">Créez votre premier fonds.</MudText>
+
+        <a href="/funds/create"
+           style="display:inline-block;padding:0.75rem 1.5rem;background:#007bff;color:white;border-radius:4px;text-decoration:none;">
+            + Créer un fonds
+        </a>
+    </MudPaper>
+}
+else
+{
+    <div style="border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+
+        <!-- HEADER -->
+        <div style="background:#f8f9fa;padding:1.5rem;border-bottom:2px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <h2 style="margin:0;">Funds</h2>
+                <p style="margin:0.5rem 0 0 0;color:#666;">
+                    @_filteredFunds.Count fonds
+                </p>
+            </div>
+
+            <div style="display:flex;gap:0.75rem;">
+                <button @onclick="ExportToExcel"
+                        style="padding:0.75rem 1.5rem;background:#28a745;color:white;border:none;border-radius:4px;">
+                    📊 Excel
+                </button>
+
+                <a href="/funds/create"
+                   style="padding:0.75rem 1.5rem;background:#007bff;color:white;border-radius:4px;text-decoration:none;">
+                    + New Fund
+                </a>
+            </div>
+        </div>
+
+        <!-- SEARCH + PAGINATION INFO -->
+        <div style="background:white;padding:1.5rem;border-bottom:1px solid #ddd;">
+
+            <input type="text"
+                   placeholder="Search funds..."
+                   @bind="_searchTerm"
+                   @bind:event="oninput"
+                   style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:4px;" />
+
+            <div style="display:flex;justify-content:space-between;margin-top:1rem;">
+                <span>Page @_currentPage / @_totalPages</span>
+
+                <select @onchange="OnPageSizeChanged">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                </select>
+            </div>
+
+        </div>
+
+        <!-- TABLE -->
+        <table style="width:100%;border-collapse:collapse;">
+            <thead style="background:#f0f0f0;">
+                <tr>
+                    <th style="padding:1rem;cursor:pointer;" @onclick="@(() => ToggleSort("Name"))">
+                        Name @GetSort("Name")
+                    </th>
+                    <th>Type</th>
+                    <th style="width:200px;text-align:center;">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var fund in _paginatedFunds)
+                {
+                    <tr style="border-bottom:1px solid #ddd;">
+                        <td style="padding:1rem;">@fund.Name</td>
+                        <td>@fund.FundTypeName</td>
+                        <td style="text-align:center;">
+                            <a href="/funds/edit/@fund.Id">✏️</a>
+                            <a href="/funds/details/@fund.Id">👁️</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- PAGINATION -->
+        <div style="display:flex;justify-content:center;padding:1rem;gap:0.5rem;background:#f8f9fa;">
+
+            <button @onclick="PrevPage" disabled="@(_currentPage == 1)">←</button>
+
+            @for (int i = 1; i <= _totalPages; i++)
+            {
+                int page = i;
+                <button @onclick="@(() => GoToPage(page))"
+                        style="@(page == _currentPage ? "background:#007bff;color:white;" : "")">
+                    @i
+                </button>
+            }
+
+            <button @onclick="NextPage" disabled="@(_currentPage == _totalPages)">→</button>
+
+        </div>
+
+    </div>
+}
+
+</MudContainer>
+
+@code {
+
+private List<FundDto> _funds = [];
+private List<FundDto> _filteredFunds = [];
+private List<FundDto> _paginatedFunds = [];
+
+private bool _isLoading = true;
+private string _searchTerm = "";
+
+private int _currentPage = 1;
+private int _pageSize = 10;
+private int _totalPages = 1;
+
+private string _sortBy = "Name";
+private bool _asc = true;
+
+protected override async Task OnInitializedAsync()
+{
+    _funds = await FundService.GetFundsAsync();
+    Apply();
+    _isLoading = false;
+}
+
+private void Apply()
+{
+    _filteredFunds = string.IsNullOrWhiteSpace(_searchTerm)
+        ? _funds
+        : _funds.Where(x => x.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    _filteredFunds = (_sortBy, _asc) switch
+    {
+        ("Name", true) => _filteredFunds.OrderBy(x => x.Name).ToList(),
+        ("Name", false) => _filteredFunds.OrderByDescending(x => x.Name).ToList(),
+        _ => _filteredFunds
+    };
+
+    _totalPages = (int)Math.Ceiling((double)_filteredFunds.Count / _pageSize);
+    if (_currentPage > _totalPages) _currentPage = 1;
+
+    _paginatedFunds = _filteredFunds
+        .Skip((_currentPage - 1) * _pageSize)
+        .Take(_pageSize)
+        .ToList();
+
+    StateHasChanged();
+}
+
+private void OnSearchChanged(ChangeEventArgs e)
+{
+    _currentPage = 1;
+    Apply();
+}
+
+private void OnPageSizeChanged(ChangeEventArgs e)
+{
+    _pageSize = int.Parse(e.Value!.ToString()!);
+    _currentPage = 1;
+    Apply();
+}
+
+private void ToggleSort(string col)
+{
+    if (_sortBy == col) _asc = !_asc;
+    else { _sortBy = col; _asc = true; }
+
+    Apply();
+}
+
+private string GetSort(string col)
+    => _sortBy == col ? (_asc ? "↑" : "↓") : "";
+
+private void PrevPage() { if (_currentPage > 1) { _currentPage--; Apply(); } }
+private void NextPage() { if (_currentPage < _totalPages) { _currentPage++; Apply(); } }
+private void GoToPage(int p) { _currentPage = p; Apply(); }
+
+private async Task ExportToExcel()
+{
+    ExcelPackage.License.SetNonCommercialPersonal("User");
+
+    using var package = new ExcelPackage();
+    var ws = package.Workbook.Worksheets.Add("Funds");
+
+    ws.Cells[1,1].Value = "Name";
+    ws.Cells[1,2].Value = "Type";
+
+    int row = 2;
+    foreach (var f in _filteredFunds)
+    {
+        ws.Cells[row,1].Value = f.Name;
+        ws.Cells[row,2].Value = f.FundTypeName;
+        row++;
+    }
+
+    var bytes = package.GetAsByteArray();
+    await JSRuntime.InvokeVoidAsync("downloadFile", bytes, "Funds.xlsx");
+}
+}

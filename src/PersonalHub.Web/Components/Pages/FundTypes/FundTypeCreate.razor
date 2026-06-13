@@ -1,0 +1,127 @@
+﻿@page "/fundtypes/create"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.FundTypes.CreateFundType
+@using PersonalHub.Web.Services
+
+@inject ILogger<FundTypeCreate> Logger
+@inject NavigationManager Navigation
+@inject FundTypeService FundTypeService
+
+<PageTitle>Create Fund Type</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+
+    <MudPaper Class="pa-8 rounded-xl">
+
+        <MudText Typo="Typo.h4" Class="mb-6">
+            Create Fund Type
+        </MudText>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">
+                @_error
+            </MudAlert>
+        }
+
+        <form>
+
+            <div style="margin-bottom:1.5rem;">
+                <label style="display:block;font-weight:500;margin-bottom:0.5rem;">
+                    Name
+                </label>
+
+                <input type="text"
+                       @bind="_name"
+                       placeholder="Enter fund type name"
+                       style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:4px;" />
+            </div>
+
+            <div style="margin-bottom:1.5rem;">
+                <label style="display:block;font-weight:500;margin-bottom:0.5rem;">
+                    Description
+                </label>
+
+                <textarea @bind="_description"
+                          rows="5"
+                          placeholder="Enter description"
+                          style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:4px;">
+                </textarea>
+            </div>
+
+            <div style="display:flex;gap:1rem;">
+
+                <button type="button"
+                        @onclick="HandleCreateFundType"
+                        disabled="@_isSubmitting"
+                        style="padding:0.75rem 2rem;background:#007bff;color:white;border:none;border-radius:4px;">
+
+                    @if (_isSubmitting)
+                    {
+                        <span>⏳ Creating...</span>
+                    }
+                    else
+                    {
+                        <span>✅ Create Fund Type</span>
+                    }
+
+                </button>
+
+                <a href="/fundtypes"
+                   style="display:inline-block;padding:0.75rem 2rem;background:#6c757d;color:white;text-decoration:none;border-radius:4px;">
+                    ❌ Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+
+    private string _name = string.Empty;
+    private string? _description;
+
+    private string _error = string.Empty;
+
+    private bool _isSubmitting;
+
+    private async Task HandleCreateFundType()
+    {
+        _error = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _error = "Name is required.";
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            var command = new CreateFundTypeCommand(
+                _name.Trim(),
+                _description?.Trim());
+
+            await FundTypeService.CreateFundTypeAsync(command);
+
+            Navigation.NavigateTo("/fundtypes");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating fund type");
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+}

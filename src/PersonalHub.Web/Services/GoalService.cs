@@ -49,13 +49,14 @@ public class GoalService
             $"api/goals/{id}");
     }
 
-    public async Task UpdateGoalAsync(
+    public async Task<bool> UpdateGoalAsync(
     Guid id,
     UpdateGoalCommand command)
     {
-        await _http.PutAsJsonAsync(
+        var response = await _http.PutAsJsonAsync(
             $"api/goals/{id}",
             command);
+        return response.IsSuccessStatusCode;
     }
 
     public async Task<string> GenerateAdviceAsync(Guid goalId)
