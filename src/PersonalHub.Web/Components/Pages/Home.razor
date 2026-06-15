@@ -1,20 +1,80 @@
 ﻿@page "/"
-@using Microsoft.AspNetCore.Components.Authorization
-@inject AuthenticationStateProvider Auth
 
-<PageTitle>Home</PageTitle>
+@using Markdig
+@using Microsoft.AspNetCore.Components
+@using MudBlazor
 
-<h1>Hello, world!</h1>
+<PageTitle>PersonalHub</PageTitle>
 
-Welcome to your new app.
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
 
+    <MudPaper Class="pa-6">
 
-@code {
+        @if (_loading)
+        {
+            <MudStack AlignItems="AlignItems.Center"
+                      Justify="Justify.Center"
+                      Spacing="2">
+
+                <MudProgressCircular Indeterminate="true"
+                                     Size="Size.Large" />
+
+                <MudText Typo="Typo.body1">
+                    Loading documentation...
+                </MudText>
+
+            </MudStack>
+        }
+        else
+        {
+            @((MarkupString)_htmlContent)
+        }
+
+    </MudPaper>
+
+</MudContainer>
+
+@code
+{
+    private bool _loading = true;
+    private string _htmlContent = string.Empty;
+
     protected override async Task OnInitializedAsync()
     {
-        var state = await Auth.GetAuthenticationStateAsync();
+        try
+        {
+            var readmePath = Path.Combine(
+                AppContext.BaseDirectory,
+                "README.md");
 
-        Console.WriteLine("IsAuthenticated: " + state.User.Identity?.IsAuthenticated);
-        Console.WriteLine("IsInRole ADMIN: " + state.User.IsInRole("ADMIN"));
+            if (!File.Exists(readmePath))
+            {
+                _htmlContent = """
+                    <h2>README not found</h2>
+                    <p>The README.md file could not be found.</p>
+                    """;
+
+                return;
+            }
+
+            var markdown = await File.ReadAllTextAsync(readmePath);
+
+            var pipeline = new MarkdownPipelineBuilder()
+                .UseAdvancedExtensions()
+                .Build();
+
+            _htmlContent = Markdown.ToHtml(markdown, pipeline);
+        }
+        catch (Exception ex)
+        {
+            _htmlContent = $"""
+                <h2>Error</h2>
+                <p>{ex.Message}</p>
+                """;
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 }
