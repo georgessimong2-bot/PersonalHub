@@ -25,6 +25,17 @@ public class UpdateFundHandler
             throw new Exception("Fund not found");
 
         entity.Name = request.Name;
+        entity.LegalName = request.LegalName;
+        entity.FundCode = request.FundCode;
+
+        entity.DomicileCountry = request.DomicileCountry;
+        entity.BaseCurrency = request.BaseCurrency;
+
+        entity.LaunchDate = request.LaunchDate;
+        entity.IsActive = request.IsActive;
+
+        entity.Description = request.Description;
+
         entity.FundTypeId = request.FundTypeId;
 
         await _context.SaveChangesAsync(cancellationToken);

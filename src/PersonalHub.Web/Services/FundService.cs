@@ -29,9 +29,15 @@ public class FundService
         await _http.PostAsJsonAsync("api/funds", command);
     }
 
-    public async Task UpdateFundAsync(Guid id, UpdateFundCommand command)
+    public async Task<bool> UpdateFundAsync(
+    Guid id,
+    UpdateFundCommand command)
     {
-        await _http.PutAsJsonAsync($"api/funds/{id}", command);
+        var response = await _http.PutAsJsonAsync(
+            $"api/funds/{id}",
+            command);
+
+        return response.IsSuccessStatusCode;
     }
 
     public async Task DeleteFundAsync(Guid id)
