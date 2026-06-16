@@ -1,11 +1,10 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using PersonalHub.Application.Common.Interfaces;
+using System.Security.Claims;
 
 namespace PersonalHub.Infrastructure.Identity;
 
-public class CurrentUserService
-    : ICurrentUserService
+public class CurrentUserService : ICurrentUserService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -19,6 +18,8 @@ public class CurrentUserService
         _httpContextAccessor
             .HttpContext?
             .User?
-            .FindFirstValue(ClaimTypes.NameIdentifier)
-        ?? string.Empty;
+            .FindFirst(ClaimTypes.NameIdentifier)?
+            .Value
+        ?? throw new UnauthorizedAccessException(
+            "User is not authenticated");
 }

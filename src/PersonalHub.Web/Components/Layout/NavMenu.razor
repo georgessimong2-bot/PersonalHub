@@ -12,9 +12,13 @@
         </Authorized>
     </AuthorizeView>
 
-    <MudNavLink Href="/notes" Icon="@Icons.Material.Filled.Note">
-        📝 Notes
-    </MudNavLink>
+     <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/notes" Icon="@Icons.Material.Filled.Note">
+                📝 Notes
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
 
     <AuthorizeView Roles="USER, ADMIN">
         <Authorized>

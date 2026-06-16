@@ -8,10 +8,12 @@ public class DeleteNoteHandler
     : IRequestHandler<DeleteNoteCommand>
 {
     private readonly IAppDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public DeleteNoteHandler(IAppDbContext context)
+    public DeleteNoteHandler(IAppDbContext context, ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task Handle(
@@ -20,7 +22,8 @@ public class DeleteNoteHandler
     {
         var note = await _context.Notes
             .FirstOrDefaultAsync(
-                x => x.Id == request.Id,
+                x => x.Id == request.Id &&
+                 x.UserId == _currentUser.UserId,
                 cancellationToken);
 
         if (note is null)
