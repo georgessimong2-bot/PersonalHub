@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PersonalHub.Application.Common.Interfaces;
-using PersonalHub.Application.Features.Goals.Common;
 
 namespace PersonalHub.Application.Features.Goals.GetGoals;
 
@@ -9,44 +8,62 @@ public class GetGoalsHandler
     : IRequestHandler<GetGoalsCommand, List<GoalDto>>
 {
     private readonly IAppDbContext _context;
+    private readonly IIdentityService _identityService;
 
-    public GetGoalsHandler(IAppDbContext context)
+    public GetGoalsHandler(
+        IAppDbContext context,
+        IIdentityService identityService)
     {
         _context = context;
+        _identityService = identityService;
     }
 
     public async Task<List<GoalDto>> Handle(
-        GetGoalsCommand request,
-        CancellationToken cancellationToken)
+     GetGoalsCommand request,
+     CancellationToken cancellationToken)
     {
-        return await _context.Goals
-            .Select(x => new GoalDto
+        var goals = await _context.Goals
+            .ToListAsync(cancellationToken);
+
+        var result = new List<GoalDto>();
+
+        foreach (var goal in goals)
+        {
+            var user = await _identityService
+                .GetUserByIdAsync(goal.UserId);
+
+            result.Add(new GoalDto
             {
-                Id = x.Id,
-                Title = x.Title,
-                Description = x.Description,
-                TargetValue = x.TargetValue,
-                CurrentValue = x.CurrentValue,
-                Deadline = x.Deadline,
+                Id = goal.Id,
+                Title = goal.Title,
+                Description = goal.Description,
+                TargetValue = goal.TargetValue,
+                CurrentValue = goal.CurrentValue,
+                Deadline = goal.Deadline,
+
+                CreatedBy = user?.Email ?? "Unknown",
+                UserId = goal.UserId,
 
                 ProgressPercentage =
-                    x.TargetValue == 0
-                    ? 0
-                    : (x.CurrentValue / x.TargetValue) * 100,
+                    goal.TargetValue == 0
+                        ? 0
+                        : (goal.CurrentValue / goal.TargetValue) * 100,
 
                 Status =
-                    x.CurrentValue >= x.TargetValue
+                    goal.CurrentValue >= goal.TargetValue
                         ? "Completed"
-                        : x.Deadline.HasValue &&
-                          x.Deadline.Value.Date < DateTime.UtcNow.Date
+                        : goal.Deadline.HasValue &&
+                          goal.Deadline.Value.Date < DateTime.UtcNow.Date
                             ? "Expired"
                             : "Active",
 
                 DaysRemaining =
-                    x.Deadline.HasValue
-                        ? (x.Deadline.Value.Date - DateTime.UtcNow.Date).Days
+                    goal.Deadline.HasValue
+                        ? (goal.Deadline.Value.Date - DateTime.UtcNow.Date).Days
                         : null
-            })
-            .ToListAsync(cancellationToken);
+            });
+        }
+
+        return result;
     }
 }

@@ -1,23 +1,24 @@
-﻿namespace PersonalHub.Application.Features.Goals.Common
+﻿public class GoalDto
 {
-    public class GoalDto
-    {
-        public Guid Id { get; set; }
+    public Guid Id { get; set; }
 
-        public string Title { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
 
-        public string? Description { get; set; }
+    public string? Description { get; set; }
 
-        public decimal TargetValue { get; set; }
+    public decimal TargetValue { get; set; }
 
-        public decimal CurrentValue { get; set; }
+    public decimal CurrentValue { get; set; }
 
-        public DateTime? Deadline { get; set; }
+    public DateTime? Deadline { get; set; }
 
-        public decimal ProgressPercentage { get; set; }
+    public decimal ProgressPercentage { get; set; }
 
-        public string Status { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
 
-        public int? DaysRemaining { get; set; }
-    }
+    public int? DaysRemaining { get; set; }
+
+    public string CreatedBy { get; set; } = string.Empty;
+
+    public string UserId { get; set; } = string.Empty;
 }

@@ -5,7 +5,9 @@
 @using PersonalHub.Application.Features.Goals.Common
 @using PersonalHub.Web.Services
 @using OfficeOpenXml
+@using PersonalHub.Web.Services.Auth
 
+@inject AuthService AuthService
 @inject GoalService GoalService
 @inject IJSRuntime JSRuntime
 @inject ILogger<Goals> Logger
@@ -71,6 +73,7 @@ else
         <thead style="background:#f0f0f0;">
         <tr>
             <th style="padding:1rem;">Title</th>
+            <th style="padding:1rem;">Created By</th>
             <th style="padding:1rem;">Progress</th>
             <th style="padding:1rem;">Status</th>
             <th style="padding:1rem;">Deadline</th>
@@ -85,19 +88,31 @@ else
                 <td style="padding:1rem;">@g.Title</td>
 
                 <td style="padding:1rem;">
-                    @g.CurrentValue / @g.TargetValue (@g.ProgressPercentage%)
+                    @g.CreatedBy
+                </td>
+
+                <td style="padding:1rem;">
+                    @g.CurrentValue / @g.TargetValue (@Math.Round(g.ProgressPercentage, 1))%
                 </td>
 
                 <td style="padding:1rem;">@g.Status</td>
 
-                <td style="padding:1rem;">@g.Deadline?.ToShortDateString()</td>
-
                 <td style="padding:1rem;">
-                    <a href="/goals/details/@g.Id">👁</a>
-                    <a href="/goals/edit/@g.Id">✏️</a>
-                    <button @onclick="() => Delete(g.Id)">🗑</button>
+                    @g.Deadline?.ToShortDateString()
                 </td>
-            </tr>
+                    <td style="padding:1rem;">
+                        <a href="/goals/details/@g.Id">👁</a>
+
+                        @if (g.UserId == _currentUserId)
+                        {
+                            <a href="/goals/edit/@g.Id">✏️</a>
+
+                            <button @onclick="() => Delete(g.Id)">
+                                🗑
+                            </button>
+                        }
+                    </td>
+                </tr>
         }
         </tbody>
     </table>
@@ -142,6 +157,7 @@ else
     private List<GoalDto> _goals = [];
     private List<GoalDto> _filteredGoals = [];
     private List<GoalDto> _paginatedGoals = [];
+    private string? _currentUserId;
 
     private string _searchTerm = "";
 
@@ -153,8 +169,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _currentUserId = AuthService.GetUserId();
+
         _goals = await GoalService.GetGoalsAsync();
+
         Apply();
+
         _isLoading = false;
     }
 
@@ -206,8 +226,9 @@ else
         foreach (var g in _filteredGoals)
         {
             ws.Cells[row, 1].Value = g.Title;
-            ws.Cells[row, 2].Value = $"{g.CurrentValue}/{g.TargetValue}";
-            ws.Cells[row, 3].Value = g.Status;
+            ws.Cells[row, 2].Value = g.CreatedBy;
+            ws.Cells[row, 3].Value = $"{g.CurrentValue}/{g.TargetValue}";
+            ws.Cells[row, 4].Value = g.Status;
             row++;
         }
 

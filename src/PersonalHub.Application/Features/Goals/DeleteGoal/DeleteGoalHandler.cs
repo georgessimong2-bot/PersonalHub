@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using PersonalHub.Application.Common.Interfaces;
 
 namespace PersonalHub.Application.Features.Goals.DeleteGoal;
@@ -7,10 +8,12 @@ public class DeleteGoalHandler
     : IRequestHandler<DeleteGoalCommand>
 {
     private readonly IAppDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public DeleteGoalHandler(IAppDbContext context)
+    public DeleteGoalHandler(IAppDbContext context, ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task Handle(
@@ -18,7 +21,10 @@ public class DeleteGoalHandler
         CancellationToken cancellationToken)
     {
         var goal = await _context.Goals
-            .FindAsync(request.Id);
+            .FirstOrDefaultAsync(
+            x =>
+                x.Id == request.Id &&
+                x.UserId == _currentUser.UserId);
 
         if (goal is null)
             throw new Exception("Goal not found");

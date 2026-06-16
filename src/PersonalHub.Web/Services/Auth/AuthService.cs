@@ -178,10 +178,19 @@ public class AuthService
         if (string.IsNullOrWhiteSpace(_store.Token))
             return null;
 
-        var jwt = new JwtSecurityTokenHandler()
-            .ReadJwtToken(_store.Token);
+        try
+        {
+            var jwt = new JwtSecurityTokenHandler()
+                .ReadJwtToken(_store.Token);
 
-        return jwt.Claims.FirstOrDefault(c =>
-            c.Type == "sub")?.Value;
+            return jwt.Claims.FirstOrDefault(c =>
+                c.Type == ClaimTypes.NameIdentifier ||
+                c.Type.Contains("nameidentifier"))
+                ?.Value;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
