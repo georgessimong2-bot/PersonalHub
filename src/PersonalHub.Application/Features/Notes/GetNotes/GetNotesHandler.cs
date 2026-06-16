@@ -9,10 +9,14 @@ public class GetNotesHandler
     : IRequestHandler<GetNotesCommand, List<NoteDto>>
 {
     private readonly IAppDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public GetNotesHandler(IAppDbContext context)
+    public GetNotesHandler(
+        IAppDbContext context,
+        ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<List<NoteDto>> Handle(
@@ -20,6 +24,7 @@ public class GetNotesHandler
         CancellationToken cancellationToken)
     {
         return await _context.Notes
+            .Where(x => x.UserId == _currentUser.UserId)
             .OrderByDescending(x => x.CreatedAt)
             .Select(x => new NoteDto
             {

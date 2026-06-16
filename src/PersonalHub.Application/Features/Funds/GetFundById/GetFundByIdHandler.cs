@@ -19,19 +19,31 @@ public class GetFundByIdHandler
         GetFundByIdCommand request,
         CancellationToken cancellationToken)
     {
-        var entity = await _context.Funds
-            .Include(x => x.FundType)
-            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
+        return await _context.Funds
+    .Include(x => x.FundType)
+    .Include(x => x.SubFunds)
+    .Where(x => x.Id == request.Id)
+    .Select(x => new FundDto
+    {
+        Id = x.Id,
 
-        if (entity is null)
-            return null;
+        Name = x.Name,
+        LegalName = x.LegalName,
+        FundCode = x.FundCode,
 
-        return new FundDto
-        {
-            Id = entity.Id,
-            Name = entity.Name,
-            FundTypeId = entity.FundTypeId,
-            FundTypeName = entity.FundType.Name
-        };
+        DomicileCountry = x.DomicileCountry,
+        BaseCurrency = x.BaseCurrency,
+
+        LaunchDate = x.LaunchDate,
+        IsActive = x.IsActive,
+
+        Description = x.Description,
+
+        FundTypeId = x.FundTypeId,
+        FundTypeName = x.FundType.Name,
+
+        SubFundCount = x.SubFunds.Count
+    })
+    .FirstOrDefaultAsync(cancellationToken);
     }
 }

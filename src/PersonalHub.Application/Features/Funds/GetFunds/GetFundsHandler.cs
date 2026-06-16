@@ -24,9 +24,23 @@ public class GetFundsHandler
             .Select(x => new FundDto
             {
                 Id = x.Id,
+
                 Name = x.Name,
+                LegalName = x.LegalName,
+                FundCode = x.FundCode,
+
+                DomicileCountry = x.DomicileCountry,
+                BaseCurrency = x.BaseCurrency,
+
+                LaunchDate = x.LaunchDate,
+                IsActive = x.IsActive,
+
+                Description = x.Description,
+
                 FundTypeId = x.FundTypeId,
-                FundTypeName = x.FundType.Name
+                FundTypeName = x.FundType.Name,
+
+                SubFundCount = x.SubFunds.Count
             })
             .ToListAsync(cancellationToken);
     }

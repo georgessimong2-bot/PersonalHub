@@ -7,7 +7,7 @@
 @using PersonalHub.Web.Configuration
 @using PersonalHub.Web.Services
 
-@inject ILogger<Create> Logger
+@inject ILogger<NoteCreate> Logger
 @inject NavigationManager Navigation
 @inject NotesService NotesService
 
@@ -112,7 +112,7 @@
             }
 
             Logger.LogInformation("Note créée avec succès");
-            Navigation.NavigateTo("/index");
+            Navigation.NavigateTo("/Notes");
         }
         catch (Exception ex)
         {

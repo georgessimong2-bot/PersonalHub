@@ -8,11 +8,14 @@ public class UpdateGoalHandler
     : IRequestHandler<UpdateGoalCommand>
 {
     private readonly IAppDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
     public UpdateGoalHandler(
-        IAppDbContext context)
+        IAppDbContext context,
+        ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task Handle(
@@ -21,11 +24,16 @@ public class UpdateGoalHandler
     {
         var goal = await _context.Goals
             .FirstOrDefaultAsync(
-                x => x.Id == request.Id,
+                x =>
+                    x.Id == request.Id &&
+                    x.UserId == _currentUser.UserId,
                 cancellationToken);
 
         if (goal is null)
-            throw new Exception("Goal not found");
+        {
+            throw new Exception(
+                "Goal not found or access denied");
+        }
 
         goal.Title = request.Title;
         goal.Description = request.Description;

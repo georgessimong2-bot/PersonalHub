@@ -33,6 +33,8 @@ public class AuthService
     public async Task InitializeAsync()
     {
         var token = await _js.InvokeAsync<string?>("authStorage.get", "token");
+        Console.WriteLine("AUTH INITIALIZE");
+        Console.WriteLine("TOKEN FOUND = " + (token ?? "NULL"));
 
         if (!string.IsNullOrWhiteSpace(token))
         {
@@ -113,7 +115,7 @@ public class AuthService
     public async Task SetToken(string token)
     {
         _store.Token = token;
-
+        Console.WriteLine("SET TOKEN");
         await _js.InvokeVoidAsync("authStorage.set", "token", token);
 
         _http.DefaultRequestHeaders.Authorization =
@@ -176,10 +178,19 @@ public class AuthService
         if (string.IsNullOrWhiteSpace(_store.Token))
             return null;
 
-        var jwt = new JwtSecurityTokenHandler()
-            .ReadJwtToken(_store.Token);
+        try
+        {
+            var jwt = new JwtSecurityTokenHandler()
+                .ReadJwtToken(_store.Token);
 
-        return jwt.Claims.FirstOrDefault(c =>
-            c.Type == "sub")?.Value;
+            return jwt.Claims.FirstOrDefault(c =>
+                c.Type == ClaimTypes.NameIdentifier ||
+                c.Type.Contains("nameidentifier"))
+                ?.Value;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

@@ -13,7 +13,7 @@
 
 <PageTitle>Create Fund</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
 
     <MudPaper Class="pa-8 rounded-xl">
 
@@ -21,69 +21,112 @@
             Create Fund
         </MudText>
 
-        @if (!string.IsNullOrEmpty(_error))
+        @if (!string.IsNullOrWhiteSpace(_error))
         {
             <MudAlert Severity="Severity.Error" Class="mb-4">
                 @_error
             </MudAlert>
         }
 
-        <form>
+        <MudTextField @bind-Value="_name"
+                      Label="Fund Name"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Required="true"
+                      Class="mb-4" />
 
-            <div style="margin-bottom:1.5rem;">
-                <label style="display:block;font-weight:500;margin-bottom:0.5rem;">
-                    Name
-                </label>
+        <MudTextField @bind-Value="_legalName"
+                      Label="Legal Name"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Class="mb-4" />
 
-                <input type="text"
-                       @bind="_name"
-                       placeholder="Enter fund name"
-                       style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:4px;" />
-            </div>
+        <MudTextField @bind-Value="_fundCode"
+                      Label="Fund Code"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Class="mb-4" />
 
-            <MudSelect T="Guid"
-                       Label="Fund Type"
+        <MudSelect T="Guid"
+                   Label="Fund Type"
+                   Variant="Variant.Outlined"
+                   FullWidth="true"
+                   @bind-Value="_fundTypeId"
+                   Class="mb-4">
+
+            @foreach (var fundType in _fundTypes)
+            {
+                <MudSelectItem T="Guid"
+                               Value="@fundType.Id">
+                    @fundType.Name
+                </MudSelectItem>
+            }
+
+        </MudSelect>
+
+        <MudTextField @bind-Value="_domicileCountry"
+                      Label="Domicile Country"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Class="mb-4" />
+
+        <MudTextField @bind-Value="_baseCurrency"
+                      Label="Base Currency"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Placeholder="EUR"
+                      Class="mb-4" />
+
+        <MudDatePicker Label="Launch Date"
                        Variant="Variant.Outlined"
-                       FullWidth="true"
-                       @bind-Value="_fundTypeId"
-                       Class="mb-4">
+                       Editable="true"
+                       @bind-Date="_launchDate"
+                       Class="mb-4" />
 
-                @foreach (var fundType in _fundTypes)
+        <MudSwitch @bind-Value="_isActive"
+                   Label="Active Fund"
+                   Color="Color.Success"
+                   Class="mb-4" />
+
+        <MudTextField @bind-Value="_description"
+                      Label="Description"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Lines="5"
+                      Class="mb-6" />
+
+        <MudStack Row="true"
+                  Justify="Justify.FlexEnd"
+                  Spacing="2">
+
+            <MudButton Variant="Variant.Outlined"
+                       OnClick="Cancel">
+                Cancel
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="HandleCreateFund"
+                       Disabled="_isSubmitting">
+
+                @if (_isSubmitting)
                 {
-                    <MudSelectItem T="Guid"
-                                   Value="@fundType.Id">
-                        @fundType.Name
-                    </MudSelectItem>
+                    <MudProgressCircular Size="Size.Small"
+                                         Indeterminate="true" />
+                    <span class="ml-2">
+                        Creating...
+                    </span>
+                }
+                else
+                {
+                    <span>
+                        Create Fund
+                    </span>
                 }
 
-            </MudSelect>
+            </MudButton>
 
-            <div style="display:flex;gap:1rem;">
-
-                <button type="button"
-                        @onclick="HandleCreateFund"
-                        disabled="@_isSubmitting"
-                        style="padding:0.75rem 2rem;background:#007bff;color:white;border:none;border-radius:4px;">
-
-                    @if (_isSubmitting)
-                    {
-                        <span>⏳ Creating...</span>
-                    }
-                    else
-                    {
-                        <span>✅ Create Fund</span>
-                    }
-
-                </button>
-
-                <a href="/funds"
-                   style="display:inline-block;padding:0.75rem 2rem;background:#6c757d;color:white;text-decoration:none;border-radius:4px;">
-                    ❌ Cancel
-                </a>
-
-            </div>
-
-        </form>
+        </MudStack>
 
     </MudPaper>
 
@@ -92,18 +135,25 @@
 @code {
 
     private string _name = string.Empty;
+    private string? _legalName;
+    private string? _fundCode;
+    private string? _domicileCountry;
+    private string? _baseCurrency;
+    private DateTime? _launchDate;
+    private bool _isActive = true;
+    private string? _description;
 
     private Guid _fundTypeId;
 
     private List<FundTypeDto> _fundTypes = [];
 
     private string _error = string.Empty;
-
     private bool _isSubmitting;
 
     protected override async Task OnInitializedAsync()
     {
-        _fundTypes = await FundTypeService.GetFundTypesAsync();
+        _fundTypes =
+            await FundTypeService.GetFundTypesAsync();
     }
 
     private async Task HandleCreateFund()
@@ -112,22 +162,29 @@
 
         if (string.IsNullOrWhiteSpace(_name))
         {
-            _error = "Name is required.";
+            _error = "Fund Name is required.";
             return;
         }
 
         if (_fundTypeId == Guid.Empty)
         {
-            _error = "Please select a fund type.";
+            _error = "Please select a Fund Type.";
             return;
         }
 
-        _isSubmitting = true;
-
         try
         {
+            _isSubmitting = true;
+
             var command = new CreateFundCommand(
                 _name.Trim(),
+                _legalName,
+                _fundCode,
+                _domicileCountry,
+                _baseCurrency,
+                _launchDate,
+                _isActive,
+                _description,
                 _fundTypeId);
 
             await FundService.CreateFundAsync(command);
@@ -136,7 +193,9 @@
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error creating fund");
+            Logger.LogError(ex,
+                "Error creating fund");
+
             _error = ex.Message;
         }
         finally
@@ -145,4 +204,8 @@
         }
     }
 
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/funds");
+    }
 }

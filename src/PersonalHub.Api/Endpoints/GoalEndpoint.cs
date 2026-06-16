@@ -14,7 +14,8 @@ public static class GoalEndpoints
     public static void MapGoalEndpoints(
         this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/goals");
+        var group = app.MapGroup("/api/goals")
+            .RequireAuthorization();
 
         group.MapGet("/", async (
             IMediator mediator) =>

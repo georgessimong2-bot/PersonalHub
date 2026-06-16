@@ -8,10 +8,14 @@ public class CreateGoalHandler
     : IRequestHandler<CreateGoalCommand, Guid>
 {
     private readonly IAppDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public CreateGoalHandler(IAppDbContext context)
+    public CreateGoalHandler(
+        IAppDbContext context,
+        ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<Guid> Handle(
@@ -26,7 +30,8 @@ public class CreateGoalHandler
             TargetValue = request.TargetValue,
             CurrentValue = 0,
             CreatedAt = DateTime.UtcNow,
-            Deadline = request.Deadline
+            Deadline = request.Deadline,
+            UserId = _currentUser.UserId
         };
 
         _context.Goals.Add(goal);
