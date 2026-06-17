@@ -182,6 +182,7 @@ else
 {
     app.UseHttpsRedirection();
 }
+builder.WebHost.UseWebRoot("wwwroot");
 app.UseStaticFiles();
 app.UseCors();
 
