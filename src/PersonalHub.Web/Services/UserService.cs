@@ -81,6 +81,11 @@ public class UserService
             "api/account/profile",
             dto);
 
+        var body = await response.Content.ReadAsStringAsync();
+
+        Console.WriteLine($"STATUS = {response.StatusCode}");
+        Console.WriteLine($"BODY = {body}");
+
         return response.IsSuccessStatusCode;
     }
 
