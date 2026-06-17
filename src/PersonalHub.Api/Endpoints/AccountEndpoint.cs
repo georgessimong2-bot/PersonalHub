@@ -126,10 +126,14 @@ public static class AccountEndpoints
             var fileName =
                 $"{Guid.NewGuid()}{extension}";
 
+            var webRoot =
+                 env.WebRootPath ??
+                 Path.Combine(env.ContentRootPath, "wwwroot");
+
+            Directory.CreateDirectory(webRoot);
+
             var folder =
-                Path.Combine(
-                    env.WebRootPath,
-                    "profiles");
+                Path.Combine(webRoot, "profiles");
 
             Directory.CreateDirectory(folder);
 
@@ -145,7 +149,7 @@ public static class AccountEndpoints
             {
                 var oldFile =
                     Path.Combine(
-                        env.WebRootPath,
+                        webRoot,
                         appUser.ProfilePictureUrl.TrimStart('/'));
 
                 if (File.Exists(oldFile))
