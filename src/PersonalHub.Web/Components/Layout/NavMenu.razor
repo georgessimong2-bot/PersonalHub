@@ -3,6 +3,11 @@
 
 <MudNavMenu>
     
+    <MudNavLink Href="/"
+                Icon="@Icons.Material.Filled.Home">
+        Home
+    </MudNavLink>
+
     <AuthorizeView Roles="ADMIN">
         <Authorized>
             <MudNavLink Href="/users"
