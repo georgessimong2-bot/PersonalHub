@@ -140,8 +140,8 @@
         return email[..1].ToUpper();
     }
 
-    private string GetProfileImageUrl()
+     private string GetProfileImageUrl()
     {
-        return $"{ApiBaseUrl}{_profilePictureUrl}";
+        return _profilePictureUrl ?? string.Empty;
     }
 }
