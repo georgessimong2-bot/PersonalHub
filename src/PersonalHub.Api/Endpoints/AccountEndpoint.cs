@@ -161,7 +161,7 @@ public static class AccountEndpoints
 
             return Results.Ok(new
             {
-                Url = appUser.ProfilePictureUrl
+                Url = $"{request.Scheme}://{request.Host}{appUser.ProfilePictureUrl}"
             });
         });
     }
