@@ -126,15 +126,20 @@ public static class AccountEndpoints
             var fileName =
                 $"{Guid.NewGuid()}{extension}";
 
+            Console.WriteLine($"CONTENT ROOT = {env.ContentRootPath}");
+            Console.WriteLine($"WEB ROOT = {env.WebRootPath}");
+
             var webRoot =
                  env.WebRootPath ??
                  Path.Combine(env.ContentRootPath, "wwwroot");
 
             Directory.CreateDirectory(webRoot);
 
+            Console.WriteLine($"FINAL WEBROOT = {webRoot}");
             var folder =
                 Path.Combine(webRoot, "profiles");
 
+            Console.WriteLine($"FOLDER = {folder}");
             Directory.CreateDirectory(folder);
 
             var path =
@@ -162,6 +167,9 @@ public static class AccountEndpoints
                 $"/profiles/{fileName}";
 
             await userManager.UpdateAsync(appUser);
+
+            Console.WriteLine($"FILE SAVED = {path}");
+            Console.WriteLine($"FILE EXISTS = {File.Exists(path)}");
 
             return Results.Ok(new
             {
