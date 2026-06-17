@@ -5,106 +5,174 @@
 @using PersonalHub.Application.Features.FundTypes.CreateFundType
 @using PersonalHub.Web.Services
 
-@inject ILogger<FundTypeCreate> Logger
-@inject NavigationManager Navigation
 @inject FundTypeService FundTypeService
+@inject NavigationManager Navigation
+@inject ILogger<FundTypeCreate> Logger
 
 <PageTitle>Create Fund Type</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
 
-    <MudPaper Class="pa-8 rounded-xl">
+    
+    <MudPaper Class="pa-6">
 
-        <MudText Typo="Typo.h4" Class="mb-6">
-            Create Fund Type
-        </MudText>
+        <!-- HEADER -->
 
-        @if (!string.IsNullOrEmpty(_error))
+        <MudStack Row="true"
+                  Justify="Justify.SpaceBetween"
+                  AlignItems="AlignItems.Center"
+                  Class="mb-4">
+
+            <div>
+
+                <MudText Typo="Typo.h4">
+                    Create Fund Type
+                </MudText>
+
+                <MudText Typo="Typo.body2">
+                    Create a new fund type classification
+                </MudText>
+
+            </div>
+
+            <MudChip T="string"
+                     Color="Color.Info"
+                     Variant="Variant.Filled">
+
+                New Fund Type
+
+            </MudChip>
+
+        </MudStack>
+
+        <!-- PREVIEW -->
+
+        <MudPaper Class="pa-4 mb-4"
+                  Outlined="true">
+
+            <MudText Typo="Typo.subtitle2">
+                Preview
+            </MudText>
+
+            <MudText Typo="Typo.h6"
+                     Class="mt-2">
+
+                @(string.IsNullOrWhiteSpace(_name)
+                    ? "Unnamed Fund Type"
+                    : _name)
+
+            </MudText>
+
+            <MudText Typo="Typo.body2"
+                     Class="mt-2">
+
+                @(string.IsNullOrWhiteSpace(_description)
+                    ? "No description provided."
+                    : _description)
+
+            </MudText>
+
+        </MudPaper>
+
+        <!-- FORM -->
+
+        <MudTextField T="string"
+                      @bind-Value="_name"
+                      Label="Name"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Required="true"
+                      Class="mb-4" />
+
+        <MudTextField T="string"
+                      @bind-Value="_description"
+                      Label="Description"
+                      Variant="Variant.Outlined"
+                      Lines="6"
+                      FullWidth="true"
+                      Class="mb-4" />
+
+        @if (!string.IsNullOrWhiteSpace(_error))
         {
-            <MudAlert Severity="Severity.Error" Class="mb-4">
+            <MudAlert Severity="Severity.Error"
+                      Class="mb-4">
+
                 @_error
+
             </MudAlert>
         }
 
-        <form>
+        <MudDivider Class="my-4" />
 
-            <div style="margin-bottom:1.5rem;">
-                <label style="display:block;font-weight:500;margin-bottom:0.5rem;">
-                    Name
-                </label>
+        <!-- ACTIONS -->
 
-                <input type="text"
-                       @bind="_name"
-                       placeholder="Enter fund type name"
-                       style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:4px;" />
-            </div>
+        <MudStack Row="true"
+                  Justify="Justify.FlexEnd"
+                  Spacing="2">
 
-            <div style="margin-bottom:1.5rem;">
-                <label style="display:block;font-weight:500;margin-bottom:0.5rem;">
-                    Description
-                </label>
+            <MudButton Variant="Variant.Outlined"
+                       StartIcon="@Icons.Material.Filled.Close"
+                       OnClick="Cancel">
 
-                <textarea @bind="_description"
-                          rows="5"
-                          placeholder="Enter description"
-                          style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:4px;">
-                </textarea>
-            </div>
+                Cancel
 
-            <div style="display:flex;gap:1rem;">
+            </MudButton>
 
-                <button type="button"
-                        @onclick="HandleCreateFundType"
-                        disabled="@_isSubmitting"
-                        style="padding:0.75rem 2rem;background:#007bff;color:white;border:none;border-radius:4px;">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="_isSubmitting"
+                       OnClick="HandleCreateFundType">
 
-                    @if (_isSubmitting)
-                    {
-                        <span>⏳ Creating...</span>
-                    }
-                    else
-                    {
-                        <span>✅ Create Fund Type</span>
-                    }
+                @if (_isSubmitting)
+                {
+                    <MudProgressCircular Size="Size.Small"
+                                         Indeterminate="true" />
 
-                </button>
+                    <span class="ms-2">
+                        Creating...
+                    </span>
+                }
+                else
+                {
+                    <span>
+                        Create Fund Type
+                    </span>
+                }
 
-                <a href="/fundtypes"
-                   style="display:inline-block;padding:0.75rem 2rem;background:#6c757d;color:white;text-decoration:none;border-radius:4px;">
-                    ❌ Cancel
-                </a>
+            </MudButton>
 
-            </div>
-
-        </form>
+        </MudStack>
 
     </MudPaper>
+    
 
 </MudContainer>
 
 @code {
 
-    private string _name = string.Empty;
+
+private string _name = string.Empty;
+
     private string? _description;
 
-    private string _error = string.Empty;
+    private string? _error;
 
     private bool _isSubmitting;
 
     private async Task HandleCreateFundType()
     {
-        _error = string.Empty;
-
-        if (string.IsNullOrWhiteSpace(_name))
-        {
-            _error = "Name is required.";
-            return;
-        }
-
-        _isSubmitting = true;
-
         try
         {
+            _error = null;
+            _isSubmitting = true;
+
+            if (string.IsNullOrWhiteSpace(_name))
+            {
+                _error = "Name is required.";
+                return;
+            }
+
             var command = new CreateFundTypeCommand(
                 _name.Trim(),
                 _description?.Trim());
@@ -115,7 +183,10 @@
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error creating fund type");
+            Logger.LogError(
+                ex,
+                "Error creating fund type");
+
             _error = ex.Message;
         }
         finally
@@ -123,5 +194,11 @@
             _isSubmitting = false;
         }
     }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/fundtypes");
+    }
+
 
 }

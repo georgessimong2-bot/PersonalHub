@@ -14,149 +14,252 @@
 
 <PageTitle>Edit Fund</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
+    
     @if (_isLoading)
     {
-        <MudPaper Class="pa-8 text-center rounded-xl">
-            <MudProgressCircular Color="Color.Primary"
-                                 Indeterminate="true"
-                                 Size="Size.Large" />
+        <MudPaper Class="pa-8 text-center">
+
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary" />
 
             <MudText Class="mt-4">
                 Loading fund...
             </MudText>
+
         </MudPaper>
     }
     else if (_fund is null)
     {
-        <MudPaper Class="pa-8 text-center rounded-xl">
+        <MudPaper Class="pa-8 text-center">
 
             <MudIcon Icon="@Icons.Material.Filled.ErrorOutline"
                      Size="Size.Large"
                      Color="Color.Error" />
 
-            <MudText Typo="Typo.h5" Class="mt-4">
+            <MudText Typo="Typo.h5"
+                     Class="mt-4">
+
                 Fund Not Found
+
             </MudText>
 
             <MudText Class="mt-2 mb-6">
-                The requested fund does not exist.
+                The requested fund could not be found.
             </MudText>
 
-            <MudButton Href="/funds"
-                       Variant="Variant.Filled"
-                       Color="Color.Primary">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Href="/funds">
+
                 Back to Funds
+
             </MudButton>
 
         </MudPaper>
     }
     else
     {
-        <MudPaper Class="pa-6 rounded-xl" Elevation="2">
+        <MudPaper Class="pa-6">
 
-            <MudText Typo="Typo.h4">
-                Edit Fund
-            </MudText>
+            <!-- HEADER -->
 
-            <MudText Typo="Typo.body2"
-                     Class="mb-6">
-                Update fund information.
-            </MudText>
+            <MudStack Row="true"
+                      Justify="Justify.SpaceBetween"
+                      AlignItems="AlignItems.Center"
+                      Class="mb-4">
 
-            @if (!string.IsNullOrWhiteSpace(_error))
-            {
-                <MudAlert Severity="Severity.Error"
-                          Dense="true"
-                          Class="mb-4">
-                    @_error
-                </MudAlert>
-            }
+                <div>
 
-            <!-- FUND NAME -->
+                    <MudText Typo="Typo.h4">
+                        Edit Fund
+                    </MudText>
 
-            <MudTextField @bind-Value="_name"
+                    <MudText Typo="Typo.body2">
+                        Update fund information
+                    </MudText>
+
+                </div>
+
+                <MudChip T="string"
+                         Color="@(_isActive ? Color.Success : Color.Error)"
+                         Variant="Variant.Filled">
+
+                    @(_isActive ? "Active" : "Inactive")
+
+                </MudChip>
+
+            </MudStack>
+
+            <!-- SUMMARY -->
+
+            <MudGrid Class="mb-4">
+
+                <MudItem xs="12" md="4">
+
+                    <MudPaper Class="pa-3">
+
+                        <MudText Typo="Typo.caption">
+                            Fund Type
+                        </MudText>
+
+                        <MudText Typo="Typo.h6">
+                            @GetSelectedFundTypeName()
+                        </MudText>
+
+                    </MudPaper>
+
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+
+                    <MudPaper Class="pa-3">
+
+                        <MudText Typo="Typo.caption">
+                            Currency
+                        </MudText>
+
+                        <MudText Typo="Typo.h6">
+                            @(_baseCurrency ?? "-")
+                        </MudText>
+
+                    </MudPaper>
+
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+
+                    <MudPaper Class="pa-3">
+
+                        <MudText Typo="Typo.caption">
+                            Launch Date
+                        </MudText>
+
+                        <MudText Typo="Typo.h6">
+                            @(_launchDate?.ToString("yyyy-MM-dd") ?? "-")
+                        </MudText>
+
+                    </MudPaper>
+
+                </MudItem>
+
+            </MudGrid>
+
+            <!-- FORM -->
+
+            <MudTextField T="string"
+                          @bind-Value="_name"
                           Label="Fund Name"
                           Variant="Variant.Outlined"
                           FullWidth="true"
                           Required="true"
                           Class="mb-4" />
 
-            <!-- LEGAL NAME -->
-
-            <MudTextField @bind-Value="_legalName"
+            <MudTextField T="string"
+                          @bind-Value="_legalName"
                           Label="Legal Name"
                           Variant="Variant.Outlined"
                           FullWidth="true"
                           Class="mb-4" />
 
-            <!-- FUND CODE -->
+            <MudGrid>
 
-            <MudTextField @bind-Value="_fundCode"
-                          Label="Fund Code"
-                          Variant="Variant.Outlined"
-                          FullWidth="true"
-                          Class="mb-4" />
+                <MudItem xs="12" md="6">
 
-            <!-- FUND TYPE -->
+                    <MudTextField T="string"
+                                  @bind-Value="_fundCode"
+                                  Label="Fund Code"
+                                  Variant="Variant.Outlined"
+                                  FullWidth="true" />
 
-            <MudSelect T="Guid"
-                       Label="Fund Type"
-                       Variant="Variant.Outlined"
-                       FullWidth="true"
-                       @bind-Value="_fundTypeId"
-                       Class="mb-4">
+                </MudItem>
 
-                @foreach (var fundType in _fundTypes)
-                {
-                    <MudSelectItem T="Guid"
-                                   Value="@fundType.Id">
-                        @fundType.Name
-                    </MudSelectItem>
-                }
+                <MudItem xs="12" md="6">
 
-            </MudSelect>
+                    <MudSelect T="Guid"
+                               Label="Fund Type"
+                               Variant="Variant.Outlined"
+                               FullWidth="true"
+                               @bind-Value="_fundTypeId">
 
-            <!-- COUNTRY -->
+                        @foreach (var fundType in _fundTypes)
+                        {
+                            <MudSelectItem T="Guid"
+                                           Value="@fundType.Id">
 
-            <MudTextField @bind-Value="_domicileCountry"
-                          Label="Domicile Country"
-                          Variant="Variant.Outlined"
-                          FullWidth="true"
-                          Class="mb-4" />
+                                @fundType.Name
 
-            <!-- CURRENCY -->
+                            </MudSelectItem>
+                        }
 
-            <MudTextField @bind-Value="_baseCurrency"
-                          Label="Base Currency"
-                          Variant="Variant.Outlined"
-                          FullWidth="true"
-                          Class="mb-4" />
+                    </MudSelect>
 
-            <!-- LAUNCH DATE -->
+                </MudItem>
 
-            <MudDatePicker Label="Launch Date"
-                           Editable="true"
-                           Variant="Variant.Outlined"
-                           @bind-Date="_launchDate"
-                           Class="mb-4" />
+            </MudGrid>
 
-            <!-- ACTIVE -->
+            <MudGrid Class="mt-2">
 
-            <MudSwitch @bind-Value="_isActive"
-                       Label="Active Fund"
-                       Color="Color.Success"
-                       Class="mb-4" />
+                <MudItem xs="12" md="4">
 
-            <!-- DESCRIPTION -->
+                    <MudTextField T="string"
+                                  @bind-Value="_domicileCountry"
+                                  Label="Domicile Country"
+                                  Variant="Variant.Outlined"
+                                  FullWidth="true" />
 
-            <MudTextField @bind-Value="_description"
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+
+                    <MudTextField T="string"
+                                  @bind-Value="_baseCurrency"
+                                  Label="Base Currency"
+                                  Variant="Variant.Outlined"
+                                  FullWidth="true" />
+
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+
+                    <MudDatePicker Label="Launch Date"
+                                   Variant="Variant.Outlined"
+                                   Editable="true"
+                                   @bind-Date="_launchDate" />
+
+                </MudItem>
+
+            </MudGrid>
+
+            <MudPaper Class="pa-4 mt-4"
+                      Outlined="true">
+
+                <MudSwitch @bind-Value="_isActive"
+                           Color="Color.Success"
+                           Label="Fund is active" />
+
+            </MudPaper>
+
+            <MudTextField T="string"
+                          @bind-Value="_description"
                           Label="Description"
                           Variant="Variant.Outlined"
+                          Lines="6"
                           FullWidth="true"
-                          Lines="5"
-                          Class="mb-6" />
+                          Class="mt-4" />
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <MudAlert Severity="Severity.Error"
+                          Class="mt-4">
+
+                    @_error
+
+                </MudAlert>
+            }
+
+            <MudDivider Class="my-4" />
 
             <!-- ACTIONS -->
 
@@ -165,20 +268,25 @@
                       Spacing="2">
 
                 <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.Close"
                            OnClick="Cancel">
+
                     Cancel
+
                 </MudButton>
 
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
-                           OnClick="HandleSave"
-                           Disabled="_isSubmitting">
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="_isSubmitting"
+                           OnClick="HandleSave">
 
                     @if (_isSubmitting)
                     {
                         <MudProgressCircular Size="Size.Small"
                                              Indeterminate="true" />
-                        <span class="ml-2">
+
+                        <span class="ms-2">
                             Saving...
                         </span>
                     }
@@ -195,12 +303,14 @@
 
         </MudPaper>
     }
+    
 
 </MudContainer>
 
 @code {
 
-    [Parameter]
+
+[Parameter]
     public Guid Id { get; set; }
 
     private FundDto? _fund;
@@ -220,6 +330,7 @@
 
     private bool _isLoading = true;
     private bool _isSubmitting;
+
     private string? _error;
 
     protected override async Task OnInitializedAsync()
@@ -231,14 +342,10 @@
     {
         try
         {
-            _isLoading = true;
-
             var fundTask = FundService.GetFundByIdAsync(Id);
             var fundTypesTask = FundTypeService.GetFundTypesAsync();
 
-            await Task.WhenAll(
-                fundTask,
-                fundTypesTask);
+            await Task.WhenAll(fundTask, fundTypesTask);
 
             _fund = fundTask.Result;
             _fundTypes = fundTypesTask.Result;
@@ -253,14 +360,12 @@
                 _launchDate = _fund.LaunchDate;
                 _isActive = _fund.IsActive;
                 _description = _fund.Description;
-
                 _fundTypeId = _fund.FundTypeId;
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(
-                ex,
+            Logger.LogError(ex,
                 "Error loading fund {FundId}",
                 Id);
 
@@ -314,12 +419,12 @@
                 return;
             }
 
-            Navigation.NavigateTo("/funds");
+            Navigation.NavigateTo(
+                $"/funds/details/{Id}");
         }
         catch (Exception ex)
         {
-            Logger.LogError(
-                ex,
+            Logger.LogError(ex,
                 "Error updating fund {FundId}",
                 Id);
 
@@ -331,8 +436,18 @@
         }
     }
 
+    private string GetSelectedFundTypeName()
+    {
+        return _fundTypes
+            .FirstOrDefault(x => x.Id == _fundTypeId)
+            ?.Name ?? "-";
+    }
+
     private void Cancel()
     {
-        Navigation.NavigateTo("/funds");
+        Navigation.NavigateTo(
+            $"/funds/details/{Id}");
     }
+
+
 }

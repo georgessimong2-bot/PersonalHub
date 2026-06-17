@@ -40,10 +40,9 @@ public class NotesService
             "api/notes");
     }
 
-    public async Task<NoteDto?> GetNoteAsync(Guid id)
-    {
-        SetAuthorizationHeader();
 
+    public async Task<NoteDto?> GetNoteByIdAsync(Guid id)
+    {
         return await _http.GetFromJsonAsync<NoteDto>(
             $"api/notes/{id}");
     }

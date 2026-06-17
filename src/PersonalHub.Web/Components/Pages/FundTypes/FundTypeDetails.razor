@@ -1,0 +1,168 @@
+﻿@page "/fundtypes/details/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.FundTypes.Common
+@using PersonalHub.Web.Services
+
+@inject FundTypeService FundTypeService
+@inject NavigationManager Navigation
+@inject ILogger<FundTypeDetails> Logger
+
+<PageTitle>Fund Type Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary" />
+
+            <MudText Class="mt-4">
+                Loading fund type...
+            </MudText>
+
+        </MudPaper>
+    }
+    else if (_fundType is null)
+    {
+        <MudPaper Class="pa-8 text-center">
+
+            <MudText Typo="Typo.h5">
+                Fund type not found
+            </MudText>
+
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-6">
+
+            <!-- HEADER -->
+
+            <MudText Typo="Typo.h4">
+                Fund Type Details
+            </MudText>
+
+            <MudDivider Class="my-4" />
+
+            <!-- NAME -->
+
+            <MudPaper Class="pa-4"
+                      Outlined="true">
+
+                <MudText Typo="Typo.caption">
+                    Name
+                </MudText>
+
+                <div class="mt-2">
+
+                    <MudChip T="string"
+                             Color="Color.Info"
+                             Variant="Variant.Outlined">
+
+                        @_fundType.Name
+
+                    </MudChip>
+
+                </div>
+
+            </MudPaper>
+
+            <!-- DESCRIPTION -->
+
+            <MudPaper Class="pa-4 mt-4"
+                      Outlined="true">
+
+                <MudText Typo="Typo.h6">
+                    Description
+                </MudText>
+
+                <MudText Class="mt-2">
+
+                    @(!string.IsNullOrWhiteSpace(_fundType.Description)
+                        ? _fundType.Description
+                        : "No description provided.")
+
+                </MudText>
+
+            </MudPaper>
+
+            <MudDivider Class="my-4" />
+
+            <!-- ACTIONS -->
+
+            <MudStack Row="true"
+                      Justify="Justify.FlexEnd"
+                      Spacing="2">
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Edit"
+                           Href="@($"/fundtypes/edit/{Id}")">
+
+                    Edit
+
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.ArrowBack"
+                           OnClick="Back">
+
+                    Back
+
+                </MudButton>
+
+            </MudStack>
+
+        </MudPaper>
+    }
+    
+
+</MudContainer>
+
+@code {
+
+
+[Parameter]
+    public Guid Id { get; set; }
+
+    private FundTypeDto? _fundType;
+
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFundType();
+    }
+
+    private async Task LoadFundType()
+    {
+        try
+        {
+            _fundType =
+                await FundTypeService.GetFundTypeByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(
+                ex,
+                "Error loading fund type {FundTypeId}",
+                Id);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void Back()
+    {
+        Navigation.NavigateTo("/fundtypes");
+    }
+
+
+}

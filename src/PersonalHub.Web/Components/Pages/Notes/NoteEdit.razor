@@ -2,10 +2,7 @@
 @rendermode InteractiveServer
 
 @using MudBlazor
-@using Microsoft.Extensions.Options
-@using PersonalHub.Web.Configuration
 @using PersonalHub.Application.Features.Notes.Common
-@using PersonalHub.Application.Features.Notes.UpdateNote
 @using PersonalHub.Web.Services
 
 @inject ILogger<NoteEdit> Logger
@@ -14,15 +11,15 @@
 
 <PageTitle>Edit Note</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8 mb-8">
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
 
+    
     @if (_isLoading)
     {
-        <MudPaper Class="pa-8 text-center rounded-xl">
+        <MudPaper Class="pa-8 text-center">
 
-            <MudProgressCircular Color="Color.Primary"
-                                 Indeterminate="true"
-                                 Size="Size.Large" />
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary" />
 
             <MudText Class="mt-4">
                 Loading note...
@@ -32,104 +29,198 @@
     }
     else if (_note is null)
     {
-        <MudPaper Class="pa-8 text-center rounded-xl">
+        <MudPaper Class="pa-8 text-center">
 
             <MudIcon Icon="@Icons.Material.Filled.ErrorOutline"
-                     Style="font-size: 64px; width:64px; height:64px;"
+                     Size="Size.Large"
                      Color="Color.Error" />
 
-            <MudText Typo="Typo.h5" Class="mt-4">
+            <MudText Typo="Typo.h5"
+                     Class="mt-4">
+
                 Note Not Found
+
             </MudText>
 
             <MudText Class="mt-2 mb-6">
-                The note you're looking for doesn't exist.
+                The requested note could not be found.
             </MudText>
 
-            <MudButton Href="/notes"
-                       Variant="Variant.Filled"
-                       Color="Color.Primary">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Href="/notes">
+
                 Back to Notes
+
             </MudButton>
 
         </MudPaper>
     }
     else
     {
-        <MudPaper Class="pa-6 rounded-xl" Elevation="2">
+        <MudPaper Class="pa-6">
+
+            <!-- HEADER -->
 
             <MudStack Row="true"
                       Justify="Justify.SpaceBetween"
                       AlignItems="AlignItems.Center"
-                      Class="mb-6">
+                      Class="mb-4">
 
                 <div>
+
                     <MudText Typo="Typo.h4">
                         Edit Note
                     </MudText>
 
-                    <MudText Typo="Typo.body2" Color="Color.Default" Class="mt-2">
-                        Update your note
+                    <MudText Typo="Typo.body2">
+                        Update your note content
                     </MudText>
+
                 </div>
 
             </MudStack>
 
-            <MudTextField @bind-Value="_title"
+            <!-- INFORMATION -->
+
+            <MudGrid Class="mb-4">
+
+                <MudItem xs="12" md="6">
+
+                    <MudPaper Class="pa-3">
+
+                        <MudText Typo="Typo.caption">
+                            Created
+                        </MudText>
+
+                        <MudChip T="string"
+                                 Color="Color.Success"
+                                 Variant="Variant.Outlined"
+                                 Class="mt-2">
+
+                            @_note.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+
+                        </MudChip>
+
+                    </MudPaper>
+
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+
+                    <MudPaper Class="pa-3">
+
+                        <MudText Typo="Typo.caption">
+                            Last Updated
+                        </MudText>
+
+                        <MudChip T="string"
+                                 Color="Color.Info"
+                                 Variant="Variant.Outlined"
+                                 Class="mt-2">
+
+                            @(_note.UpdatedAt?.ToString("yyyy-MM-dd HH:mm")
+                                ?? "Never")
+
+                        </MudChip>
+
+                    </MudPaper>
+
+                </MudItem>
+
+            </MudGrid>
+
+            <!-- FORM -->
+
+            <MudTextField T="string"
+                          @bind-Value="_title"
                           Label="Title"
                           Variant="Variant.Outlined"
                           FullWidth="true"
+                          Required="true"
                           Class="mb-4" />
 
-            <MudTextField @bind-Value="_content"
+            <MudTextField T="string"
+                          @bind-Value="_content"
                           Label="Content"
                           Variant="Variant.Outlined"
+                          Lines="12"
                           FullWidth="true"
-                          Lines="6"
+                          Required="true"
                           Class="mb-4" />
 
             @if (!string.IsNullOrWhiteSpace(_error))
             {
-                <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+                <MudAlert Severity="Severity.Error"
+                          Class="mb-4">
+
+                    @_error
+
+                </MudAlert>
             }
 
-            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+            <MudDivider Class="my-4" />
+
+            <!-- ACTIONS -->
+
+            <MudStack Row="true"
+                      Justify="Justify.FlexEnd"
+                      Spacing="2">
+
                 <MudButton Variant="Variant.Outlined"
-                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.Close"
                            OnClick="Cancel">
+
                     Cancel
+
                 </MudButton>
+
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
-                           OnClick="@(async () => await HandleUpdateNote())"
-                           Disabled="@_isSubmitting">
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="_isSubmitting"
+                           OnClick="HandleUpdateNote">
+
                     @if (_isSubmitting)
                     {
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                        <span class="ml-2">Saving...</span>
+                        <MudProgressCircular Size="Size.Small"
+                                             Indeterminate="true" />
+
+                        <span class="ms-2">
+                            Saving...
+                        </span>
                     }
                     else
                     {
-                        <span>Save Changes</span>
+                        <span>
+                            Save Changes
+                        </span>
                     }
+
                 </MudButton>
+
             </MudStack>
 
         </MudPaper>
     }
+    
 
 </MudContainer>
 
 @code {
 
-    [Parameter]
+
+[Parameter]
     public Guid Id { get; set; }
+
+    private NoteDto? _note;
 
     private string _title = string.Empty;
     private string _content = string.Empty;
-    private NoteDto? _note;
+
     private bool _isLoading = true;
-    private bool _isSubmitting = false;
+    private bool _isSubmitting;
+
     private string? _error;
 
     protected override async Task OnInitializedAsync()
@@ -141,42 +232,23 @@
     {
         try
         {
-            _isLoading = true;
-
-            Logger.LogInformation(
-                "Loading note {Id}",
-                Id);
-
             _note =
-                await NotesService.GetNoteAsync(Id);
+                await NotesService.GetNoteByIdAsync(Id);
 
             if (_note is not null)
             {
                 _title = _note.Title;
                 _content = _note.Content;
-
-                Logger.LogInformation(
-                    "Note {Id} loaded",
-                    Id);
             }
-        }
-        catch (HttpRequestException ex)
-        {
-            Logger.LogError(
-                ex,
-                "Error loading note {Id}",
-                Id);
-
-            _error = "Failed to load note.";
         }
         catch (Exception ex)
         {
             Logger.LogError(
                 ex,
-                "Unexpected error loading note {Id}",
+                "Error loading note {NoteId}",
                 Id);
 
-            _error = "An unexpected error occurred.";
+            _error = "Failed to load note.";
         }
         finally
         {
@@ -191,67 +263,41 @@
             _isSubmitting = true;
             _error = null;
 
-            Logger.LogInformation(
-                "Updating note {Id}",
-                Id);
-
-            // Validation manuelle
             if (string.IsNullOrWhiteSpace(_title))
             {
-                _error = "Title is required";
-                _isSubmitting = false;
+                _error = "Title is required.";
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(_content))
             {
-                _error = "Content is required";
-                _isSubmitting = false;
+                _error = "Content is required.";
                 return;
             }
 
-            var trimmedTitle = _title.Trim();
-            var trimmedContent = _content.Trim();
-
-            Logger.LogInformation(
-                "Sending update to service: Title='{Title}'",
-                trimmedTitle);
-
-            var success = await NotesService.UpdateAsync(Id, trimmedTitle, trimmedContent);
+            var success =
+                await NotesService.UpdateAsync(
+                    Id,
+                    _title.Trim(),
+                    _content.Trim());
 
             if (!success)
             {
-                Logger.LogError(
-                    "Failed to update note {Id}",
-                    Id);
-
-                _error = "Failed to update note";
+                _error = "Failed to update note.";
                 return;
             }
 
-            Logger.LogInformation(
-                "Note {Id} updated successfully",
-                Id);
-
-            Navigation.NavigateTo("/notes");
-        }
-        catch (HttpRequestException ex)
-        {
-            Logger.LogError(
-                ex,
-                "Error updating note {Id}",
-                Id);
-
-            _error = $"Failed to update note: {ex.Message}";
+            Navigation.NavigateTo(
+                $"/notes/details/{Id}");
         }
         catch (Exception ex)
         {
             Logger.LogError(
                 ex,
-                "Unexpected error updating note {Id}",
+                "Error updating note {NoteId}",
                 Id);
 
-            _error = $"An unexpected error occurred: {ex.Message}";
+            _error = ex.Message;
         }
         finally
         {
@@ -261,6 +307,9 @@
 
     private void Cancel()
     {
-        Navigation.NavigateTo("/index");
+        Navigation.NavigateTo(
+            $"/notes/details/{Id}");
     }
+
+
 }

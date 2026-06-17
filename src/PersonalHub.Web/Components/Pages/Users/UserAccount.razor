@@ -2,13 +2,15 @@
 @attribute [Authorize]
 @rendermode InteractiveServer
 
-@using MudBlazor
-@using PersonalHub.Web.Services.Auth
 @using Microsoft.AspNetCore.Authorization
-@using PersonalHub.Application.Features.Users.Common
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.Extensions.Options
+@using MudBlazor
 @using PersonalHub.Application.Features.Account.Common
 @using PersonalHub.Web.Configuration
-@using Microsoft.Extensions.Options
+@using PersonalHub.Web.Services
+@using PersonalHub.Web.Services.Auth
+@using PersonalHub.Application.Features.Users.Common;
 
 @inject UserService UserService
 @inject AuthService AuthService
@@ -17,26 +19,35 @@
 
 <PageTitle>My Account</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
     @if (_loading)
     {
-        <MudPaper Class="pa-6 text-center">
-            <MudProgressCircular Indeterminate="true" />
+        <MudPaper Class="pa-8 text-center">
+
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary"
+                                 Size="Size.Large" />
+
+            <MudText Class="mt-4">
+                Loading account...
+            </MudText>
+
         </MudPaper>
     }
     else
     {
-        <!-- Profile Header -->
+        <!-- PROFILE HEADER -->
 
-        <MudPaper Class="pa-6 mb-4" Elevation="2">
+        <MudPaper Class="pa-6 mb-6" Elevation="2">
 
             <MudStack Row="true"
-                      AlignItems="AlignItems.Center"
-                      Spacing="3">
+                      Spacing="4"
+                      AlignItems="AlignItems.Center">
 
                 <MudAvatar Size="Size.Large"
-                           Color="Color.Primary">
+                           Color="Color.Primary"
+                           Style="width:120px;height:120px;">
 
                     @if (!string.IsNullOrWhiteSpace(_profilePictureUrl))
                     {
@@ -52,19 +63,20 @@
 
                 <MudStack Spacing="1">
 
-                    <MudText Typo="Typo.h5">
+                    <MudText Typo="Typo.h4">
                         @($"{_model.FirstName} {_model.LastName}".Trim())
                     </MudText>
 
-                    <MudText Typo="Typo.body2">
+                    <MudText Typo="Typo.body1">
                         @_email
                     </MudText>
 
                     <MudChip T="string"
                              Color="Color.Primary"
-                             Variant="Variant.Filled"
-                             Size="Size.Small">
+                             Variant="Variant.Filled">
+
                         @_role
+
                     </MudChip>
 
                     <InputFile OnChange="UploadPicture" />
@@ -79,66 +91,60 @@
 
         </MudPaper>
 
-        <!-- Personal Information -->
+       
 
-        <MudCard Class="mb-4">
+        <!-- ACCOUNT SECTIONS -->
 
-            <MudCardHeader>
-                <MudText Typo="Typo.h6">
-                    Personal Information
-                </MudText>
-            </MudCardHeader>
+        <MudExpansionPanels MultiExpansion="true">
 
-            <MudCardContent>
+            <!-- PERSONAL INFORMATION -->
+
+            <MudExpansionPanel Text="Personal Information"
+                               Expanded="true">
 
                 <MudGrid>
 
                     <MudItem xs="12" md="6">
+
                         <MudTextField @bind-Value="_model.FirstName"
                                       Label="First Name"
                                       Variant="Variant.Outlined"
                                       FullWidth="true" />
+
                     </MudItem>
 
                     <MudItem xs="12" md="6">
+
                         <MudTextField @bind-Value="_model.LastName"
                                       Label="Last Name"
                                       Variant="Variant.Outlined"
                                       FullWidth="true" />
+
                     </MudItem>
 
                 </MudGrid>
 
-            </MudCardContent>
+            </MudExpansionPanel>
 
-        </MudCard>
+            <!-- CONTACT INFORMATION -->
 
-        <!-- Contact Information -->
-
-        <MudCard Class="mb-4">
-
-            <MudCardHeader>
-                <MudText Typo="Typo.h6">
-                    Contact Information
-                </MudText>
-            </MudCardHeader>
-
-            <MudCardContent>
+            <MudExpansionPanel Text="Contact Information">
 
                 <MudStack Spacing="3">
 
-                    <MudTextField T="string" Value="_email"
+                    <MudTextField T="string"
+                                  Value="_email"
                                   Label="Email"
                                   Variant="Variant.Outlined"
                                   ReadOnly="true"
                                   FullWidth="true" />
 
-                    <MudTextField T="string" @bind-Value="_model.PhoneNumber"
+                    <MudTextField @bind-Value="_model.PhoneNumber"
                                   Label="Phone Number"
                                   Variant="Variant.Outlined"
                                   FullWidth="true" />
 
-                    <MudTextField T="string" @bind-Value="_model.Address"
+                    <MudTextField @bind-Value="_model.Address"
                                   Label="Address"
                                   Variant="Variant.Outlined"
                                   Lines="3"
@@ -146,21 +152,11 @@
 
                 </MudStack>
 
-            </MudCardContent>
+            </MudExpansionPanel>
 
-        </MudCard>
+            <!-- SECURITY -->
 
-        <!-- Security -->
-
-        <MudCard Class="mb-4">
-
-            <MudCardHeader>
-                <MudText Typo="Typo.h6">
-                    Security
-                </MudText>
-            </MudCardHeader>
-
-            <MudCardContent>
+            <MudExpansionPanel Text="Security">
 
                 <MudStack Spacing="3">
 
@@ -181,6 +177,7 @@
 
                     <MudButton Color="Color.Secondary"
                                Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.LockReset"
                                OnClick="ChangePasswordAsync">
 
                         Change Password
@@ -189,17 +186,27 @@
 
                 </MudStack>
 
-            </MudCardContent>
+            </MudExpansionPanel>
 
-        </MudCard>
+        </MudExpansionPanels>
 
-        <!-- Actions -->
+        <MudDivider Class="my-6" />
+
+        <!-- ACTIONS -->
 
         <MudStack Row="true"
-                  Justify="Justify.FlexEnd">
+                  Justify="Justify.SpaceBetween">
 
-            <MudButton Color="Color.Primary"
-                       Variant="Variant.Filled"
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.DeleteForever">
+
+                Delete Account
+
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Save"
                        Disabled="_saving"
                        OnClick="SaveAsync">
@@ -227,10 +234,17 @@
 
     private string _email = string.Empty;
     private string _role = string.Empty;
-    private ChangePasswordDto _password = new();
+
     private string? _profilePictureUrl;
 
+    private readonly ChangePasswordDto _password = new();
+
     private UpdateProfileDto _model = new();
+
+    // Dashboard stats (optional)
+    private int _goalsCount;
+    private int _notesCount;
+    private int _fundsCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -239,10 +253,7 @@
             var userId = AuthService.GetUserId();
 
             if (string.IsNullOrWhiteSpace(userId))
-            {
-                _loading = false;
                 return;
-            }
 
             var user = await UserService.GetByIdAsync(userId);
 
@@ -250,16 +261,18 @@
             {
                 _email = user.Email;
                 _role = user.Role;
+
                 _profilePictureUrl = user.ProfilePictureUrl;
 
                 _model = new UpdateProfileDto
                 {
                     FirstName = user.FirstName ?? string.Empty,
                     LastName = user.LastName ?? string.Empty,
-                    Address = user.Address ?? string.Empty,
-                    PhoneNumber = user.PhoneNumber ?? string.Empty
+                    PhoneNumber = user.PhoneNumber ?? string.Empty,
+                    Address = user.Address ?? string.Empty
                 };
             }
+       
         }
         finally
         {
@@ -278,8 +291,8 @@
 
             Snackbar.Add(
                 success
-                    ? "Profile updated successfully"
-                    : "Unable to update profile",
+                    ? "Profile updated successfully."
+                    : "Unable to update profile.",
                 success
                     ? Severity.Success
                     : Severity.Error);
@@ -288,6 +301,62 @@
         {
             _saving = false;
         }
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        if (_password.NewPassword != _password.ConfirmPassword)
+        {
+            Snackbar.Add(
+                "Passwords do not match.",
+                Severity.Error);
+
+            return;
+        }
+
+        var success =
+            await UserService.ChangePasswordAsync(_password);
+
+        Snackbar.Add(
+            success
+                ? "Password changed successfully."
+                : "Unable to change password.",
+            success
+                ? Severity.Success
+                : Severity.Error);
+
+        if (success)
+        {
+            _password.CurrentPassword = string.Empty;
+            _password.NewPassword = string.Empty;
+            _password.ConfirmPassword = string.Empty;
+        }
+    }
+
+    private async Task UploadPicture(
+        InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        var url =
+            await UserService.UploadProfilePictureAsync(file);
+
+        if (url is null)
+        {
+            Snackbar.Add(
+                "Unable to upload image.",
+                Severity.Error);
+
+            return;
+        }
+
+        _profilePictureUrl = url;
+
+        Snackbar.Add(
+            "Profile picture updated.",
+            Severity.Success);
+
+        StateHasChanged();
     }
 
     private string GetInitials()
@@ -302,66 +371,12 @@
                 ? ""
                 : _model.LastName[..1];
 
-        var result = $"{first}{last}".ToUpper();
+        var initials =
+            $"{first}{last}".ToUpper();
 
-        return string.IsNullOrWhiteSpace(result)
+        return string.IsNullOrWhiteSpace(initials)
             ? "U"
-            : result;
-    }
-
-    private async Task ChangePasswordAsync()
-    {
-        if (_password.NewPassword != _password.ConfirmPassword)
-        {
-            Snackbar.Add(
-                "Passwords do not match",
-                Severity.Error);
-
-            return;
-        }
-
-        var success =
-            await UserService.ChangePasswordAsync(_password);
-
-        Snackbar.Add(
-            success
-                ? "Password updated successfully"
-                : "Unable to change password",
-            success
-                ? Severity.Success
-                : Severity.Error);
-
-        if (success)
-        {
-            _password = new();
-        }
-    }
-
-    private async Task UploadPicture(
-    InputFileChangeEventArgs e)
-    {
-        var file = e.File;
-
-        var url =
-            await UserService
-                .UploadProfilePictureAsync(file);
-
-        if (url is null)
-        {
-            Snackbar.Add(
-                "Unable to upload image",
-                Severity.Error);
-
-            return;
-        }
-
-        _profilePictureUrl = url;
-
-        Snackbar.Add(
-            "Profile picture updated",
-            Severity.Success);
-
-        StateHasChanged();
+            : initials;
     }
 
     private string GetProfileImageUrl()
