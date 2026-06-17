@@ -30,8 +30,11 @@ services:
       JwtSettings__Secret: ${JWT_SECRET}
       JwtSettings__Issuer: PersonalHub
       JwtSettings__Audience: PersonalHubUsers
-
       OpenAI__ApiKey: ${OPENAI_API_KEY}
+
+    volumes:
+      - profile_pictures:/app/wwwroot/profiles
+
   web:
     build:
       context: .
@@ -51,3 +54,4 @@ services:
 
 volumes:
   sqlserver_data:
+  profile_pictures:
