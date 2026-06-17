@@ -1,47 +1,47 @@
-﻿using Microsoft.Extensions.Options;
-using Microsoft.JSInterop;
+﻿using Microsoft.JSInterop;
 using PersonalHub.Web.Components.Shared;
-using PersonalHub.Web.Configuration;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace PersonalHub.Web.Services.Auth;
 
 public class AuthService
 {
     private readonly HttpClient _http;
-    private readonly ApiSettings _apiSettings;
     private readonly IJSRuntime _js;
     private readonly TokenStore _store;
+    private readonly ILogger<AuthService> _logger;
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     public string? AccessToken => _store.Token;
 
     public event Action? OnAuthStateChanged;
 
     public AuthService(
         IHttpClientFactory factory,
-        IOptions<ApiSettings> apiSettings,
         IJSRuntime js,
-        TokenStore store)
+        TokenStore store,
+        ILogger<AuthService> logger)
     {
         _http = factory.CreateClient("Api");
-        _apiSettings = apiSettings.Value;
         _js = js;
         _store = store;
+        _logger = logger;
     }
 
     public async Task InitializeAsync()
     {
         var token = await _js.InvokeAsync<string?>("authStorage.get", "token");
-        Console.WriteLine("AUTH INITIALIZE");
-        Console.WriteLine("TOKEN FOUND = " + (token ?? "NULL"));
 
         if (!string.IsNullOrWhiteSpace(token))
         {
             _store.Token = token;
-
-            _http.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
+            _logger.LogInformation("Session restaurée depuis le stockage local.");
         }
     }
 
@@ -60,7 +60,6 @@ public class AuthService
             .Replace("\"", "");
 
         await SetToken(token);
-
         NotifyStateChanged();
 
         return true;
@@ -77,119 +76,83 @@ public class AuthService
         var content = await response.Content.ReadAsStringAsync();
 
         if (response.IsSuccessStatusCode)
-        {
-            return new RegisterResult
-            {
-                Success = true
-            };
-        }
+            return new RegisterResult { Success = true };
 
-        // try parse structured errors first
         try
         {
-            var result = System.Text.Json.JsonSerializer.Deserialize<RegisterResult>(
-                content,
-                new System.Text.Json.JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+            var result = JsonSerializer.Deserialize<RegisterResult>(content, _jsonOptions);
 
-            if (result != null)
+            if (result is not null)
             {
                 result.Success = false;
                 return result;
             }
         }
-        catch
+        catch (JsonException ex)
         {
-
+            _logger.LogWarning(ex, "Impossible de désérialiser la réponse d'inscription.");
         }
 
-        return new RegisterResult
-        {
-            Success = false,
-            Error = content
-        };
+        return new RegisterResult { Success = false, Error = content };
     }
 
     public async Task SetToken(string token)
     {
         _store.Token = token;
-        Console.WriteLine("SET TOKEN");
+        // Le header HTTP est injecté automatiquement par AuthHeaderHandler
         await _js.InvokeVoidAsync("authStorage.set", "token", token);
-
-        _http.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
     }
 
     public string? GetToken() => _store.Token;
 
+    /// <summary>
+    /// Vérifie que le token est présent ET non expiré.
+    /// </summary>
     public bool IsAuthenticated()
-        => !string.IsNullOrWhiteSpace(_store.Token);
+    {
+        var jwt = GetParsedToken();
+        return jwt is not null && jwt.ValidTo > DateTime.UtcNow;
+    }
 
     public string? GetUserRole()
-    {
-        if (string.IsNullOrWhiteSpace(_store.Token))
-            return null;
-
-        var jwt = new JwtSecurityTokenHandler()
-            .ReadJwtToken(_store.Token);
-
-        return jwt.Claims.FirstOrDefault(c =>
-            c.Type == ClaimTypes.Role || c.Type == "role")?.Value;
-    }
+        => GetParsedToken()?.Claims
+            .FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role")?.Value;
 
     public string? GetUserEmail()
-    {
-        if (string.IsNullOrWhiteSpace(_store.Token))
-            return null;
+        => GetParsedToken()?.Claims
+            .FirstOrDefault(c => c.Type == ClaimTypes.Email || c.Type == "email")?.Value;
 
-        try
-        {
-            var jwt = new JwtSecurityTokenHandler()
-                .ReadJwtToken(_store.Token);
-
-            return jwt.Claims.FirstOrDefault(c =>
-                c.Type == ClaimTypes.Email ||
-                c.Type == "email")?.Value;
-        }
-        catch
-        {
-            return null;
-        }
-    }
+    public string? GetUserId()
+        => GetParsedToken()?.Claims
+            .FirstOrDefault(c =>
+                c.Type == ClaimTypes.NameIdentifier ||
+                c.Type.Contains("nameidentifier"))?.Value;
 
     public async Task LogoutAsync()
     {
         _store.Token = null;
-
         await _js.InvokeVoidAsync("authStorage.remove", "token");
-
-        _http.DefaultRequestHeaders.Authorization = null;
-
         NotifyStateChanged();
     }
 
     private void NotifyStateChanged()
         => OnAuthStateChanged?.Invoke();
 
-    public string? GetUserId()
+    /// <summary>
+    /// Parse le JWT une seule fois et le retourne. Retourne null si absent ou invalide.
+    /// </summary>
+    private JwtSecurityToken? GetParsedToken()
     {
         if (string.IsNullOrWhiteSpace(_store.Token))
             return null;
 
         try
         {
-            var jwt = new JwtSecurityTokenHandler()
-                .ReadJwtToken(_store.Token);
-
-            return jwt.Claims.FirstOrDefault(c =>
-                c.Type == ClaimTypes.NameIdentifier ||
-                c.Type.Contains("nameidentifier"))
-                ?.Value;
+            return new JwtSecurityTokenHandler().ReadJwtToken(_store.Token);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Impossible de parser le token JWT.");
             return null;
         }
     }

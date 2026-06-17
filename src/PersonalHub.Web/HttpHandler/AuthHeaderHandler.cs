@@ -16,14 +16,10 @@ public class AuthHeaderHandler : DelegatingHandler
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        var token = _store.Token;
-
-        Console.WriteLine("HTTP HANDLER TOKEN = " + (token ?? "NULL"));
-
-        if (!string.IsNullOrWhiteSpace(token))
+        if (!string.IsNullOrWhiteSpace(_store.Token))
         {
             request.Headers.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
+                new AuthenticationHeaderValue("Bearer", _store.Token);
         }
 
         return base.SendAsync(request, cancellationToken);
