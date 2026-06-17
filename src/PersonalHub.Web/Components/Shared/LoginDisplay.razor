@@ -33,14 +33,8 @@
 
                     @if (!string.IsNullOrWhiteSpace(_profilePictureUrl))
                     {
-                        <MudAvatar Size="Size.Small">
-
-                            <img src="@GetProfileImageUrl()"
-                                 style="width:100%;
-                            height:100%;
-                            object-fit:cover;
-                            border-radius:50%;" />
-
+                        <MudAvatar Size="Size.Large">
+                            <MudImage Src="@GetProfileImageUrl()" />
                         </MudAvatar>
                     }
                     else
@@ -142,6 +136,9 @@
 
     private string GetProfileImageUrl()
     {
-        return _profilePictureUrl ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(_profilePictureUrl))
+            return "/images/default-avatar.png";
+
+        return _profilePictureUrl;
     }
 }
