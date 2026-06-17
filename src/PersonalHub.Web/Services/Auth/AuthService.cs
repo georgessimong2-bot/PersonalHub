@@ -41,7 +41,12 @@ public class AuthService
         if (!string.IsNullOrWhiteSpace(token))
         {
             _store.Token = token;
-            _logger.LogInformation("Session restaurée depuis le stockage local.");
+            _logger.LogInformation("Session restored from local storage. Token length: {TokenLength}", token.Length);
+            _logger.LogInformation("TokenStore.Token is now set. Reference check: Token in store is {NotNull}", _store.Token != null);
+        }
+        else
+        {
+            _logger.LogWarning("No token found in local storage during initialization");
         }
     }
 

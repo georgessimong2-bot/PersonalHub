@@ -1,6 +1,6 @@
 window.downloadFile = function (bytes, fileName) {
 
-    console.log("downloadFile appelé");
+    console.log("downloadFile called");
 
     const blob = new Blob(
         [new Uint8Array(bytes)],

@@ -74,24 +74,59 @@ public class UserService
 
     public async Task<string?> UploadProfilePictureAsync(IBrowserFile file)
     {
-        using var content = new MultipartFormDataContent();
-        await using var stream = file.OpenReadStream(2 * 1024 * 1024);
-        using var fileContent = new StreamContent(stream);
-
-        content.Add(fileContent, "file", file.Name);
-
-        var response = await _http.PostAsync("api/account/profile-picture", content);
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            _logger.LogWarning(
-                "Échec de l'upload de la photo de profil. Statut : {Status}",
-                response.StatusCode);
+            _logger.LogInformation("Starting upload for file: {FileName}, Size: {Size}", file.Name, file.Size);
+
+            using var content = new MultipartFormDataContent();
+
+            // Read file into byte array
+            using var ms = new MemoryStream();
+            await file.OpenReadStream(2 * 1024 * 1024).CopyToAsync(ms);
+            var fileBytes = ms.ToArray();
+
+            _logger.LogInformation("File read into memory. Byte count: {ByteCount}", fileBytes.Length);
+
+            // Use ByteArrayContent instead of StreamContent
+            var fileContent = new ByteArrayContent(fileBytes);
+            fileContent.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue(
+                    string.IsNullOrWhiteSpace(file.ContentType) 
+                        ? "application/octet-stream" 
+                        : file.ContentType);
+
+            _logger.LogInformation("Content-Type set to: {ContentType}", fileContent.Headers.ContentType);
+
+            content.Add(fileContent, "file", file.Name);
+
+            _logger.LogInformation("Sending request to api/account/profile-picture");
+
+            var response = await _http.PostAsync("api/account/profile-picture", content);
+
+            _logger.LogInformation("Response status: {StatusCode}", response.StatusCode);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+
+                _logger.LogError(
+                    "Failed to upload profile picture. Status: {Status}, Response: {Error}",
+                    response.StatusCode, error);
+
+                return null;
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<UploadResponse>();
+
+            _logger.LogInformation("Upload succeeded. URL: {Url}", result?.Url);
+
+            return result?.Url;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception while uploading profile picture.");
             return null;
         }
-
-        var result = await response.Content.ReadFromJsonAsync<UploadResponse>();
-        return result?.Url;
     }
 
     private sealed record UploadResponse(string? Url);

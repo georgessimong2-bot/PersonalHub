@@ -3,6 +3,9 @@
 @inject AuthService AuthService
 @inject UserService UserService
 @inject ILogger<LoginDisplay> Logger
+@inject IOptions<ApiSettings> ApiSettings
+@using Microsoft.Extensions.Options
+@using PersonalHub.Web.Configuration
 
 <AuthorizeView Context="auth">
     <Authorized>
@@ -74,12 +77,26 @@
         try
         {
             var userDto = await UserService.GetByIdAsync(userId);
-            _profilePictureUrl = userDto?.ProfilePictureUrl;
+            _profilePictureUrl = ResolveImageUrl(userDto?.ProfilePictureUrl);
         }
         catch (Exception ex)
         {
             Logger.LogWarning(ex, "Impossible de charger l'avatar de l'utilisateur {UserId}.", userId);
         }
+    }
+
+    private string ResolveImageUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return null;
+
+        // If it's already a full URL, return as-is
+        if (url.StartsWith("http://") || url.StartsWith("https://"))
+            return url;
+
+        // If it's a relative URL, prepend the API base URL
+        var apiUrl = ApiSettings.Value.BaseUrl;
+        return $"{apiUrl}{url}";
     }
 
     private static string ResolveEmail(ClaimsPrincipal user) =>
