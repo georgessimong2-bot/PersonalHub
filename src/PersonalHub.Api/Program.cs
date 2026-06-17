@@ -133,7 +133,8 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-
+Console.WriteLine($"CONTENT ROOT = {app.Environment.ContentRootPath}");
+Console.WriteLine($"WEB ROOT = {app.Environment.WebRootPath}");
 
 using (var scope = app.Services.CreateScope())
 {
