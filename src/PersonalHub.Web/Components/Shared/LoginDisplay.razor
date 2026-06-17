@@ -2,10 +2,14 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using MudBlazor
 @using PersonalHub.Web.Services.Auth
+@using PersonalHub.Web.Configuration
+@using Microsoft.Extensions.Options
 
+@inject IOptions<ApiSettings> ApiSettings
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
 @inject AuthService AuthService
+@inject UserService UserService
 
 
 <AuthorizeView Context="auth">
@@ -20,24 +24,58 @@
                 ?? "unknown";
         }
 
-        <MudMenu Icon="@Icons.Material.Filled.AccountCircle">
+        <MudMenu>
 
-            <MudText Class="px-3 py-2">
-                @email
-            </MudText>
+            <ActivatorContent Context="menu">
 
-            <MudDivider />
+                <div @onclick="menu.ToggleAsync"
+                     style="cursor:pointer">
 
-            <MudMenuItem OnClick="GoToAccount">
-                Mon compte
-            </MudMenuItem>
+                    @if (!string.IsNullOrWhiteSpace(_profilePictureUrl))
+                    {
+                        <MudAvatar Size="Size.Small">
 
-            <MudMenuItem OnClick="Logout">
-                Déconnexion
-            </MudMenuItem>
+                            <img src="@GetProfileImageUrl()"
+                                 style="width:100%;
+                            height:100%;
+                            object-fit:cover;
+                            border-radius:50%;" />
+
+                        </MudAvatar>
+                    }
+                    else
+                    {
+                        <MudAvatar Size="Size.Small"
+                                   Color="Color.Primary">
+
+                            @GetInitials(email)
+
+                        </MudAvatar>
+                    }
+
+                </div>
+
+            </ActivatorContent>
+
+            <ChildContent>
+
+                <MudText Class="px-3 py-2">
+                    @email
+                </MudText>
+
+                <MudDivider />
+
+                <MudMenuItem OnClick="GoToAccount">
+                    Mon compte
+                </MudMenuItem>
+
+                <MudMenuItem OnClick="Logout">
+                    Déconnexion
+                </MudMenuItem>
+
+            </ChildContent>
 
         </MudMenu>
-
     </Authorized>
 
     <NotAuthorized>
@@ -58,8 +96,30 @@
 
 
 @code {
+    private string? _profilePictureUrl;
+    private string ApiBaseUrl =>
+       ApiSettings.Value.BaseUrl;
+    protected override async Task OnInitializedAsync()
+    {
+        var authState =
+            await AuthProvider.GetAuthenticationStateAsync();
 
- 
+        var user = authState.User;
+
+        var userId =
+            user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        Console.WriteLine($"USERID = {userId}");
+
+        if (string.IsNullOrWhiteSpace(userId))
+            return;
+
+        var userDto =
+            await UserService.GetByIdAsync(userId);
+
+        _profilePictureUrl =
+            userDto?.ProfilePictureUrl;
+    }
 
     private void GoToAccount()
     {
@@ -70,5 +130,18 @@
     {
         await AuthService.LogoutAsync();
         Navigation.NavigateTo("/login", true);
+    }
+
+    private string GetInitials(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return "?";
+
+        return email[..1].ToUpper();
+    }
+
+    private string GetProfileImageUrl()
+    {
+        return $"{ApiBaseUrl}{_profilePictureUrl}";
     }
 }

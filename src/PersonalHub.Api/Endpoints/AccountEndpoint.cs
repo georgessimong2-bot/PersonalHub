@@ -1,7 +1,11 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Identity;
+using PersonalHub.Application.Features.Account.ChangePassword;
+using PersonalHub.Application.Features.Account.Common;
 using PersonalHub.Application.Features.Account.UpdateProfile;
 using PersonalHub.Application.Features.Users.Common;
 using PersonalHub.Application.Features.Users.GetUserById;
+using PersonalHub.Infrastructure.Identity;
 using System.Security.Claims;
 
 namespace PersonalHub.Api.Endpoints;
@@ -17,7 +21,8 @@ public static class AccountEndpoints
             ClaimsPrincipal user,
             IMediator mediator) =>
         {
-            var userId = user.FindFirst("sub")?.Value;
+
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (userId is null)
                 return Results.Unauthorized();
@@ -34,7 +39,8 @@ public static class AccountEndpoints
             ClaimsPrincipal user,
             IMediator mediator) =>
         {
-            var userId = user.FindFirst("sub")?.Value;
+
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrWhiteSpace(userId))
                 return Results.Unauthorized();
@@ -66,6 +72,97 @@ public static class AccountEndpoints
                     detail: ex.Message,
                     statusCode: 500);
             }
+        });
+
+        group.MapPut("/password", async (
+            ChangePasswordDto dto,
+            ClaimsPrincipal user,
+            IMediator mediator) =>
+        {
+            var userId =
+                user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrWhiteSpace(userId))
+                return Results.Unauthorized();
+
+            await mediator.Send(
+                new ChangePasswordCommand
+                {
+                    UserId = userId,
+                    CurrentPassword = dto.CurrentPassword,
+                    NewPassword = dto.NewPassword
+                });
+
+            return Results.NoContent();
+        });
+
+        group.MapPost("/profile-picture", async (
+            HttpRequest request,
+            ClaimsPrincipal user,
+            UserManager<AppUser> userManager,
+            IWebHostEnvironment env) =>
+        {
+            var userId =
+                user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrWhiteSpace(userId))
+                return Results.Unauthorized();
+
+            var appUser =
+                await userManager.FindByIdAsync(userId);
+
+            if (appUser is null)
+                return Results.NotFound();
+
+            var file =
+                request.Form.Files.FirstOrDefault();
+
+            if (file is null)
+                return Results.BadRequest("No file uploaded.");
+
+            var extension =
+                Path.GetExtension(file.FileName);
+
+            var fileName =
+                $"{Guid.NewGuid()}{extension}";
+
+            var folder =
+                Path.Combine(
+                    env.WebRootPath,
+                    "profiles");
+
+            Directory.CreateDirectory(folder);
+
+            var path =
+                Path.Combine(folder, fileName);
+
+            await using var stream =
+                File.Create(path);
+
+            await file.CopyToAsync(stream);
+
+            if (!string.IsNullOrWhiteSpace(appUser.ProfilePictureUrl))
+            {
+                var oldFile =
+                    Path.Combine(
+                        env.WebRootPath,
+                        appUser.ProfilePictureUrl.TrimStart('/'));
+
+                if (File.Exists(oldFile))
+                {
+                    File.Delete(oldFile);
+                }
+            }
+
+            appUser.ProfilePictureUrl =
+                $"/profiles/{fileName}";
+
+            await userManager.UpdateAsync(appUser);
+
+            return Results.Ok(new
+            {
+                Url = appUser.ProfilePictureUrl
+            });
         });
     }
 }

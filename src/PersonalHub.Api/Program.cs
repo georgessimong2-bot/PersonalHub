@@ -188,7 +188,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapEndpoints();
-
+app.UseStaticFiles();
 
 
 app.Run();

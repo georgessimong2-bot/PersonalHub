@@ -31,4 +31,9 @@ public interface IIdentityService
     string id);
 
     Task UpdateProfileAsync(string userId, string firstName, string lastName, string address, string phoneNumber);
+
+    Task ChangePasswordAsync(
+    string userId,
+    string currentPassword,
+    string newPassword);
 }
