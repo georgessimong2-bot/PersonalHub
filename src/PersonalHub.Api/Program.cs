@@ -182,13 +182,14 @@ else
 {
     app.UseHttpsRedirection();
 }
+app.UseStaticFiles();
 app.UseCors();
-Console.WriteLine("AUTH CONFIGURED");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapEndpoints();
-app.UseStaticFiles();
+
 
 
 app.Run();
