@@ -15,5 +15,6 @@ public static class ApiExtensions
         app.MapAiEndpoints();
         app.MapFundEndpoints();
         app.MapFundTypeEndpoints();
+        app.MapDashboardEndpoints();
     }
 }

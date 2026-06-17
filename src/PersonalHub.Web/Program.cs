@@ -53,6 +53,7 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<GoalService>();
 builder.Services.AddScoped<FundService>();
 builder.Services.AddScoped<FundTypeService>();
+builder.Services.AddScoped<DashboardService>();
 #endregion
 
 #region MUD BLAZOR
