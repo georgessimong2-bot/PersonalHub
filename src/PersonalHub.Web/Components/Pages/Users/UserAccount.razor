@@ -61,6 +61,8 @@
 
                 </MudAvatar>
 
+
+
                 <MudStack Spacing="1">
 
                     <MudText Typo="Typo.h4">
@@ -381,6 +383,6 @@
 
     private string GetProfileImageUrl()
     {
-        return $"{ApiSettings.Value.BaseUrl}{_profilePictureUrl}";
+        return _profilePictureUrl ?? string.Empty;
     }
 }
