@@ -203,6 +203,7 @@ public class IdentityService : IIdentityService
             LastName = user.LastName,
             Address = user.Address,
             PhoneNumber = user.PhoneNumber,
+            ProfilePictureUrl = user.ProfilePictureUrl,
             Role = roles.FirstOrDefault() ?? string.Empty
         };
     }
@@ -270,6 +271,31 @@ public class IdentityService : IIdentityService
                 throw new Exception(string.Join(", ",
                     result.Errors.Select(e => e.Description)));
             }
+        }
+    }
+
+    public async Task ChangePasswordAsync(
+    string userId,
+    string currentPassword,
+    string newPassword)
+    {
+        var user =
+            await _userManager.FindByIdAsync(userId);
+
+        if (user is null)
+            throw new BusinessException("User not found.");
+
+        var result =
+            await _userManager.ChangePasswordAsync(
+                user,
+                currentPassword,
+                newPassword);
+
+        if (!result.Succeeded)
+        {
+            throw new BusinessException(
+                string.Join(", ",
+                    result.Errors.Select(x => x.Description)));
         }
     }
 }

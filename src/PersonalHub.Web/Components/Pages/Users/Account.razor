@@ -6,72 +6,229 @@
 @using PersonalHub.Web.Services.Auth
 @using Microsoft.AspNetCore.Authorization
 @using PersonalHub.Application.Features.Users.Common
+@using PersonalHub.Application.Features.Account.Common
+@using PersonalHub.Web.Configuration
+@using Microsoft.Extensions.Options
 
 @inject UserService UserService
 @inject AuthService AuthService
 @inject ISnackbar Snackbar
+@inject IOptions<ApiSettings> ApiSettings
 
-<PageTitle>Mon compte</PageTitle>
+<PageTitle>My Account</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
-
-    <MudText Typo="Typo.h4" Class="mb-6">
-        👤 Mon profil
-    </MudText>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
 
     @if (_loading)
     {
-        <MudProgressCircular Indeterminate="true" />
+        <MudPaper Class="pa-6 text-center">
+            <MudProgressCircular Indeterminate="true" />
+        </MudPaper>
     }
     else
     {
-        <MudPaper Class="pa-6 rounded-lg" Elevation="3">
+        <!-- Profile Header -->
 
-            <MudStack Spacing="3">
+        <MudPaper Class="pa-6 mb-4" Elevation="2">
 
-                <MudTextField @bind-Value="_model.FirstName"
-                              Label="Prénom"
-                              Variant="Variant.Outlined" />
+            <MudStack Row="true"
+                      AlignItems="AlignItems.Center"
+                      Spacing="3">
 
-                <MudTextField @bind-Value="_model.LastName"
-                              Label="Nom"
-                              Variant="Variant.Outlined" />
+                <MudAvatar Size="Size.Large"
+                           Color="Color.Primary">
 
-                <MudTextField @bind-Value="_model.Address"
-                              Label="Adresse"
-                              Variant="Variant.Outlined" />
+                    @if (!string.IsNullOrWhiteSpace(_profilePictureUrl))
+                    {
+                        <MudImage Src="@GetProfileImageUrl()"
+                                  Alt="Profile Picture" />
+                    }
+                    else
+                    {
+                        @GetInitials()
+                    }
 
-                <MudTextField @bind-Value="_model.PhoneNumber"
-                              Label="Téléphone"
-                              Variant="Variant.Outlined" />
+                </MudAvatar>
 
-                <MudButton Color="Color.Primary"
-                           Variant="Variant.Filled"
-                           OnClick="SaveAsync"
-                           Disabled="_saving">
-                    💾 Enregistrer
-                </MudButton>
+                <MudStack Spacing="1">
 
-                @if (!string.IsNullOrWhiteSpace(_message))
-                {
-                    <MudAlert Severity="Severity.Success">
-                        @_message
-                    </MudAlert>
-                }
+                    <MudText Typo="Typo.h5">
+                        @($"{_model.FirstName} {_model.LastName}".Trim())
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        @_email
+                    </MudText>
+
+                    <MudChip T="string"
+                             Color="Color.Primary"
+                             Variant="Variant.Filled"
+                             Size="Size.Small">
+                        @_role
+                    </MudChip>
+
+                    <InputFile OnChange="UploadPicture" />
+
+                    <MudText Typo="Typo.caption">
+                        JPG, PNG, WEBP (max 2 MB)
+                    </MudText>
+
+                </MudStack>
 
             </MudStack>
 
         </MudPaper>
+
+        <!-- Personal Information -->
+
+        <MudCard Class="mb-4">
+
+            <MudCardHeader>
+                <MudText Typo="Typo.h6">
+                    Personal Information
+                </MudText>
+            </MudCardHeader>
+
+            <MudCardContent>
+
+                <MudGrid>
+
+                    <MudItem xs="12" md="6">
+                        <MudTextField @bind-Value="_model.FirstName"
+                                      Label="First Name"
+                                      Variant="Variant.Outlined"
+                                      FullWidth="true" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudTextField @bind-Value="_model.LastName"
+                                      Label="Last Name"
+                                      Variant="Variant.Outlined"
+                                      FullWidth="true" />
+                    </MudItem>
+
+                </MudGrid>
+
+            </MudCardContent>
+
+        </MudCard>
+
+        <!-- Contact Information -->
+
+        <MudCard Class="mb-4">
+
+            <MudCardHeader>
+                <MudText Typo="Typo.h6">
+                    Contact Information
+                </MudText>
+            </MudCardHeader>
+
+            <MudCardContent>
+
+                <MudStack Spacing="3">
+
+                    <MudTextField T="string" Value="_email"
+                                  Label="Email"
+                                  Variant="Variant.Outlined"
+                                  ReadOnly="true"
+                                  FullWidth="true" />
+
+                    <MudTextField T="string" @bind-Value="_model.PhoneNumber"
+                                  Label="Phone Number"
+                                  Variant="Variant.Outlined"
+                                  FullWidth="true" />
+
+                    <MudTextField T="string" @bind-Value="_model.Address"
+                                  Label="Address"
+                                  Variant="Variant.Outlined"
+                                  Lines="3"
+                                  FullWidth="true" />
+
+                </MudStack>
+
+            </MudCardContent>
+
+        </MudCard>
+
+        <!-- Security -->
+
+        <MudCard Class="mb-4">
+
+            <MudCardHeader>
+                <MudText Typo="Typo.h6">
+                    Security
+                </MudText>
+            </MudCardHeader>
+
+            <MudCardContent>
+
+                <MudStack Spacing="3">
+
+                    <MudTextField Label="Current Password"
+                                  InputType="InputType.Password"
+                                  Variant="Variant.Outlined"
+                                  @bind-Value="_password.CurrentPassword" />
+
+                    <MudTextField Label="New Password"
+                                  InputType="InputType.Password"
+                                  Variant="Variant.Outlined"
+                                  @bind-Value="_password.NewPassword" />
+
+                    <MudTextField Label="Confirm Password"
+                                  InputType="InputType.Password"
+                                  Variant="Variant.Outlined"
+                                  @bind-Value="_password.ConfirmPassword" />
+
+                    <MudButton Color="Color.Secondary"
+                               Variant="Variant.Filled"
+                               OnClick="ChangePasswordAsync">
+
+                        Change Password
+
+                    </MudButton>
+
+                </MudStack>
+
+            </MudCardContent>
+
+        </MudCard>
+
+        <!-- Actions -->
+
+        <MudStack Row="true"
+                  Justify="Justify.FlexEnd">
+
+            <MudButton Color="Color.Primary"
+                       Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Save"
+                       Disabled="_saving"
+                       OnClick="SaveAsync">
+
+                @if (_saving)
+                {
+                    <MudProgressCircular Size="Size.Small"
+                                         Indeterminate="true"
+                                         Class="me-2" />
+                }
+
+                Save Changes
+
+            </MudButton>
+
+        </MudStack>
     }
 
 </MudContainer>
 
-
 @code {
 
     private bool _loading = true;
-    private string? _message;
     private bool _saving;
+
+    private string _email = string.Empty;
+    private string _role = string.Empty;
+    private ChangePasswordDto _password = new();
+    private string? _profilePictureUrl;
 
     private UpdateProfileDto _model = new();
 
@@ -91,13 +248,17 @@
 
             if (user is not null)
             {
+                _email = user.Email;
+                _role = user.Role;
+                _profilePictureUrl = user.ProfilePictureUrl;
+
                 _model = new UpdateProfileDto
                 {
-                    FirstName = user.FirstName ?? "",
-                    LastName = user.LastName ?? "",
-                    Address = user.Address ?? "",
-                    PhoneNumber = user.PhoneNumber ?? ""
-                };  
+                    FirstName = user.FirstName ?? string.Empty,
+                    LastName = user.LastName ?? string.Empty,
+                    Address = user.Address ?? string.Empty,
+                    PhoneNumber = user.PhoneNumber ?? string.Empty
+                };
             }
         }
         finally
@@ -110,14 +271,101 @@
     {
         _saving = true;
 
-        var success = await UserService.UpdateProfileAsync(_model);
+        try
+        {
+            var success =
+                await UserService.UpdateProfileAsync(_model);
 
-        _saving = false;
+            Snackbar.Add(
+                success
+                    ? "Profile updated successfully"
+                    : "Unable to update profile",
+                success
+                    ? Severity.Success
+                    : Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private string GetInitials()
+    {
+        var first =
+            string.IsNullOrWhiteSpace(_model.FirstName)
+                ? ""
+                : _model.FirstName[..1];
+
+        var last =
+            string.IsNullOrWhiteSpace(_model.LastName)
+                ? ""
+                : _model.LastName[..1];
+
+        var result = $"{first}{last}".ToUpper();
+
+        return string.IsNullOrWhiteSpace(result)
+            ? "U"
+            : result;
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        if (_password.NewPassword != _password.ConfirmPassword)
+        {
+            Snackbar.Add(
+                "Passwords do not match",
+                Severity.Error);
+
+            return;
+        }
+
+        var success =
+            await UserService.ChangePasswordAsync(_password);
 
         Snackbar.Add(
-            success ? "Profil mis à jour ✔" : "Erreur",
-            success ? Severity.Success : Severity.Error);
+            success
+                ? "Password updated successfully"
+                : "Unable to change password",
+            success
+                ? Severity.Success
+                : Severity.Error);
 
-        var user = await UserService.GetByIdAsync(AuthService.GetUserId());
+        if (success)
+        {
+            _password = new();
+        }
+    }
+
+    private async Task UploadPicture(
+    InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        var url =
+            await UserService
+                .UploadProfilePictureAsync(file);
+
+        if (url is null)
+        {
+            Snackbar.Add(
+                "Unable to upload image",
+                Severity.Error);
+
+            return;
+        }
+
+        _profilePictureUrl = url;
+
+        Snackbar.Add(
+            "Profile picture updated",
+            Severity.Success);
+
+        StateHasChanged();
+    }
+
+    private string GetProfileImageUrl()
+    {
+        return $"{ApiSettings.Value.BaseUrl}{_profilePictureUrl}";
     }
 }

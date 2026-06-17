@@ -28,4 +28,7 @@ public class UserDto
 
     [JsonPropertyName("phoneNumber")]
     public string? PhoneNumber { get; set; }
+
+    [JsonPropertyName("profilePictureUrl")]
+    public string? ProfilePictureUrl { get; set; }
 }
