@@ -6,42 +6,117 @@
 @using PersonalHub.Application.Features.FundTypes.Common
 @using PersonalHub.Web.Services
 
-@inject ILogger<FundCreate> Logger
-@inject NavigationManager Navigation
 @inject FundService FundService
 @inject FundTypeService FundTypeService
+@inject NavigationManager Navigation
+@inject ILogger<FundCreate> Logger
 
 <PageTitle>Create Fund</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
 
-    <MudPaper Class="pa-8 rounded-xl">
+    
+    <MudPaper Class="pa-6">
 
-        <MudText Typo="Typo.h4" Class="mb-6">
-            Create Fund
-        </MudText>
+        <!-- HEADER -->
 
-        @if (!string.IsNullOrWhiteSpace(_error))
-        {
-            <MudAlert Severity="Severity.Error" Class="mb-4">
-                @_error
-            </MudAlert>
-        }
+        <MudStack Row="true"
+                  Justify="Justify.SpaceBetween"
+                  AlignItems="AlignItems.Center"
+                  Class="mb-4">
 
-        <MudTextField @bind-Value="_name"
+            <div>
+
+                <MudText Typo="Typo.h4">
+                    Create Fund
+                </MudText>
+
+                <MudText Typo="Typo.body2">
+                    Create a new investment fund
+                </MudText>
+
+            </div>
+
+            <MudChip T="string"
+                     Color="Color.Info"
+                     Variant="Variant.Filled">
+
+                New Fund
+
+            </MudChip>
+
+        </MudStack>
+
+        <!-- PREVIEW -->
+
+        <MudPaper Class="pa-4 mb-4"
+                  Outlined="true">
+
+            <MudText Typo="Typo.subtitle2">
+                Preview
+            </MudText>
+
+            <MudText Typo="Typo.h6"
+                     Class="mt-2">
+
+                @(string.IsNullOrWhiteSpace(_name)
+                    ? "Unnamed Fund"
+                    : _name)
+
+            </MudText>
+
+            @if (!string.IsNullOrWhiteSpace(_legalName))
+            {
+                <MudText Typo="Typo.body2">
+                    @_legalName
+                </MudText>
+            }
+
+            <MudStack Row="true"
+                      Spacing="1"
+                      Class="mt-2">
+
+                @if (!string.IsNullOrWhiteSpace(_baseCurrency))
+                {
+                    <MudChip T="string"
+                             Size="Size.Small">
+
+                        @_baseCurrency
+
+                    </MudChip>
+                }
+
+                <MudChip T="string"
+                         Size="Size.Small"
+                         Color="@(_isActive ? Color.Success : Color.Default)">
+
+                    @(_isActive ? "Active" : "Inactive")
+
+                </MudChip>
+
+            </MudStack>
+
+        </MudPaper>
+
+        <!-- FORM -->
+
+        <MudTextField T="string"
+                      @bind-Value="_name"
                       Label="Fund Name"
                       Variant="Variant.Outlined"
                       FullWidth="true"
                       Required="true"
                       Class="mb-4" />
 
-        <MudTextField @bind-Value="_legalName"
+        <MudTextField T="string"
+                      @bind-Value="_legalName"
                       Label="Legal Name"
                       Variant="Variant.Outlined"
                       FullWidth="true"
                       Class="mb-4" />
 
-        <MudTextField @bind-Value="_fundCode"
+        <MudTextField T="string"
+                      @bind-Value="_fundCode"
                       Label="Fund Code"
                       Variant="Variant.Outlined"
                       FullWidth="true"
@@ -58,23 +133,27 @@
             {
                 <MudSelectItem T="Guid"
                                Value="@fundType.Id">
+
                     @fundType.Name
+
                 </MudSelectItem>
             }
 
         </MudSelect>
 
-        <MudTextField @bind-Value="_domicileCountry"
+        <MudTextField T="string"
+                      @bind-Value="_domicileCountry"
                       Label="Domicile Country"
                       Variant="Variant.Outlined"
                       FullWidth="true"
                       Class="mb-4" />
 
-        <MudTextField @bind-Value="_baseCurrency"
+        <MudTextField T="string"
+                      @bind-Value="_baseCurrency"
                       Label="Base Currency"
+                      Placeholder="EUR"
                       Variant="Variant.Outlined"
                       FullWidth="true"
-                      Placeholder="EUR"
                       Class="mb-4" />
 
         <MudDatePicker Label="Launch Date"
@@ -88,32 +167,52 @@
                    Color="Color.Success"
                    Class="mb-4" />
 
-        <MudTextField @bind-Value="_description"
+        <MudTextField T="string"
+                      @bind-Value="_description"
                       Label="Description"
                       Variant="Variant.Outlined"
+                      Lines="6"
                       FullWidth="true"
-                      Lines="5"
-                      Class="mb-6" />
+                      Class="mb-4" />
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error"
+                      Class="mb-4">
+
+                @_error
+
+            </MudAlert>
+        }
+
+        <MudDivider Class="my-4" />
+
+        <!-- ACTIONS -->
 
         <MudStack Row="true"
                   Justify="Justify.FlexEnd"
                   Spacing="2">
 
             <MudButton Variant="Variant.Outlined"
+                       StartIcon="@Icons.Material.Filled.Close"
                        OnClick="Cancel">
+
                 Cancel
+
             </MudButton>
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
-                       OnClick="HandleCreateFund"
-                       Disabled="_isSubmitting">
+                       StartIcon="@Icons.Material.Filled.AddBusiness"
+                       Disabled="_isSubmitting"
+                       OnClick="HandleCreateFund">
 
                 @if (_isSubmitting)
                 {
                     <MudProgressCircular Size="Size.Small"
                                          Indeterminate="true" />
-                    <span class="ml-2">
+
+                    <span class="ms-2">
                         Creating...
                     </span>
                 }
@@ -129,12 +228,14 @@
         </MudStack>
 
     </MudPaper>
+    
 
 </MudContainer>
 
 @code {
 
-    private string _name = string.Empty;
+
+private string _name = string.Empty;
     private string? _legalName;
     private string? _fundCode;
     private string? _domicileCountry;
@@ -147,7 +248,8 @@
 
     private List<FundTypeDto> _fundTypes = [];
 
-    private string _error = string.Empty;
+    private string? _error;
+
     private bool _isSubmitting;
 
     protected override async Task OnInitializedAsync()
@@ -158,23 +260,22 @@
 
     private async Task HandleCreateFund()
     {
-        _error = string.Empty;
-
-        if (string.IsNullOrWhiteSpace(_name))
-        {
-            _error = "Fund Name is required.";
-            return;
-        }
-
-        if (_fundTypeId == Guid.Empty)
-        {
-            _error = "Please select a Fund Type.";
-            return;
-        }
-
         try
         {
+            _error = null;
             _isSubmitting = true;
+
+            if (string.IsNullOrWhiteSpace(_name))
+            {
+                _error = "Fund name is required.";
+                return;
+            }
+
+            if (_fundTypeId == Guid.Empty)
+            {
+                _error = "Please select a fund type.";
+                return;
+            }
 
             var command = new CreateFundCommand(
                 _name.Trim(),
@@ -193,7 +294,8 @@
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex,
+            Logger.LogError(
+                ex,
                 "Error creating fund");
 
             _error = ex.Message;
@@ -208,4 +310,6 @@
     {
         Navigation.NavigateTo("/funds");
     }
+
+
 }

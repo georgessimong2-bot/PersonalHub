@@ -1,14 +1,16 @@
-@page "/notes/create"
+﻿@page "/users/create"
 @rendermode InteractiveServer
+@attribute [Authorize(Roles = "ADMIN")]
 
+@using Microsoft.AspNetCore.Authorization
 @using MudBlazor
-@using PersonalHub.Web.Services
+@using PersonalHub.Application.Features.Users.CreateUser
 
-@inject NotesService NotesService
+@inject UserService UserService
 @inject NavigationManager Navigation
-@inject ILogger<NoteCreate> Logger
+@inject ILogger<UserCreate> Logger
 
-<PageTitle>Create Note</PageTitle>
+<PageTitle>Create User</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
 
@@ -25,11 +27,11 @@
             <div>
 
                 <MudText Typo="Typo.h4">
-                    Create Note
+                    Create User
                 </MudText>
 
                 <MudText Typo="Typo.body2">
-                    Create a new note
+                    Create a new application user
                 </MudText>
 
             </div>
@@ -38,7 +40,7 @@
                      Color="Color.Info"
                      Variant="Variant.Filled">
 
-                New Note
+                New User
 
             </MudChip>
 
@@ -56,43 +58,63 @@
             <MudText Typo="Typo.h6"
                      Class="mt-2">
 
-                @(string.IsNullOrWhiteSpace(_title)
-                    ? "Untitled Note"
-                    : _title)
+                @(string.IsNullOrWhiteSpace(_model.Email)
+                    ? "user@example.com"
+                    : _model.Email)
 
             </MudText>
 
-            <MudText Typo="Typo.body2"
+            <MudChip T="string"
+                     Color="@GetRoleColor()"
                      Class="mt-2">
 
-                @(string.IsNullOrWhiteSpace(_content)
-                    ? "No content yet..."
-                    : (_content.Length > 200
-                        ? _content[..200] + "..."
-                        : _content))
+                @(_model.Role ?? "USER")
 
-            </MudText>
+            </MudChip>
 
         </MudPaper>
 
         <!-- FORM -->
 
         <MudTextField T="string"
-                      @bind-Value="_title"
-                      Label="Title"
+                      @bind-Value="_model.Email"
+                      Label="Email"
                       Variant="Variant.Outlined"
                       FullWidth="true"
                       Required="true"
                       Class="mb-4" />
 
         <MudTextField T="string"
-                      @bind-Value="_content"
-                      Label="Content"
+                      @bind-Value="_model.Password"
+                      Label="Password"
                       Variant="Variant.Outlined"
-                      Lines="10"
+                      InputType="InputType.Password"
                       FullWidth="true"
                       Required="true"
                       Class="mb-4" />
+
+        <MudSelect T="string"
+                   Label="Role"
+                   Variant="Variant.Outlined"
+                   FullWidth="true"
+                   @bind-Value="_model.Role"
+                   Class="mb-4">
+
+            <MudSelectItem T="string"
+                           Value="@("USER")">
+
+                User
+
+            </MudSelectItem>
+
+            <MudSelectItem T="string"
+                           Value="@("ADMIN")">
+
+                Administrator
+
+            </MudSelectItem>
+
+        </MudSelect>
 
         @if (!string.IsNullOrWhiteSpace(_error))
         {
@@ -122,9 +144,9 @@
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.NoteAdd"
+                       StartIcon="@Icons.Material.Filled.PersonAdd"
                        Disabled="_isSubmitting"
-                       OnClick="HandleCreateNote">
+                       OnClick="Save">
 
                 @if (_isSubmitting)
                 {
@@ -138,7 +160,7 @@
                 else
                 {
                     <span>
-                        Create Note
+                        Create User
                     </span>
                 }
 
@@ -154,51 +176,50 @@
 @code {
 
 
-private string _title = string.Empty;
-
-    private string _content = string.Empty;
-
-    private string? _error;
+private CreateUserCommand _model = new()
+{
+    Role = "USER"
+};
 
     private bool _isSubmitting;
 
-    private async Task HandleCreateNote()
+    private string? _error;
+
+    private async Task Save()
     {
         try
         {
-            _error = null;
             _isSubmitting = true;
+            _error = null;
 
-            if (string.IsNullOrWhiteSpace(_title))
+            if (string.IsNullOrWhiteSpace(_model.Email))
             {
-                _error = "Title is required.";
+                _error = "Email is required.";
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(_content))
+            if (string.IsNullOrWhiteSpace(_model.Password))
             {
-                _error = "Content is required.";
+                _error = "Password is required.";
                 return;
             }
 
             var success =
-                await NotesService.CreateAsync(
-                    _title.Trim(),
-                    _content.Trim());
+                await UserService.CreateAsync(_model);
 
             if (!success)
             {
-                _error = "Failed to create note.";
+                _error = "Failed to create user.";
                 return;
             }
 
-            Navigation.NavigateTo("/notes");
+            Navigation.NavigateTo("/users");
         }
         catch (Exception ex)
         {
             Logger.LogError(
                 ex,
-                "Error creating note");
+                "Error creating user");
 
             _error = ex.Message;
         }
@@ -208,9 +229,16 @@ private string _title = string.Empty;
         }
     }
 
+    private Color GetRoleColor()
+    {
+        return _model.Role == "ADMIN"
+            ? Color.Error
+            : Color.Success;
+    }
+
     private void Cancel()
     {
-        Navigation.NavigateTo("/notes");
+        Navigation.NavigateTo("/users");
     }
 
 

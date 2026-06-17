@@ -12,111 +12,274 @@
 
 <PageTitle>Edit Goal</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8 mb-8">
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
 
+    
     @if (_isLoading)
     {
-        <MudPaper Class="pa-8 text-center rounded-xl">
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
-            <MudText Class="mt-4">Loading goal...</MudText>
+        <MudPaper Class="pa-8 text-center">
+
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary" />
+
+            <MudText Class="mt-4">
+                Loading goal...
+            </MudText>
+
         </MudPaper>
     }
     else if (_goal is null)
     {
-        <MudPaper Class="pa-8 text-center rounded-xl">
+        <MudPaper Class="pa-8 text-center">
 
             <MudIcon Icon="@Icons.Material.Filled.ErrorOutline"
-                     Style="font-size:64px;width:64px;height:64px;"
+                     Size="Size.Large"
                      Color="Color.Error" />
 
-            <MudText Typo="Typo.h5" Class="mt-4">
+            <MudText Typo="Typo.h5"
+                     Class="mt-4">
+
                 Goal Not Found
+
             </MudText>
 
             <MudText Class="mt-2 mb-6">
-                The goal you're looking for doesn't exist.
+                The requested goal could not be found.
             </MudText>
 
-            <MudButton Href="/goals"
-                       Variant="Variant.Filled"
-                       Color="Color.Primary">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Href="/goals">
+
                 Back to Goals
+
             </MudButton>
 
         </MudPaper>
     }
     else
     {
-        <MudPaper Class="pa-6 rounded-xl" Elevation="2">
+        <MudPaper Class="pa-6">
+
+            <!-- HEADER -->
 
             <MudStack Row="true"
                       Justify="Justify.SpaceBetween"
                       AlignItems="AlignItems.Center"
-                      Class="mb-6">
+                      Class="mb-4">
 
                 <div>
-                    <MudText Typo="Typo.h4">Edit Goal</MudText>
-                    <MudText Typo="Typo.body2" Class="mt-2">
-                        Update your goal
+
+                    <MudText Typo="Typo.h4">
+                        Edit Goal
                     </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        Update your goal information
+                    </MudText>
+
                 </div>
+
+                <MudChip T="string"
+                         Color="@GetStatusColor()"
+                         Variant="Variant.Filled">
+
+                    @GetStatus()
+
+                </MudChip>
 
             </MudStack>
 
-            <MudTextField T="string" @bind-Value="_title"
+            <!-- PROGRESS -->
+
+            <MudPaper Class="pa-4 mb-4"
+                      Outlined="true">
+
+                <MudText Typo="Typo.subtitle2">
+                    Current Progress
+                </MudText>
+
+                <MudProgressLinear Value="@GetProgress()"
+                                   Color="Color.Primary"
+                                   Rounded="true"
+                                   Class="mt-2 mb-2" />
+
+                <MudText>
+
+                    @_currentValue /
+                    @_targetValue
+
+                    (@GetProgress().ToString("0.0")%)
+
+                </MudText>
+
+            </MudPaper>
+
+            <!-- KPI -->
+
+            <MudGrid Class="mb-4">
+
+                <MudItem xs="12" md="4">
+
+                    <MudPaper Class="pa-3">
+
+                        <MudText Typo="Typo.caption">
+                            Status
+                        </MudText>
+
+                        <div class="mt-2">
+
+                            <MudChip T="string"
+                                     Color="@GetStatusColor()">
+
+                                @GetStatus()
+
+                            </MudChip>
+
+                        </div>
+
+                    </MudPaper>
+
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+
+                    <MudPaper Class="pa-3">
+
+                        <MudText Typo="Typo.caption">
+                            Remaining
+                        </MudText>
+
+                        <MudText Typo="Typo.h6">
+
+                            @(Math.Max(
+                                0,
+                                _targetValue -
+                                _currentValue))
+
+                        </MudText>
+
+                    </MudPaper>
+
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+
+                    <MudPaper Class="pa-3">
+
+                        <MudText Typo="Typo.caption">
+                            Deadline
+                        </MudText>
+
+                        <MudText Typo="Typo.h6">
+
+                            @(_deadline?.ToString("yyyy-MM-dd")
+                                ?? "-")
+
+                        </MudText>
+
+                    </MudPaper>
+
+                </MudItem>
+
+            </MudGrid>
+
+            <!-- FORM -->
+
+            <MudTextField T="string"
+                          @bind-Value="_title"
                           Label="Title"
                           Variant="Variant.Outlined"
                           FullWidth="true"
+                          Required="true"
                           Class="mb-4" />
 
-            <MudTextField T="string" @bind-Value="_description"
+            <MudTextField T="string"
+                          @bind-Value="_description"
                           Label="Description"
                           Variant="Variant.Outlined"
-                          Lines="4"
+                          Lines="5"
                           FullWidth="true"
                           Class="mb-4" />
 
-            <MudNumericField T="decimal"
-                             @bind-Value="_targetValue"
-                             Label="Target Value"
-                             Variant="Variant.Outlined"
-                             Class="mb-4" />
+            <MudGrid>
 
-            <MudNumericField T="decimal"
-                             @bind-Value="_currentValue"
-                             Label="Current Value"
-                             Variant="Variant.Outlined"
-                             Class="mb-4" />
+                <MudItem xs="12" md="4">
 
-            <MudDatePicker @bind-Date="_deadline"
-                           Label="Deadline"
-                           Class="mb-4" />
+                    <MudNumericField T="decimal"
+                                     @bind-Value="_targetValue"
+                                     Label="Target Value"
+                                     Variant="Variant.Outlined"
+                                     FullWidth="true" />
+
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+
+                    <MudNumericField T="decimal"
+                                     @bind-Value="_currentValue"
+                                     Label="Current Value"
+                                     Variant="Variant.Outlined"
+                                     FullWidth="true" />
+
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+
+                    <MudDatePicker @bind-Date="_deadline"
+                                   Label="Deadline"
+                                   Variant="Variant.Outlined" />
+
+                </MudItem>
+
+            </MudGrid>
 
             @if (!string.IsNullOrWhiteSpace(_error))
             {
-                <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+                <MudAlert Severity="Severity.Error"
+                          Class="mt-4">
+
+                    @_error
+
+                </MudAlert>
             }
 
-            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+            <MudDivider Class="my-4" />
+
+            <!-- ACTIONS -->
+
+            <MudStack Row="true"
+                      Justify="Justify.FlexEnd"
+                      Spacing="2">
 
                 <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.Close"
                            OnClick="Cancel">
+
                     Cancel
+
                 </MudButton>
 
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
                            Disabled="_isSubmitting"
                            OnClick="HandleUpdateGoal">
 
                     @if (_isSubmitting)
                     {
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                        <span class="ml-2">Saving...</span>
+                        <MudProgressCircular Size="Size.Small"
+                                             Indeterminate="true" />
+
+                        <span class="ms-2">
+                            Saving...
+                        </span>
                     }
                     else
                     {
-                        <span>Save Changes</span>
+                        <span>
+                            Save Changes
+                        </span>
                     }
 
                 </MudButton>
@@ -125,25 +288,30 @@
 
         </MudPaper>
     }
+    
 
 </MudContainer>
 
 @code {
 
-    [Parameter] public Guid Id { get; set; }
+
+[Parameter]
+    public Guid Id { get; set; }
 
     private GoalDto? _goal;
-    private string _title = "";
+
+    private string _title = string.Empty;
     private string? _description;
+
     private decimal _targetValue;
     private decimal _currentValue;
+
     private DateTime? _deadline;
 
     private bool _isLoading = true;
     private bool _isSubmitting;
+
     private string? _error;
-
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -167,7 +335,10 @@
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error loading goal {Id}", Id);
+            Logger.LogError(ex,
+                "Error loading goal {GoalId}",
+                Id);
+
             _error = "Failed to load goal.";
         }
         finally
@@ -185,31 +356,38 @@
 
             if (string.IsNullOrWhiteSpace(_title))
             {
-                _error = "Title is required";
+                _error = "Title is required.";
                 return;
             }
 
-            var cmd = new UpdateGoalCommand(
+            var command = new UpdateGoalCommand(
                 Id,
                 _title.Trim(),
-                _description ?? "",
+                _description ?? string.Empty,
                 _targetValue,
                 _currentValue,
                 _deadline);
 
-            var success = await GoalService.UpdateGoalAsync(Id, cmd);
+            var success =
+                await GoalService.UpdateGoalAsync(
+                    Id,
+                    command);
 
             if (!success)
             {
-                _error = "Failed to update goal";
+                _error = "Failed to update goal.";
                 return;
             }
 
-            Navigation.NavigateTo("/goals");
+            Navigation.NavigateTo(
+                $"/goals/details/{Id}");
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error updating goal {Id}", Id);
+            Logger.LogError(ex,
+                "Error updating goal {GoalId}",
+                Id);
+
             _error = ex.Message;
         }
         finally
@@ -218,8 +396,43 @@
         }
     }
 
+    private double GetProgress()
+    {
+        if (_targetValue <= 0)
+            return 0;
+
+        return (double)
+            (_currentValue / _targetValue * 100);
+    }
+
+    private string GetStatus()
+    {
+        if (_targetValue > 0 &&
+            _currentValue >= _targetValue)
+            return "Completed";
+
+        if (_deadline.HasValue &&
+            _deadline.Value.Date < DateTime.Today)
+            return "Expired";
+
+        return "Active";
+    }
+
+    private Color GetStatusColor()
+    {
+        return GetStatus() switch
+        {
+            "Completed" => Color.Success,
+            "Expired" => Color.Error,
+            _ => Color.Info
+        };
+    }
+
     private void Cancel()
     {
-        Navigation.NavigateTo("/goals");
+        Navigation.NavigateTo(
+            $"/goals/details/{Id}");
     }
+
+
 }

@@ -1,0 +1,196 @@
+﻿@page "/notes/details/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Notes.Common
+@using PersonalHub.Web.Services
+
+@inject NotesService NotesService
+@inject NavigationManager Navigation
+@inject ILogger<NoteDetails> Logger
+
+<PageTitle>Note Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+    
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary" />
+
+            <MudText Class="mt-4">
+                Loading note...
+            </MudText>
+
+        </MudPaper>
+    }
+    else if (_note is null)
+    {
+        <MudPaper Class="pa-8 text-center">
+
+            <MudText Typo="Typo.h5">
+                Note not found
+            </MudText>
+
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-6">
+
+            <!-- HEADER -->
+
+            <MudText Typo="Typo.h4">
+                @_note.Title
+            </MudText>
+
+            <MudDivider Class="my-4" />
+
+            <!-- DATES -->
+
+            <MudGrid>
+
+                <MudItem xs="12" md="6">
+
+                    <MudPaper Class="pa-4">
+
+                        <MudText Typo="Typo.caption">
+                            Created
+                        </MudText>
+
+                        <MudChip T="string"
+                                 Color="Color.Success"
+                                 Variant="Variant.Outlined"
+                                 Class="mt-2">
+
+                            @_note.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+
+                        </MudChip>
+
+                    </MudPaper>
+
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+
+                    <MudPaper Class="pa-4">
+
+                        <MudText Typo="Typo.caption">
+                            Updated
+                        </MudText>
+
+                        <MudChip T="string"
+                                 Color="Color.Info"
+                                 Variant="Variant.Outlined"
+                                 Class="mt-2">
+
+                            @(_note.UpdatedAt?.ToString("yyyy-MM-dd HH:mm")
+                                ?? "Never")
+
+                        </MudChip>
+
+                    </MudPaper>
+
+                </MudItem>
+
+            </MudGrid>
+
+            <!-- CONTENT -->
+
+            <MudPaper Class="pa-4 mt-4"
+                      Outlined="true">
+
+                <MudText Typo="Typo.h6">
+                    Content
+                </MudText>
+
+                <MudDivider Class="my-3" />
+
+                <MudText Style="white-space: pre-wrap;">
+
+                    @(!string.IsNullOrWhiteSpace(_note.Content)
+                        ? _note.Content
+                        : "No content available.")
+
+                </MudText>
+
+            </MudPaper>
+
+            <MudDivider Class="my-4" />
+
+            <!-- ACTIONS -->
+
+            <MudStack Row="true"
+                      Justify="Justify.FlexEnd"
+                      Spacing="2">
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Edit"
+                           Href="@($"/notes/edit/{Id}")">
+
+                    Edit
+
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.ArrowBack"
+                           OnClick="Back">
+
+                    Back
+
+                </MudButton>
+
+            </MudStack>
+
+        </MudPaper>
+    }
+    
+
+</MudContainer>
+
+@code {
+
+
+[Parameter]
+    public Guid Id { get; set; }
+
+    private NoteDto? _note;
+
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNote();
+    }
+
+    private async Task LoadNote()
+    {
+        try
+        {
+            _note =
+                await NotesService.GetNoteByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(
+                ex,
+                "Error loading note {NoteId}",
+                Id);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void Back()
+    {
+        Navigation.NavigateTo("/notes");
+    }
+
+
+}

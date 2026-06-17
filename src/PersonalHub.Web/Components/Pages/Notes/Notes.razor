@@ -2,295 +2,252 @@
 @rendermode InteractiveServer
 
 @using MudBlazor
-@using Microsoft.Extensions.Options
-@using PersonalHub.Application.Features.Notes.GetNotes
-@using PersonalHub.Application.Features.Notes.Common
-@using PersonalHub.Web.Configuration
-@using PersonalHub.Web.Services
 @using OfficeOpenXml
-@using PersonalHub.Web.Services.Auth
+@using PersonalHub.Application.Features.Notes.Common
 
-
-@inject HttpClient Http
-@inject IOptions<ApiSettings> ApiSettings
-@inject ILogger<Notes> Logger
-@inject NavigationManager Navigation
-@inject IJSRuntime JSRuntime
 @inject NotesService NotesService
-@inject PersonalHub.Web.Services.Auth.AuthService AuthService
+@inject ILogger<Notes> Logger
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Notes</PageTitle>
 
 <ConfirmDialog @ref="_confirmDialog"
-               Title="Supprimer la note"
-               Message="Êtes-vous sûr de vouloir supprimer cette note ? Cette action ne peut pas être annulée."
-               ConfirmButtonText="Supprimer"
+               Title="Delete Note"
+               Message="Are you sure you want to delete this note? This action cannot be undone."
+               ConfirmButtonText="Delete"
                IsVisible="_showConfirmDialog"
                OnConfirm="ConfirmDelete"
                OnCancel="CancelDelete" />
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
-   @if (_isLoading)
+    @if (_isLoading)
     {
-        <MudPaper Class="pa-8 text-center rounded-xl">
-            <MudProgressCircular Color="Color.Primary"
-                                 Indeterminate="true"
-                                 Size="Size.Large" />
+        <MudPaper Class="pa-8 text-center">
+
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary" />
 
             <MudText Class="mt-4">
-                Chargement des notes...
-            </MudText>
-        </MudPaper>
-    }
-    else if (_filteredNotes.Count == 0 && _notes.Count == 0)
-    {
-        <MudPaper Class="pa-10 text-center rounded-xl">
-            <MudIcon Icon="@Icons.Material.Filled.StickyNote2"
-                     Style="font-size: 64px; width:64px; height:64px;"
-                     Color="Color.Primary" />
-
-            <MudText Typo="Typo.h5" Class="mt-4">
-                Aucune note
+                Loading notes...
             </MudText>
 
-            <MudText Class="mt-2 mb-6">
-                Créez votre première note pour commencer.
-            </MudText>
-
-            <a href="/notes/create" style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
-                + Créer une note
-            </a>
         </MudPaper>
     }
     else
     {
-        <div style="border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
-            <!-- Header Section -->
-            <div style="background-color: #f8f9fa; padding: 1.5rem; border-bottom: 2px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+        <MudPaper Class="pa-4">
+
+            <MudStack Row="true"
+                      Justify="Justify.SpaceBetween"
+                      AlignItems="AlignItems.Center"
+                      Class="mb-4">
+
                 <div>
-                    <h2 style="margin: 0; font-size: 1.5rem; font-weight: bold; color: #333;">
-                        Notes personnelles
-                    </h2>
-                    <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
-                        @_filteredNotes.Count note(s) - Organisez vos pensées, idées et tâches.
-                    </p>
-                </div>
-                <div style="display: flex; gap: 0.75rem;">
-                    <button type="button" @onclick="ExportToExcel" style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #28a745; color: white; border: none; text-decoration: none; border-radius: 4px; font-weight: bold; cursor: pointer; white-space: nowrap;">
-                        📊 Exporter en Excel
-                    </button>
-                    <a href="/notes/create" style="display: inline-block; padding: 0.75rem 1.5rem; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; cursor: pointer; white-space: nowrap;">
-                        + Créer une note
-                    </a>
-                </div>
-            </div>
 
-            <!-- Search, Sort & Pagination Controls -->
-            <div style="background-color: #fff; padding: 1.5rem; border-bottom: 1px solid #ddd;">
-                <!-- Search Bar -->
-                <div style="margin-bottom: 1rem;">
-                    <input type="text"
-                           placeholder="Rechercher par titre ou contenu..."
-                           @bind="_searchTerm"
-                           @bind:event="oninput"
-                           @onchange="OnSearchChanged"
-                           style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;" />
+                    <MudText Typo="Typo.h4">
+                        Notes
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        @_filteredNotes.Count note(s)
+                    </MudText>
+
                 </div>
 
-                <!-- Date Filter -->
-                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; align-items: center;">
-                    <div style="flex: 1;">
-                        <label style="display: block; margin-bottom: 0.25rem; font-size: 0.9rem; color: #666;">De :</label>
-                        <input type="date"
-                               value="@(_searchDateFrom?.ToString("yyyy-MM-dd") ?? "")"
-                               @onchange="OnDateFromChanged"
-                               style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;" />
-                    </div>
-                    <div style="flex: 1;">
-                        <label style="display: block; margin-bottom: 0.25rem; font-size: 0.9rem; color: #666;">À :</label>
-                        <input type="date"
-                               value="@(_searchDateTo?.ToString("yyyy-MM-dd") ?? "")"
-                               @onchange="OnDateToChanged"
-                               style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;" />
-                    </div>
-                    @if (_searchDateFrom.HasValue || _searchDateTo.HasValue)
-                    {
-                        <button type="button" @onclick="ClearDateFilter" style="padding: 0.5rem 1rem; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; align-self: flex-end;">
-                            Effacer les dates
-                        </button>
-                    }
-                </div>
+                <MudStack Row="true" Spacing="2">
 
-                <!-- Pagination Info -->
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; color: #666;">
-                    <span>Page @_currentPage de @_totalPages</span>
-                    <div>
-                        <label style="margin-right: 0.5rem;">Notes par page :</label>
-                        <select @onchange="OnPageSizeChanged"
-                                style="padding: 0.25rem; border: 1px solid #ddd; border-radius: 4px;">
-                            <option value="5">5</option>
-                            <option value="10" selected>10</option>
-                            <option value="20">20</option>
-                            <option value="50">50</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+                    <MudButton Variant="Variant.Outlined"
+                               StartIcon="@Icons.Material.Filled.FileDownload"
+                               OnClick="ExportToExcel">
 
-            <!-- Table Section -->
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead style="background-color: #f0f0f0; border-bottom: 2px solid #ddd;">
-                    <tr>
-                        <th @onclick="@(() => ToggleSortBy("Title"))" 
-                            @onmouseover="@((MouseEventArgs e) => _hoverColumn = "Title")" 
-                            @onmouseout="@((MouseEventArgs e) => _hoverColumn = "")"
-                            style="padding: 1rem; text-align: left; font-weight: bold; width: 25%; cursor: pointer; user-select: none; background-color: @(_hoverColumn == "Title" ? "#e8e8e8" : "transparent"); transition: background-color 0.2s;">
-                            Titre @GetSortIndicator("Title")
-                        </th>
-                        <th @onclick="@(() => ToggleSortBy("Content"))" 
-                            @onmouseover="@((MouseEventArgs e) => _hoverColumn = "Content")" 
-                            @onmouseout="@((MouseEventArgs e) => _hoverColumn = "")"
-                            style="padding: 1rem; text-align: left; font-weight: bold; width: 40%; cursor: pointer; user-select: none; background-color: @(_hoverColumn == "Content" ? "#e8e8e8" : "transparent"); transition: background-color 0.2s;">
-                            Contenu @GetSortIndicator("Content")
-                        </th>
-                        <th @onclick="@(() => ToggleSortBy("CreatedAt"))" 
-                            @onmouseover="@((MouseEventArgs e) => _hoverColumn = "CreatedAt")" 
-                            @onmouseout="@((MouseEventArgs e) => _hoverColumn = "")"
-                            style="padding: 1rem; text-align: left; font-weight: bold; width: 20%; cursor: pointer; user-select: none; background-color: @(_hoverColumn == "CreatedAt" ? "#e8e8e8" : "transparent"); transition: background-color 0.2s;">
-                            Créée le @GetSortIndicator("CreatedAt")
-                        </th>
-                        <th style="padding: 1rem; text-align: center; font-weight: bold; width: 15%;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var note in _paginatedNotes)
-                    {
-                        <tr style="border-bottom: 1px solid #ddd; hover: background-color: #f9f9f9;">
-                            <td style="padding: 1rem; vertical-align: top; font-weight: 500;">
-                                @note.Title
-                            </td>
-                            <td style="padding: 1rem; vertical-align: top; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #666;">
-                                @note.Content
-                            </td>
-                            <td style="padding: 1rem; vertical-align: top; font-size: 0.9rem; color: #666;">
-                                @note.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                            </td>
-                            <td style="padding: 1rem; text-align: center; vertical-align: top; display: flex; justify-content: center; gap: 0.5rem;">
-                                <a href="/notes/edit/@note.Id" style="cursor: pointer; font-size: 1.2rem; opacity: 0.7; transition: opacity 0.2s;" title="Éditer">
-                                    ✏️
-                                </a>
-                                <button type="button" @onclick="@(async () => await ShowDeleteConfirm(note.Id))" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; opacity: 0.7; transition: opacity 0.2s; padding: 0;" title="Supprimer">
-                                    🗑️
-                                </button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                        Export Excel
 
-            <!-- Pagination Controls -->
-            <div style="background-color: #f8f9fa; padding: 1.5rem; border-top: 1px solid #ddd; display: flex; justify-content: center; gap: 0.5rem; align-items: center;">
-                <button @onclick="PreviousPage" disabled="@(_currentPage == 1)" style="padding: 0.5rem 1rem; background-color: @(_currentPage == 1 ? "#e0e0e0" : "#007bff"); color: white; border: none; border-radius: 4px; cursor: @(_currentPage == 1 ? "not-allowed" : "pointer");">
-                    ← Précédent
-                </button>
+                    </MudButton>
 
-                @for (int i = 1; i <= _totalPages && i <= 5; i++)
-                {
-                    int page = i;
-                    <button @onclick="@(() => GoToPage(page))"
-                            style="padding: 0.5rem 0.75rem; background-color: @(_currentPage == page ? "#007bff" : "#f0f0f0"); color: @(_currentPage == page ? "white" : "black"); border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-weight: @(_currentPage == page ? "bold" : "normal");">
-                        @i
-                    </button>
-                }
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Href="/notes/create"
+                               StartIcon="@Icons.Material.Filled.Add">
 
-                @if (_totalPages > 5)
-                {
-                    <span style="color: #999;">...</span>
-                }
+                        Create Note
 
-                <button @onclick="NextPage" disabled="@(_currentPage >= _totalPages)" style="padding: 0.5rem 1rem; background-color: @(_currentPage >= _totalPages ? "#e0e0e0" : "#007bff"); color: white; border: none; border-radius: 4px; cursor: @(_currentPage >= _totalPages ? "not-allowed" : "pointer");">
-                    Suivant →
-                </button>
-            </div>
-        </div>
+                    </MudButton>
+
+                </MudStack>
+
+            </MudStack>
+
+            <MudGrid Class="mb-4">
+
+                <MudItem xs="12" md="6">
+
+                    <MudTextField T="string"
+                                  @bind-Value="SearchTerm"
+                                  Label="Search"
+                                  Variant="Variant.Outlined"
+                                  Immediate="true"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search" />
+
+                </MudItem>
+
+                <MudItem xs="12" md="3">
+
+                    <MudDatePicker Label="From"
+                                   Date="_searchDateFrom"
+                                   DateChanged="DateFromChanged" />
+
+                </MudItem>
+
+                <MudItem xs="12" md="3">
+
+                    <MudDatePicker Label="To"
+                                   Date="_searchDateTo"
+                                   DateChanged="DateToChanged" />                   
+
+                </MudItem>
+
+                <MudItem xs="12">
+
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Secondary"
+                               StartIcon="@Icons.Material.Filled.Clear"
+                               OnClick="ClearFilters">
+
+                        Clear Filters
+
+                    </MudButton>
+
+                </MudItem>
+
+
+                
+
+            </MudGrid>
+
+            <MudTable Items="_filteredNotes"
+                      Hover="true"
+                      Dense="true"
+                      Striped="true"
+                      Bordered="true"
+                      Elevation="0">
+
+                <HeaderContent>
+
+                    <MudTh>Title</MudTh>
+                    <MudTh>Content</MudTh>
+                    <MudTh>Created</MudTh>
+                    <MudTh>Updated</MudTh>
+                    <MudTh>Actions</MudTh>
+
+                </HeaderContent>
+
+                <RowTemplate>
+
+                    <MudTd DataLabel="Title">
+                        @context.Title
+                    </MudTd>
+
+                    <MudTd DataLabel="Content">
+
+                        <MudTooltip Text="@context.Content">
+
+                            @(string.IsNullOrWhiteSpace(context.Content)
+                                ? "-"
+                                : context.Content.Length > 100
+                                    ? context.Content[..100] + "..."
+                                    : context.Content)
+
+                        </MudTooltip>
+
+                    </MudTd>
+
+                    <MudTd DataLabel="Created">
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Variant="Variant.Outlined">
+
+                            @context.CreatedAt.ToString("yyyy-MM-dd")
+
+                        </MudChip>
+                    </MudTd>
+
+                    <MudTd DataLabel="Updated">
+
+                        @if (context.UpdatedAt.HasValue)
+                        {
+                            <MudChip T="string"
+                                     Size="Size.Small"
+                                     Variant="Variant.Outlined">
+
+                                @context.UpdatedAt.Value.ToString("yyyy-MM-dd")
+
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudText>-</MudText>
+                        }
+
+                    </MudTd>
+
+                    <MudTd DataLabel="Actions">
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Primary"
+                                       Href="@($"/notes/edit/{context.Id}")" />
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                       Color="Color.Info"
+                                       Href="@($"/notes/details/{context.Id}")" />
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => ShowDeleteConfirm(context.Id))" />
+
+                    </MudTd>
+
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+
+            </MudTable>
+
+        </MudPaper>
     }
 
 </MudContainer>
-
 @code {
-
     private ConfirmDialog? _confirmDialog;
 
-    private bool _showConfirmDialog = false;
+    private bool _showConfirmDialog;
 
-    private Guid _noteToDelete = Guid.Empty;
-
-    private List<NoteDto> _notes = [];
-
-    private List<NoteDto> _filteredNotes = [];
-
-    private List<NoteDto> _paginatedNotes = [];
+    private Guid _noteToDelete;
 
     private bool _isLoading = true;
+
+    private List<NoteDto> _notes = [];
+    private List<NoteDto> _filteredNotes = [];
 
     private string _searchTerm = string.Empty;
 
     private DateTime? _searchDateFrom;
-
     private DateTime? _searchDateTo;
-
-    private string _sortBy = "CreatedAt";
-
-    private bool _sortAscending = false;
-
-    private int _currentPage = 1;
-
-    private int _pageSize = 10;
-
-    private int _totalPages = 1;
-
-    private string _hoverColumn = "";
-
-    private bool _isAuthenticated = false;
-
-    private bool _initialized = false;
-
-    private string ApiUrl =>
-        ApiSettings.Value.BaseUrl;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadNotes();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && !_initialized)
-        {
-            _initialized = true;
-            _isAuthenticated = AuthService.IsAuthenticated();
-            StateHasChanged();
-        }
-    }
-
     private async Task LoadNotes()
     {
-        _isLoading = true;
-
         try
         {
-            Logger.LogInformation("Chargement des notes depuis l'API");
-
             _notes = await NotesService.GetNotesAsync() ?? [];
-
-            Logger.LogInformation("Chargé {Count} notes", _notes.Count);
-
-            ApplyFiltersAndSort();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Erreur lors du chargement des notes");
+            ApplyFilters();
         }
         finally
         {
@@ -298,168 +255,57 @@
         }
     }
 
-    private void ApplyFiltersAndSort()
-    {
-        // Appliquer recherche par texte
-        _filteredNotes = string.IsNullOrEmpty(_searchTerm)
-            ? new List<NoteDto>(_notes)
-            : _notes.Where(n =>
-                n.Title.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                n.Content.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
-                .ToList();
 
-        // Appliquer filtrage par date
+
+    private void DateFromChanged(DateTime? value)
+    {
+        _searchDateFrom = value;
+        ApplyFilters();
+    }
+
+    private void DateToChanged(DateTime? value)
+    {
+        _searchDateTo = value;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        _filteredNotes = _notes;
+
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _filteredNotes = _filteredNotes
+                .Where(x =>
+                    x.Title.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+                    ||
+                    x.Content.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
         if (_searchDateFrom.HasValue)
         {
             _filteredNotes = _filteredNotes
-                .Where(n => n.CreatedAt.Date >= _searchDateFrom.Value.Date)
+                .Where(x => x.CreatedAt.Date >= _searchDateFrom.Value.Date)
                 .ToList();
         }
 
         if (_searchDateTo.HasValue)
         {
             _filteredNotes = _filteredNotes
-                .Where(n => n.CreatedAt.Date <= _searchDateTo.Value.Date)
+                .Where(x => x.CreatedAt.Date <= _searchDateTo.Value.Date)
                 .ToList();
         }
 
-        // Appliquer tri basé sur la colonne et la direction
-        _filteredNotes = (_sortBy, _sortAscending) switch
-        {
-            ("Title", true) => _filteredNotes.OrderBy(n => n.Title).ToList(),
-            ("Title", false) => _filteredNotes.OrderByDescending(n => n.Title).ToList(),
-            ("Content", true) => _filteredNotes.OrderBy(n => n.Content).ToList(),
-            ("Content", false) => _filteredNotes.OrderByDescending(n => n.Content).ToList(),
-            ("CreatedAt", true) => _filteredNotes.OrderBy(n => n.CreatedAt).ToList(),
-            ("CreatedAt", false) => _filteredNotes.OrderByDescending(n => n.CreatedAt).ToList(),
-            _ => _filteredNotes.OrderByDescending(n => n.CreatedAt).ToList()
-        };
-
-        // Calculer pagination
-        _totalPages = (int)Math.Ceiling((double)_filteredNotes.Count / _pageSize);
-        if (_currentPage > _totalPages)
-            _currentPage = Math.Max(1, _totalPages);
-
-        // Appliquer pagination
-        _paginatedNotes = _filteredNotes
-            .Skip((_currentPage - 1) * _pageSize)
-            .Take(_pageSize)
+        _filteredNotes = _filteredNotes
+            .OrderByDescending(x => x.CreatedAt)
             .ToList();
-
-        StateHasChanged();
     }
 
-    private void OnSearchChanged(ChangeEventArgs e)
-    {
-        _currentPage = 1; // Réinitialiser à la première page
-        ApplyFiltersAndSort();
-    }
-
-    private void OnDateFromChanged(ChangeEventArgs e)
-    {
-        if (DateTime.TryParse(e.Value?.ToString(), out var date))
-        {
-            _searchDateFrom = date;
-        }
-        else
-        {
-            _searchDateFrom = null;
-        }
-        _currentPage = 1;
-        ApplyFiltersAndSort();
-    }
-
-    private void OnDateToChanged(ChangeEventArgs e)
-    {
-        if (DateTime.TryParse(e.Value?.ToString(), out var date))
-        {
-            _searchDateTo = date;
-        }
-        else
-        {
-            _searchDateTo = null;
-        }
-        _currentPage = 1;
-        ApplyFiltersAndSort();
-    }
-
-    private void ClearDateFilter()
-    {
-        _searchDateFrom = null;
-        _searchDateTo = null;
-        _currentPage = 1;
-        ApplyFiltersAndSort();
-    }
-
-    private string GetSortIndicator(string column)
-    {
-        if (_sortBy != column)
-            return "";
-
-        return _sortAscending ? "↑" : "↓";
-    }
-
-    private void ToggleSortBy(string column)
-    {
-        if (_sortBy == column)
-        {
-            // Inverser la direction si on clique sur la même colonne
-            _sortAscending = !_sortAscending;
-        }
-        else
-        {
-            // Nouvelle colonne, tri descendant par défaut
-            _sortBy = column;
-            _sortAscending = false;
-        }
-
-        _currentPage = 1; // Réinitialiser à la première page
-        ApplyFiltersAndSort();
-    }
-
-    private void OnSortByChanged(ChangeEventArgs e)
-    {
-        _sortBy = e.Value?.ToString() ?? "CreatedAt";
-        _currentPage = 1; // Réinitialiser à la première page
-        ApplyFiltersAndSort();
-    }
-
-    private void OnPageSizeChanged(ChangeEventArgs e)
-    {
-        _pageSize = int.Parse(e.Value?.ToString() ?? "10");
-        _currentPage = 1; // Réinitialiser à la première page
-        ApplyFiltersAndSort();
-    }
-
-    private void PreviousPage()
-    {
-        if (_currentPage > 1)
-        {
-            _currentPage--;
-            ApplyFiltersAndSort();
-        }
-    }
-
-    private void NextPage()
-    {
-        if (_currentPage < _totalPages)
-        {
-            _currentPage++;
-            ApplyFiltersAndSort();
-        }
-    }
-
-    private void GoToPage(int page)
-    {
-        _currentPage = page;
-        ApplyFiltersAndSort();
-    }
-
-    private async Task ShowDeleteConfirm(Guid id)
+    private void ShowDeleteConfirm(Guid id)
     {
         _noteToDelete = id;
         _showConfirmDialog = true;
-        StateHasChanged();
     }
 
     private async Task ConfirmDelete()
@@ -467,100 +313,77 @@
         if (_noteToDelete == Guid.Empty)
             return;
 
-        await Delete(_noteToDelete);
+        var success = await NotesService.DeleteAsync(_noteToDelete);
+
+        if (success)
+        {
+            _notes.RemoveAll(x => x.Id == _noteToDelete);
+            ApplyFilters();
+        }
+
         _noteToDelete = Guid.Empty;
+        _showConfirmDialog = false;
     }
 
-    private async Task CancelDelete()
+    private Task CancelDelete()
     {
         _noteToDelete = Guid.Empty;
-    }
-
-    private async Task Delete(Guid id)
-    {
-        try
-        {
-            Logger.LogInformation("Suppression de la note {Id}", id);
-
-            var success = await NotesService.DeleteAsync(id);
-
-            if (!success)
-            {
-                Logger.LogError("Échec de la suppression de la note {Id}", id);
-                return;
-            }
-
-            _notes.RemoveAll(x => x.Id == id);
-            ApplyFiltersAndSort();
-
-            Logger.LogInformation("Note {Id} supprimée", id);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Erreur lors de la suppression de la note {Id}", id);
-        }
+        return Task.CompletedTask;
     }
 
     private async Task ExportToExcel()
     {
-        try
+        ExcelPackage.License.SetNonCommercialPersonal("Georges Simon");
+
+        using var package = new ExcelPackage();
+
+        var worksheet = package.Workbook.Worksheets.Add("Notes");
+
+        worksheet.Cells[1, 1].Value = "Title";
+        worksheet.Cells[1, 2].Value = "Content";
+        worksheet.Cells[1, 3].Value = "Created";
+        worksheet.Cells[1, 4].Value = "Updated";
+
+        var row = 2;
+
+        foreach (var note in _filteredNotes)
         {
-            // Définir la licence EPPlus
-            ExcelPackage.License.SetNonCommercialPersonal("Georges Simon");
+            worksheet.Cells[row, 1].Value = note.Title;
+            worksheet.Cells[row, 2].Value = note.Content;
+            worksheet.Cells[row, 3].Value = note.CreatedAt.ToString("yyyy-MM-dd HH:mm");
+            worksheet.Cells[row, 4].Value = note.UpdatedAt?.ToString("yyyy-MM-dd HH:mm");
 
-            using (var package = new ExcelPackage())
-            {
-                var worksheet = package.Workbook.Worksheets.Add("Notes");
-
-                // Ajouter les en-têtes
-                worksheet.Cells[1, 1].Value = "Titre";
-                worksheet.Cells[1, 2].Value = "Contenu";
-                worksheet.Cells[1, 3].Value = "Créée le";
-                worksheet.Cells[1, 4].Value = "Modifiée le";
-
-                // Style des en-têtes
-                var headerRow = worksheet.Cells[1, 1, 1, 4];
-                headerRow.Style.Font.Bold = true;
-                headerRow.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                headerRow.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(0, 120, 215));
-                headerRow.Style.Font.Color.SetColor(System.Drawing.Color.White);
-
-                // Ajouter les données
-                int row = 2;
-                foreach (var note in _filteredNotes)
-                {
-                    worksheet.Cells[row, 1].Value = note.Title;
-                    worksheet.Cells[row, 2].Value = note.Content;
-                    worksheet.Cells[row, 3].Value = note.CreatedAt.ToString("dd/MM/yyyy HH:mm");
-                    worksheet.Cells[row, 4].Value = note.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "";
-
-                    row++;
-                }
-
-                // Ajuster la largeur des colonnes
-                worksheet.Column(1).Width = 20;
-                worksheet.Column(2).Width = 40;
-                worksheet.Column(3).Width = 20;
-                worksheet.Column(4).Width = 20;
-
-                // Convertir en bytes
-                var excelBytes = package.GetAsByteArray();
-
-                // Créer un blob et déclencher le téléchargement
-                await using (var stream = new MemoryStream(excelBytes))
-                {
-                    var fileName = $"Notes_{DateTime.Now:yyyy_MM_dd_HHmmss}.xlsx";
-
-                    // Utiliser JS interop pour déclencher le téléchargement
-                    await JSRuntime.InvokeVoidAsync("downloadFile", excelBytes, fileName);
-                }
-
-                Logger.LogInformation("Export Excel généré avec {Count} notes", _filteredNotes.Count);
-            }
+            row++;
         }
-        catch (Exception ex)
+
+        worksheet.Cells.AutoFitColumns();
+
+        var bytes = package.GetAsByteArray();
+
+        await JSRuntime.InvokeVoidAsync(
+            "downloadFile",
+            bytes,
+            "notes.xlsx");
+    }
+
+    private string SearchTerm
+    {
+        get => _searchTerm;
+        set
         {
-            Logger.LogError(ex, "Erreur lors de la génération du fichier Excel");
+            _searchTerm = value;
+            ApplyFilters();
         }
     }
+
+    private void ClearFilters()
+    {
+        _searchTerm = string.Empty;
+        _searchDateFrom = null;
+        _searchDateTo = null;
+
+        ApplyFilters();
+    }
 }
+
+                               

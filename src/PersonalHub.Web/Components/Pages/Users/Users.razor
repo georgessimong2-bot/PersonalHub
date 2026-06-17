@@ -11,124 +11,162 @@
 @inject ILogger<Users> Logger
 @inject IJSRuntime JSRuntime
 
-<PageTitle>Utilisateurs</PageTitle>
+<PageTitle>Users</PageTitle>
 
 <ConfirmDialog @ref="_confirmDialog"
-               Title="Supprimer l'utilisateur"
-               Message="Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action ne peut pas être annulée."
-               ConfirmButtonText="Supprimer"
+               Title="Delete User"
+               Message="Are you sure you want to delete this user? This action cannot be undone."
+               ConfirmButtonText="Delete"
                IsVisible="_showConfirmDialog"
                OnConfirm="ConfirmDelete"
                OnCancel="CancelDelete" />
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
-@if (_isLoading)
-{
-    <MudPaper Class="pa-8 text-center rounded-xl">
-        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
-        <MudText Class="mt-4">Chargement des utilisateurs...</MudText>
-    </MudPaper>
-}
-else
-{
-    <div style="border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true"
+                                 Color="Color.Primary" />
 
-        <!-- HEADER -->
-        <div style="background-color:#f8f9fa;padding:1.5rem;border-bottom:2px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
-            <div>
-                <h2 style="margin:0;font-size:1.5rem;font-weight:bold;">
-                    Gestion des utilisateurs
-                </h2>
+            <MudText Class="mt-4">
+                Loading users...
+            </MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-4">
 
-                <p style="margin:0.5rem 0 0 0;color:#666;">
-                    @_filteredUsers.Count utilisateur(s)
-                </p>
-            </div>
+            <MudStack Row="true"
+                      Justify="Justify.SpaceBetween"
+                      AlignItems="AlignItems.Center"
+                      Class="mb-4">
 
-            <div style="display:flex;gap:0.75rem;">
-                <button @onclick="ExportToExcel"
-                        style="padding:0.75rem 1.5rem;background:#28a745;color:white;border:none;border-radius:4px;">
-                    📊 Export Excel
-                </button>
+                <div>
 
-                <a href="/users/create"
-                   style="padding:0.75rem 1.5rem;background:#007bff;color:white;border-radius:4px;text-decoration:none;">
-                    + Créer
-                </a>
-            </div>
-        </div>
+                    <MudText Typo="Typo.h4">
+                        User Management
+                    </MudText>
 
-        <!-- SEARCH -->
-        <div style="padding:1.5rem;border-bottom:1px solid #ddd;">
-            <input type="text"
-                   placeholder="Rechercher..."
-                   @bind="Search"
-                   @bind:event="oninput"
-                   style="width:100%;padding:0.75rem;border:1px solid #ddd;border-radius:4px;" />
-        </div>
+                    <MudText Typo="Typo.body2">
+                        @_filteredUsers.Count user(s)
+                    </MudText>
 
-        <!-- TABLE -->
-        <table style="width:100%;border-collapse:collapse;">
-                <thead style="background:#f0f0f0;">
-                    <tr>
-                        <th style="padding:1rem;text-align:left;">Email</th>
-                        <th style="padding:1rem;text-align:left;">Rôle</th>
-                        <th style="padding:1rem;text-align:left;">Id</th>
-                        <th style="padding:1rem;text-align:center;">Actions</th>
-                    </tr>
-                </thead>
+                </div>
 
-                <tbody>
-                    @foreach (var user in _paginatedUsers)
-                    {
-                        <tr style="border-bottom:1px solid #ddd;">
-                            <td style="padding:1rem;">@user.Email</td>
+                <MudStack Row="true" Spacing="2">
 
-                            <td style="padding:1rem;">
-                                @if (user.Role == "ADMIN")
-                                {
-                                    <span style="background:#dc3545;color:white;padding:0.25rem 0.5rem;border-radius:4px;">
-                                        @user.Role
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span style="background:#28a745;color:white;padding:0.25rem 0.5rem;border-radius:4px;">
-                                        @user.Role
-                                    </span>
-                                }
-                            </td>
+                    <MudButton Variant="Variant.Outlined"
+                               StartIcon="@Icons.Material.Filled.FileDownload"
+                               OnClick="ExportToExcel">
 
-                            <td style="padding:1rem;color:#666;font-size:0.9rem;">
-                                @user.Id
-                            </td>
+                        Export Excel
 
-                            <td style="padding:1rem;display:flex;gap:0.75rem;justify-content:center;">
-                                <a href="/users/edit/@user.Id">✏️</a>
+                    </MudButton>
 
-                                <button @onclick="@(async () => await ShowDeleteConfirm(user.Id))">
-                                    🗑️
-                                </button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-        </table>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Href="/users/create">
 
-        <!-- PAGINATION -->
-        <div style="padding:1rem;background:#f8f9fa;display:flex;justify-content:center;gap:0.5rem;align-items:center;">
+                        Créer
 
-            <button @onclick="PrevPage" disabled="@(_currentPage == 1)">←</button>
+                    </MudButton>
 
-            <span>Page @_currentPage / @_totalPages</span>
+                </MudStack>
 
-            <button @onclick="NextPage" disabled="@(_currentPage >= _totalPages)">→</button>
+            </MudStack>
 
-        </div>
+            <MudTextField T="string"
+                          @bind-Value="Search"
+                          Label="Search users"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Immediate="true"
+                          Class="mb-4" />
 
-    </div>
-}
+            <MudTable Items="_filteredUsers"
+                      Hover="true"
+                      Dense="true"
+                      Striped="true"
+                      Bordered="true"
+                      Elevation="0">
+
+                <HeaderContent>
+
+                    <MudTh>Email</MudTh>
+                    <MudTh>Role</MudTh>
+                    <MudTh>Id</MudTh>
+                    <MudTh>Actions</MudTh>
+
+                </HeaderContent>
+
+                <RowTemplate>
+
+                    <MudTd DataLabel="Email">
+                        @context.Email
+                    </MudTd>
+
+                    <MudTd DataLabel="Role">
+
+                        @if (context.Role == "ADMIN")
+                        {
+                            <MudChip T="string"
+                                     Variant="Variant.Filled"
+                                     Color="@(context.Role == "ADMIN"
+                                                  ? Color.Error
+                                                  : Color.Success)">
+                                @context.Role
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string"
+                                     Variant="Variant.Filled"
+                                     Color="@(context.Role == "USER"
+                                                  ? Color.Transparent
+                                                  : Color.Success)">
+                                @context.Role
+                            </MudChip>
+                        }
+
+                    </MudTd>
+
+                    <MudTd DataLabel="Id">
+
+                        <MudTooltip Text="@context.Id">
+
+                            @(context.Id.Length > 12
+                                ? context.Id[..12] + "..."
+                                : context.Id)
+
+                        </MudTooltip>
+
+                    </MudTd>
+
+                    <MudTd DataLabel="Actions">
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Primary"
+                                       Href="@($"/users/edit/{context.Id}")" />
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => ShowDeleteConfirm(context.Id))" />
+
+                    </MudTd>
+
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+
+            </MudTable>
+
+        </MudPaper>
+    }
 </MudContainer>
 
 @code {
@@ -137,16 +175,12 @@ else
     private bool _showConfirmDialog = false;
     private List<UserDto> _users = [];
     private List<UserDto> _filteredUsers = [];
-    private List<UserDto> _paginatedUsers = [];
     private string _userToDelete = string.Empty;
 
     private bool _isLoading = true;
 
     private string _search = "";
 
-    private int _currentPage = 1;
-    private int _pageSize = 10;
-    private int _totalPages = 1;
 
     // 🔥 SEARCH PROPERTY (IMPORTANT)
     private string Search
@@ -155,7 +189,6 @@ else
         set
         {
             _search = value;
-            _currentPage = 1;
             ApplyFilters();
         }
     }
@@ -196,37 +229,10 @@ else
                 || x.Role.Contains(_search, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        _totalPages = Math.Max(1,
-            (int)Math.Ceiling((double)_filteredUsers.Count / _pageSize));
-
-        if (_currentPage > _totalPages)
-            _currentPage = 1;
-
-        _paginatedUsers = _filteredUsers
-            .Skip((_currentPage - 1) * _pageSize)
-            .Take(_pageSize)
-            .ToList();
-
         StateHasChanged();
     }
 
-    private void NextPage()
-    {
-        if (_currentPage < _totalPages)
-        {
-            _currentPage++;
-            ApplyFilters();
-        }
-    }
-
-    private void PrevPage()
-    {
-        if (_currentPage > 1)
-        {
-            _currentPage--;
-            ApplyFilters();
-        }
-    }
+   
 
 
     private async Task ExportToExcel()
@@ -238,7 +244,7 @@ else
         var ws = package.Workbook.Worksheets.Add("Users");
 
         ws.Cells[1, 1].Value = "Email";
-        ws.Cells[1, 2].Value = "Rôle";
+        ws.Cells[1, 2].Value = "Role";
         ws.Cells[1, 3].Value = "Id";
 
         int row = 2;
@@ -275,51 +281,33 @@ else
     {
         try
         {
-            Logger.LogInformation("Suppression de l'utilisateur {Id}", id);
+            Logger.LogInformation("Deleting user {Id}", id);
 
             var success = await UsersService.DeleteAsync(id);
 
             if (!success)
             {
-                Logger.LogError("Échec de la suppression de l'utilisateur {Id}", id);
+                Logger.LogError("Failed to delete user {Id}", id);
                 return;
             }
 
             _users.RemoveAll(x => x.Id == id);
-            ApplyFiltersAndSort();
 
-            Logger.LogInformation("Utilisateur {Id} supprimé", id);
+            ApplyFilters();
+
+            Logger.LogInformation("User {Id} deleted", id);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Erreur lors de la suppression de l'utilisateur {Id}", id);
+            Logger.LogError(ex, "Error deleting user {Id}", id);
         }
     }
 
-    private async Task CancelDelete()
+    private Task CancelDelete()
     {
         _userToDelete = string.Empty;
+        return Task.CompletedTask;
     }
 
-    private void ApplyFiltersAndSort()
-    {
-        _filteredUsers = string.IsNullOrWhiteSpace(_search)
-            ? _users
-            : _users.Where(x =>
-                x.Email.Contains(_search, StringComparison.OrdinalIgnoreCase)
-                || x.Role.Contains(_search, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        _totalPages = (int)Math.Ceiling((double)_filteredUsers.Count / _pageSize);
-
-        if (_currentPage > _totalPages)
-            _currentPage = Math.Max(1, _totalPages);
-
-        _paginatedUsers = _filteredUsers
-            .Skip((_currentPage - 1) * _pageSize)
-            .Take(_pageSize)
-            .ToList();
-
-        StateHasChanged();
-    }
+   
 }

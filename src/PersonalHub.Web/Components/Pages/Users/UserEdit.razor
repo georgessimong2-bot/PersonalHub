@@ -1,16 +1,16 @@
-﻿@page "/fundtypes/edit/{Id:guid}"
+﻿@page "/users/edit/{Id}"
 @rendermode InteractiveServer
+@attribute [Authorize(Roles = "ADMIN")]
 
+@using Microsoft.AspNetCore.Authorization
 @using MudBlazor
-@using PersonalHub.Application.Features.FundTypes.Common
-@using PersonalHub.Application.Features.FundTypes.UpdateFundType
-@using PersonalHub.Web.Services
+@using PersonalHub.Application.Features.Users.UpdateUser
 
-@inject FundTypeService FundTypeService
+@inject UserService UserService
 @inject NavigationManager Navigation
-@inject ILogger<FundTypeEdit> Logger
+@inject ILogger<UserEdit> Logger
 
-<PageTitle>Edit Fund Type</PageTitle>
+<PageTitle>Edit User</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
 
@@ -23,37 +23,8 @@
                                  Color="Color.Primary" />
 
             <MudText Class="mt-4">
-                Loading fund type...
+                Loading user...
             </MudText>
-
-        </MudPaper>
-    }
-    else if (_fundType is null)
-    {
-        <MudPaper Class="pa-8 text-center">
-
-            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline"
-                     Size="Size.Large"
-                     Color="Color.Error" />
-
-            <MudText Typo="Typo.h5"
-                     Class="mt-4">
-
-                Fund Type Not Found
-
-            </MudText>
-
-            <MudText Class="mt-2 mb-6">
-                The requested fund type could not be found.
-            </MudText>
-
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       Href="/fundtypes">
-
-                Back to Fund Types
-
-            </MudButton>
 
         </MudPaper>
     }
@@ -71,20 +42,20 @@
                 <div>
 
                     <MudText Typo="Typo.h4">
-                        Edit Fund Type
+                        Edit User
                     </MudText>
 
                     <MudText Typo="Typo.body2">
-                        Update fund type information
+                        Update user information and permissions
                     </MudText>
 
                 </div>
 
                 <MudChip T="string"
-                         Color="Color.Primary"
+                         Color="@GetRoleColor()"
                          Variant="Variant.Filled">
 
-                    Fund Type
+                    @_model.Role
 
                 </MudChip>
 
@@ -92,50 +63,77 @@
 
             <!-- SUMMARY -->
 
-            <MudPaper Class="pa-4 mb-4"
-                      Outlined="true">
+            <MudGrid Class="mb-4">
 
-                <MudText Typo="Typo.subtitle2">
-                    Preview
-                </MudText>
+                <MudItem xs="12" md="6">
 
-                <MudText Typo="Typo.h6"
-                         Class="mt-2">
+                    <MudPaper Class="pa-3">
 
-                    @(string.IsNullOrWhiteSpace(_name)
-                        ? "Unnamed Fund Type"
-                        : _name)
+                        <MudText Typo="Typo.caption">
+                            User Id
+                        </MudText>
 
-                </MudText>
+                        <MudText Typo="Typo.body2">
+                            @Id
+                        </MudText>
 
-                <MudText Typo="Typo.body2"
-                         Class="mt-2">
+                    </MudPaper>
 
-                    @(string.IsNullOrWhiteSpace(_description)
-                        ? "No description provided."
-                        : _description)
+                </MudItem>
 
-                </MudText>
+                <MudItem xs="12" md="6">
 
-            </MudPaper>
+                    <MudPaper Class="pa-3">
+
+                        <MudText Typo="Typo.caption">
+                            Current Role
+                        </MudText>
+
+                        <MudChip T="string"
+                                 Color="@GetRoleColor()">
+
+                            @_model.Role
+
+                        </MudChip>
+
+                    </MudPaper>
+
+                </MudItem>
+
+            </MudGrid>
 
             <!-- FORM -->
 
             <MudTextField T="string"
-                          @bind-Value="_name"
-                          Label="Name"
+                          @bind-Value="_model.Email"
+                          Label="Email"
                           Variant="Variant.Outlined"
                           FullWidth="true"
                           Required="true"
                           Class="mb-4" />
 
-            <MudTextField T="string"
-                          @bind-Value="_description"
-                          Label="Description"
-                          Variant="Variant.Outlined"
-                          Lines="6"
-                          FullWidth="true"
-                          Class="mb-4" />
+            <MudSelect T="string"
+                       Label="Role"
+                       Variant="Variant.Outlined"
+                       FullWidth="true"
+                       @bind-Value="_model.Role"
+                       Class="mb-4">
+
+                <MudSelectItem T="string"
+                               Value="@("USER")">
+
+                    User
+
+                </MudSelectItem>
+
+                <MudSelectItem T="string"
+                               Value="@("ADMIN")">
+
+                    Administrator
+
+                </MudSelectItem>
+
+            </MudSelect>
 
             @if (!string.IsNullOrWhiteSpace(_error))
             {
@@ -167,7 +165,7 @@
                            Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Save"
                            Disabled="_isSubmitting"
-                           OnClick="HandleSave">
+                           OnClick="Save">
 
                     @if (_isSubmitting)
                     {
@@ -199,45 +197,37 @@
 
 
 [Parameter]
-    public Guid Id { get; set; }
-
-    private FundTypeDto? _fundType;
-
-    private string _name = string.Empty;
-    private string? _description;
+    public string Id { get; set; } = string.Empty;
 
     private bool _isLoading = true;
     private bool _isSubmitting;
 
     private string? _error;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await Load();
-    }
+    private UpdateUserCommand _model = new();
 
-    private async Task Load()
+    protected override async Task OnInitializedAsync()
     {
         try
         {
-            _fundType =
-                await FundTypeService
-                    .GetFundTypeByIdAsync(Id);
+            var user =
+                await UserService.GetByIdAsync(Id);
 
-            if (_fundType is not null)
+            if (user is not null)
             {
-                _name = _fundType.Name;
-                _description = _fundType.Description;
+                _model.Id = user.Id;
+                _model.Email = user.Email;
+                _model.Role = user.Role;
             }
         }
         catch (Exception ex)
         {
             Logger.LogError(
                 ex,
-                "Error loading FundType {Id}",
+                "Error loading user {UserId}",
                 Id);
 
-            _error = "Unable to load fund type.";
+            _error = "Unable to load user.";
         }
         finally
         {
@@ -245,36 +235,37 @@
         }
     }
 
-    private async Task HandleSave()
+    private async Task Save()
     {
         try
         {
             _isSubmitting = true;
             _error = null;
 
-            if (string.IsNullOrWhiteSpace(_name))
+            if (string.IsNullOrWhiteSpace(_model.Email))
             {
-                _error = "Name is required.";
+                _error = "Email is required.";
                 return;
             }
 
-            var command = new UpdateFundTypeCommand(
-                Id,
-                _name.Trim(),
-                _description);
+            var success =
+                await UserService.UpdateAsync(
+                    Id,
+                    _model);
 
-            await FundTypeService.UpdateFundTypeAsync(
-                Id,
-                command);
+            if (!success)
+            {
+                _error = "Failed to update user.";
+                return;
+            }
 
-            Navigation.NavigateTo(
-                $"/fundtypes/details/{Id}");
+            Navigation.NavigateTo("/users");
         }
         catch (Exception ex)
         {
             Logger.LogError(
                 ex,
-                "Error updating fund type {Id}",
+                "Error updating user {UserId}",
                 Id);
 
             _error = ex.Message;
@@ -285,10 +276,16 @@
         }
     }
 
+    private Color GetRoleColor()
+    {
+        return _model.Role == "ADMIN"
+            ? Color.Error
+            : Color.Success;
+    }
+
     private void Cancel()
     {
-        Navigation.NavigateTo(
-            $"/fundtypes/details/{Id}");
+        Navigation.NavigateTo("/users");
     }
 
 
