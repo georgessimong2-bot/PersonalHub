@@ -1,93 +1,230 @@
 ﻿@page "/dashboard"
 @rendermode InteractiveServer
-@attribute [Authorize]
 
-@using Microsoft.AspNetCore.Authorization
 @using MudBlazor
-@using PersonalHub.Web.Services.Auth
+@using PersonalHub.Application.Features.Dashboard.Common
+@using PersonalHub.Web.Services
 
-@inject AuthService AuthService
-@inject UserService UsersService
-@inject NotesService NotesService
+@inject DashboardService DashboardService
+@inject NavigationManager Navigation
 
 <PageTitle>Dashboard</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
-    <MudText Typo="Typo.h4" Class="mb-4">
-        Dashboard
-    </MudText>
+    @if (_loading)
+    {
+        <MudPaper Class="pa-6 text-center">
+            <MudProgressCircular Indeterminate="true" />
+        </MudPaper>
+    }
+    else
+    {
+        <!-- Welcome -->
 
-    <MudText Typo="Typo.body1" Class="mb-6">
-        Bienvenue 👋 @Email
-    </MudText>
+        <MudPaper Class="pa-6 mb-6" Elevation="2">
 
-    <MudGrid Spacing="3">
+            <MudText Typo="Typo.h4">
+                Welcome to PersonalHub 👋
+            </MudText>
 
-        <!-- USERS CARD -->
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="pa-4 rounded-lg" Elevation="3">
-                <MudText Typo="Typo.h6">Utilisateurs</MudText>
-                <MudText Typo="Typo.h3">@_usersCount</MudText>
-            </MudPaper>
-        </MudItem>
+            <MudText Typo="Typo.body1">
+                Here's a quick overview of your data.
+            </MudText>
 
-        <!-- NOTES CARD -->
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="pa-4 rounded-lg" Elevation="3">
-                <MudText Typo="Typo.h6">Notes</MudText>
-                <MudText Typo="Typo.h3">@_notesCount</MudText>
-            </MudPaper>
-        </MudItem>
+        </MudPaper>
 
-        <!-- TASKS CARD -->
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="pa-4 rounded-lg" Elevation="3">
-                <MudText Typo="Typo.h6">Tasks</MudText>
-                <MudText Typo="Typo.h3">
-                    @if (_loading)
-                    {
-                        <MudProgressCircular Indeterminate="true" />
-                    }
-                    else
-                    {
-                        <MudText Typo="Typo.h3">@_usersCount</MudText>
-                    }
-                </MudText>
-            </MudPaper>
-        </MudItem>
+        <!-- Statistics -->
 
-        <!-- STATUS CARD -->
-        <MudItem xs="12" sm="6" md="3">
-            <MudPaper Class="pa-4 rounded-lg" Elevation="3">
-                <MudText Typo="Typo.h6">Status</MudText>
-                <MudText Color="Color.Success">Online</MudText>
-            </MudPaper>
-        </MudItem>
+        <MudGrid>
 
-    </MudGrid>
+            <MudItem xs="12" sm="6" md="3">
+
+                <MudCard Class="dashboard-card"
+                         Style="cursor:pointer"
+                         @onclick="GoToGoals">
+
+                    <MudCardContent>
+
+                        <MudText Typo="Typo.h6">
+                            Goals
+                        </MudText>
+
+                        <MudText Typo="Typo.h3">
+                            @_dashboard.GoalsCount
+                        </MudText>
+
+                    </MudCardContent>
+
+                </MudCard>
+
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+
+                <MudCard Class="dashboard-card"
+                         Style="cursor:pointer"
+                         @onclick="GoToNotes">
+
+                    <MudCardContent>
+
+                        <MudText Typo="Typo.h6">
+                            Notes
+                        </MudText>
+
+                        <MudText Typo="Typo.h3">
+                            @_dashboard.NotesCount
+                        </MudText>
+
+                    </MudCardContent>
+
+                </MudCard>
+
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+
+                <MudCard Class="dashboard-card"
+                         Style="cursor:pointer"
+                         @onclick="GoToFunds">
+
+                    <MudCardContent>
+
+                        <MudText Typo="Typo.h6">
+                            Funds
+                        </MudText>
+
+                        <MudText Typo="Typo.h3">
+                            @_dashboard.FundsCount
+                        </MudText>
+
+                    </MudCardContent>
+
+                </MudCard>
+
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+
+                <MudCard Class="dashboard-card"
+                         Style="cursor:pointer"
+                         @onclick="GoToFundTypes">
+
+                    <MudCardContent>
+
+                        <MudText Typo="Typo.h6">
+                            Fund Types
+                        </MudText>
+
+                        <MudText Typo="Typo.h3">
+                            @_dashboard.FundTypesCount
+                        </MudText>
+
+                    </MudCardContent>
+
+                </MudCard>
+
+            </MudItem>
+
+        </MudGrid>
+
+        <!-- Quick Actions -->
+
+        <MudPaper Class="pa-6 mt-6"
+                  Elevation="2">
+
+            <MudText Typo="Typo.h5"
+                     Class="mb-4">
+                Quick Actions
+            </MudText>
+
+            <MudStack Row="true"
+                      Spacing="2">
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="CreateGoal">
+
+                    New Goal
+
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Secondary"
+                           OnClick="CreateNote">
+
+                    New Note
+
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Success"
+                           OnClick="CreateFund">
+
+                    New Fund
+
+                </MudButton>
+
+            </MudStack>
+
+        </MudPaper>
+
+    }
 
 </MudContainer>
 
+<style>
+    .dashboard-card {
+        transition: all .2s ease;
+    }
+
+        .dashboard-card:hover {
+            transform: translateY(-4px);
+        }
+</style>
 
 @code {
 
-    private string? Email;
-    private int _usersCount;
-    private int _notesCount;
     private bool _loading = true;
 
-    protected override void OnInitialized()
-    {
-        Email = AuthService.GetUserEmail();
-    }
+    private DashboardDto _dashboard = new();
 
     protected override async Task OnInitializedAsync()
     {
-        var users = await UsersService.GetUsersAsync();
-        var notes = await NotesService.GetNotesAsync();
+        try
+        {
+            var result =
+                await DashboardService.GetAsync();
 
-        _usersCount = users?.Count ?? 0;
-        _notesCount = notes?.Count ?? 0;
+            if (result is not null)
+            {
+                _dashboard = result;
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
+
+    private void GoToGoals()
+        => Navigation.NavigateTo("/goals");
+
+    private void GoToNotes()
+        => Navigation.NavigateTo("/notes");
+
+    private void GoToFunds()
+        => Navigation.NavigateTo("/funds");
+
+    private void GoToFundTypes()
+        => Navigation.NavigateTo("/fundtypes");
+
+    private void CreateGoal()
+        => Navigation.NavigateTo("/goals/create");
+
+    private void CreateNote()
+        => Navigation.NavigateTo("/notes/create");
+
+    private void CreateFund()
+        => Navigation.NavigateTo("/funds/create");
 }
