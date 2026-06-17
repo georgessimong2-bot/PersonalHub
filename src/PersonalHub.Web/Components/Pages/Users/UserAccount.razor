@@ -429,6 +429,9 @@
 
     private string GetProfileImageUrl()
     {
-        return _profilePictureUrl ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(_profilePictureUrl))
+            return "/images/default-avatar.png";
+
+        return _profilePictureUrl;
     }
 }

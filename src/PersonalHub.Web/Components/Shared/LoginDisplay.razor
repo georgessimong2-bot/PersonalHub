@@ -1,75 +1,42 @@
-﻿@using System.Security.Claims
-@using Microsoft.AspNetCore.Components.Authorization
-@using MudBlazor
-@using PersonalHub.Web.Services.Auth
-@using PersonalHub.Web.Configuration
-@using Microsoft.Extensions.Options
-
-@inject IOptions<ApiSettings> ApiSettings
-@inject AuthenticationStateProvider AuthProvider
+﻿@inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
 @inject AuthService AuthService
 @inject UserService UserService
-
+@inject ILogger<LoginDisplay> Logger
 
 <AuthorizeView Context="auth">
     <Authorized>
 
-        @{
-            var email =
-                auth.User.FindFirst(ClaimTypes.Email)?.Value
-                ?? auth.User.FindFirst("email")?.Value
-                ?? auth.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value
-                ?? auth.User.Identity?.Name
-                ?? "unknown";
-        }
-
         <MudMenu>
 
             <ActivatorContent Context="menu">
-
-                <div @onclick="menu.ToggleAsync"
-                     style="cursor:pointer">
+                <div @onclick="menu.ToggleAsync" style="cursor:pointer">
 
                     @if (!string.IsNullOrWhiteSpace(_profilePictureUrl))
                     {
-                        <MudAvatar Size="Size.Large">
-                            <MudImage Src="@GetProfileImageUrl()" />
+                        <MudAvatar Size="Size.Medium">
+                            <MudImage Src="@_profilePictureUrl" />
                         </MudAvatar>
                     }
                     else
                     {
-                        <MudAvatar Size="Size.Small"
-                                   Color="Color.Primary">
-
-                            @GetInitials(email)
-
+                        <MudAvatar Size="Size.Small" Color="Color.Primary">
+                            @GetInitials(_email)
                         </MudAvatar>
                     }
 
                 </div>
-
             </ActivatorContent>
 
             <ChildContent>
-
-                <MudText Class="px-3 py-2">
-                    @email
-                </MudText>
-
+                <MudText Class="px-3 py-2">@_email</MudText>
                 <MudDivider />
-
-                <MudMenuItem OnClick="GoToAccount">
-                    Mon compte
-                </MudMenuItem>
-
-                <MudMenuItem OnClick="Logout">
-                    Déconnexion
-                </MudMenuItem>
-
+                <MudMenuItem OnClick="GoToAccount">Mon compte</MudMenuItem>
+                <MudMenuItem OnClick="Logout">Déconnexion</MudMenuItem>
             </ChildContent>
 
         </MudMenu>
+
     </Authorized>
 
     <NotAuthorized>
@@ -88,37 +55,42 @@
     </NotAuthorized>
 </AuthorizeView>
 
-
 @code {
     private string? _profilePictureUrl;
-    private string ApiBaseUrl =>
-       ApiSettings.Value.BaseUrl;
+    private string _email = "unknown";
+
     protected override async Task OnInitializedAsync()
     {
-        var authState =
-            await AuthProvider.GetAuthenticationStateAsync();
-
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
-        var userId =
-            user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        _email = ResolveEmail(user);
 
-        Console.WriteLine($"USERID = {userId}");
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (string.IsNullOrWhiteSpace(userId))
             return;
 
-        var userDto =
-            await UserService.GetByIdAsync(userId);
-
-        _profilePictureUrl =
-            userDto?.ProfilePictureUrl;
+        try
+        {
+            var userDto = await UserService.GetByIdAsync(userId);
+            _profilePictureUrl = userDto?.ProfilePictureUrl;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Impossible de charger l'avatar de l'utilisateur {UserId}.", userId);
+        }
     }
 
-    private void GoToAccount()
-    {
+    private static string ResolveEmail(ClaimsPrincipal user) =>
+        user.FindFirst(ClaimTypes.Email)?.Value
+        ?? user.FindFirst("email")?.Value
+        ?? user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value
+        ?? user.Identity?.Name
+        ?? "unknown";
+
+    private void GoToAccount() =>
         Navigation.NavigateTo("/account");
-    }
 
     private async Task Logout()
     {
@@ -126,19 +98,6 @@
         Navigation.NavigateTo("/login", true);
     }
 
-    private string GetInitials(string email)
-    {
-        if (string.IsNullOrWhiteSpace(email))
-            return "?";
-
-        return email[..1].ToUpper();
-    }
-
-    private string GetProfileImageUrl()
-    {
-        if (string.IsNullOrWhiteSpace(_profilePictureUrl))
-            return "/images/default-avatar.png";
-
-        return _profilePictureUrl;
-    }
+    private static string GetInitials(string email) =>
+        string.IsNullOrWhiteSpace(email) ? "?" : email[..1].ToUpper();
 }
