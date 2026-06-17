@@ -1,80 +1,213 @@
 ﻿@page "/"
+@rendermode InteractiveServer
 
 @using Markdig
 @using Microsoft.AspNetCore.Components
-@using MudBlazor
 
-<PageTitle>PersonalHub</PageTitle>
+@inject IWebHostEnvironment Environment
+@inject NavigationManager Navigation
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+<PageTitle>Dashboard</PageTitle>
 
-    <MudPaper Class="pa-6">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
 
-        @if (_loading)
-        {
-            <MudStack AlignItems="AlignItems.Center"
-                      Justify="Justify.Center"
-                      Spacing="2">
+    <!-- Welcome -->
 
-                <MudProgressCircular Indeterminate="true"
-                                     Size="Size.Large" />
+    <MudPaper Class="pa-6 mb-6">
 
-                <MudText Typo="Typo.body1">
-                    Loading documentation...
+        <MudText Typo="Typo.h4" Class="mb-2">
+            PersonalHub
+        </MudText>
+
+        <MudText Typo="Typo.body1">
+            PersonalHub is a modern platform built with .NET 10, Blazor, Clean Architecture and CQRS.
+        </MudText>
+
+        <MudText Typo="Typo.body1">
+            The project combines personal organization tools with investment fund management features 
+            while serving as a technical playground for modern software architecture, cloud deployment 
+            and AI integration.
+        </MudText>
+
+        <MudText Typo="Typo.body1" Class="mt-3">
+            Built as a full-stack showcase project, it demonstrates modern .NET development
+            practices including Clean Architecture, CQRS, cloud deployment and AI integration.
+        </MudText>
+
+        <MudDivider Class="my-4" />
+
+        <MudGrid>
+
+            <MudItem xs="12" md="4">
+                <MudText Typo="Typo.subtitle1">
+                    🏗 Architecture
                 </MudText>
 
-            </MudStack>
-        }
-        else
-        {
-            @((MarkupString)_htmlContent)
-        }
+                <MudText Typo="Typo.body2">
+                    Clean Architecture, CQRS, MediatR,
+                    FluentValidation and Dependency Injection.
+                </MudText>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudText Typo="Typo.subtitle1">
+                    ☁ Infrastructure
+                </MudText>
+
+                <MudText Typo="Typo.body2">
+                    Docker, SQL Server, Nginx,
+                    GitHub Actions and automated deployments.
+                </MudText>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudText Typo="Typo.subtitle1">
+                    🤖 Artificial Intelligence
+                </MudText>
+
+                <MudText Typo="Typo.body2">
+                    AI-assisted goal generation and future intelligent productivity features.
+                </MudText>
+            </MudItem>
+
+        </MudGrid>
 
     </MudPaper>
+
+    <!-- Quick Links -->
+
+    <MudGrid>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Style="cursor:pointer"
+                     @onclick='() => Navigation.NavigateTo("/notes")'>
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">
+                        Notes
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        Manage your knowledge base
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Style="cursor:pointer"
+                     @onclick='() => Navigation.NavigateTo("/goals")'>
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">
+                        Goals
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        Track personal objectives
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Style="cursor:pointer"
+                     @onclick='() => Navigation.NavigateTo("/funds")'>
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">
+                        Funds
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        Manage umbrella funds
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Style="cursor:pointer"
+                     @onclick='() => Navigation.NavigateTo("/fundtypes")'>
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">
+                        Fund Types
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        Regulatory structures
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+    </MudGrid>
+
+    <!-- About -->
+
+  
+
+    <!-- README -->
+
+    <MudExpansionPanels Class="mt-6">
+
+        <MudExpansionPanel Text="Project Documentation">
+
+            @if (_isLoading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (!string.IsNullOrWhiteSpace(_htmlContent))
+            {
+                @((MarkupString)_htmlContent)
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Warning">
+                    README.md not found.
+                </MudAlert>
+            }
+
+        </MudExpansionPanel>
+
+    </MudExpansionPanels>
 
 </MudContainer>
 
 @code
 {
-    private bool _loading = true;
+    private bool _isLoading = true;
+
     private string _htmlContent = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var readmePath = Path.Combine(
-                AppContext.BaseDirectory,
-                "README.md");
+            var solutionRoot =
+                Directory.GetParent(Environment.ContentRootPath)?.FullName;
+
+            if (solutionRoot is null)
+                return;
+
+            var readmePath =
+                Path.Combine(
+                    solutionRoot.Replace("\\src", string.Empty),
+                    "README.md");
 
             if (!File.Exists(readmePath))
-            {
-                _htmlContent = """
-                    <h2>README not found</h2>
-                    <p>The README.md file could not be found.</p>
-                    """;
-
                 return;
-            }
 
-            var markdown = await File.ReadAllTextAsync(readmePath);
+            var markdown =
+                await File.ReadAllTextAsync(readmePath);
 
-            var pipeline = new MarkdownPipelineBuilder()
-                .UseAdvancedExtensions()
-                .Build();
-
-            _htmlContent = Markdown.ToHtml(markdown, pipeline);
+            _htmlContent =
+                Markdown.ToHtml(markdown);
         }
-        catch (Exception ex)
+        catch
         {
-            _htmlContent = $"""
-                <h2>Error</h2>
-                <p>{ex.Message}</p>
-                """;
+            _htmlContent = string.Empty;
         }
         finally
         {
-            _loading = false;
+            _isLoading = false;
         }
     }
 }

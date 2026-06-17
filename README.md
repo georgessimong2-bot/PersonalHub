@@ -1,184 +1,148 @@
-# 🚀 PersonalHub
+## Features
 
-PersonalHub est une application de productivité personnelle développée avec **ASP.NET Core 10**, **Blazor Server**, **Clean Architecture** et **OpenAI**.
+### User Management
 
-L'objectif du projet est de centraliser la gestion des notes, objectifs et données personnelles dans une plateforme moderne, évolutive et prête pour des fonctionnalités IA avancées.
+- Authentication & Authorization
+- User Administration
+- Profile Management
+- Profile Picture Upload
+- Password Management
 
----
+### Notes
 
-## ✨ Fonctionnalités
+- Personal Knowledge Base
+- Markdown Support
+- CRUD Operations
 
-### 🔐 Authentification
+### Goals
 
-* Inscription utilisateur
-* Connexion JWT
-* Gestion des rôles
-* Sécurisation des endpoints API
+- Goal Management
+- Progress Tracking
+- Deadlines and Targets
+- AI-Assisted Goal Generation
 
-### 👤 Profil utilisateur
+### Fund Management
 
-* Consultation du profil
-* Modification des informations personnelles
-* Gestion des coordonnées utilisateur
-
-### 📝 Notes
-
-* Création de notes
-* Modification de notes
-* Suppression de notes
-* Consultation détaillée
-* Gestion personnelle des contenus
-
-### 🎯 Goals (Objectifs)
-
-* Création d'objectifs
-* Définition d'une valeur cible
-* Suivi de progression
-* Date limite optionnelle
-* Statut automatique :
-
-  * Active
-  * Completed
-  * Expired
-
-### 🤖 AI Goal Advisor
-
-Analyse automatique d'un objectif grâce à OpenAI :
-
-* Évaluation de la progression
-* Identification des risques
-* Conseils personnalisés
-* Recommandations d'actions
-
-Exemple :
-
-> Goal: Learn Blazor
-> Progress: 40%
-> Deadline: 30 days
-
-L'IA génère alors un plan d'action adapté à l'objectif.
-
-### 📊 Dashboard
-
-Statistiques globales :
-
-* Nombre d'utilisateurs
-* Nombre de notes
-* Nombre d'objectifs
-* Répartition des statuts
+- Fund Types
+- Funds
+- Sub-Funds (In Progress)
+- Share Classes (Planned)
 
 ---
 
-## 🏗 Architecture
+## Architecture
 
-Le projet suit les principes de la Clean Architecture :
+The solution follows Clean Architecture principles.
 
-text
-src/
+```text
+PersonalHub
 │
 ├── PersonalHub.Api
 ├── PersonalHub.Application
 ├── PersonalHub.Domain
 ├── PersonalHub.Infrastructure
 └── PersonalHub.Web
+```
 
+### Technologies
 
-### Domain
+- .NET 10
+- ASP.NET Core
+- Blazor Server
+- MudBlazor
+- Entity Framework Core
+- SQL Server
+- MediatR
+- FluentValidation
+- JWT Authentication
+- Docker
+- Nginx
+- GitHub Actions
+- OpenAI
 
-Contient :
+---
 
-* Entités métier
-* Enums
-* Règles métier
+### Architectural Patterns
 
-### Application
+### Clean Architecture
 
-Contient :
+The solution is organized into distinct layers to enforce separation of concerns and maintain long-term maintainability.
 
-* CQRS
-* MediatR
-* Commands
-* Queries
-* Validators
-* DTOs
-* Interfaces
+### CQRS (Command Query Responsibility Segregation)
+
+Commands and Queries are separated using MediatR, allowing clear distinction between read and write operations.
+
+### Mediator Pattern
+
+MediatR is used as the central mediator between the API layer and application handlers.
+
+### Dependency Injection
+
+Services and application components are registered through ASP.NET Core's built-in dependency injection container.
+
+### Pipeline Behaviors
+
+Cross-cutting concerns such as validation are handled through MediatR pipeline behaviors, keeping handlers focused on business logic.
+
+## Artificial Intelligence
+
+OpenAI integration is used to enhance the user experience.
+
+Current capabilities include:
+
+- AI-assisted goal generation
+- Smart productivity assistance
+
+Future enhancements may include:
+
+- Note summarization
+- Semantic search
+- Personal AI assistant
+
+---
+
+## Deployment
+
+The application is fully containerized and automatically deployed.
 
 ### Infrastructure
 
-Contient :
+- Ubuntu VPS
+- Docker Compose
+- SQL Server
+- Nginx Reverse Proxy
+- Let's Encrypt SSL Certificates
 
-* Entity Framework Core
-* SQL Server
-* ASP.NET Identity
-* Services OpenAI
-* Services externes
+### CI/CD
 
-### API
+GitHub Actions automatically:
 
-Contient :
-
-* Endpoints Minimal API
-* Authentification JWT
-* Middlewares
-
-### Web
-
-Contient :
-
-* Blazor Server
-* MudBlazor
-* Services HTTP
-* Pages utilisateur
+1. Build the solution
+2. Build Docker images
+3. Deploy to the VPS
+4. Restart containers
 
 ---
 
-## 🛠 Technologies
+## Roadmap
 
-### Backend
-
-* ASP.NET Core 10
-* Minimal APIs
-* Entity Framework Core
-* SQL Server
-* ASP.NET Identity
-* MediatR
-* FluentValidation
-* Serilog
-
-### Frontend
-
-* Blazor Server
-* MudBlazor
-
-### Intelligence Artificielle
-
-* OpenAI API
-* GPT-4.1 Mini
+- Sub-Fund Management
+- Share Class Management
+- Benchmark Management
+- Portfolio Tracking
+- Additional AI Features
 
 ---
 
+## Author
 
-## 📸 Aperçu
+Georges Simon
 
-Fonctionnalités principales :
+Senior .NET Developer specialized in:
 
-* Dashboard utilisateur
-* Gestion des notes
-* Gestion des objectifs
-* Conseils IA personnalisés
-* Authentification sécurisée
-
----
-
-
-
-## 👨‍💻 Auteur
-
-Projet personnel développé pour explorer :
-
-* Clean Architecture
-* CQRS
-* ASP.NET Core 10
-* Blazor
-* OpenAI Integration
-* Enterprise Development Patterns
+- ASP.NET Core
+- Blazor
+- SQL Server
+- Python
+- Investment Fund Platforms
+- Fund Administration Systems
