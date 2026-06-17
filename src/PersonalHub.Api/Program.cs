@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using PersonalHub.Api;
 using PersonalHub.Api.Middlewares;
@@ -183,7 +184,18 @@ else
 {
     app.UseHttpsRedirection();
 }
-app.UseStaticFiles();
+var webRoot =
+    Path.Combine(
+        app.Environment.ContentRootPath,
+        "wwwroot");
+
+Directory.CreateDirectory(webRoot);
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(webRoot),
+    RequestPath = ""
+});
 app.UseCors();
 
 app.UseAuthentication();
