@@ -46,20 +46,6 @@
 
 @code {
 
-    private bool _initialized;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && !_initialized)
-        {
-            _initialized = true;
-
-            await AuthService.InitializeAsync();
-
-            StateHasChanged();
-        }
-    }
-
     private bool _drawerOpen;
 
     private void ToggleDrawer()

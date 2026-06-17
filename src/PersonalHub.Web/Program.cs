@@ -29,7 +29,7 @@ builder.Host.UseSerilog();
 #endregion
 
 #region AUTH CORE SERVICES
-builder.Services.AddScoped<TokenStore>();
+builder.Services.AddSingleton<TokenStore>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStateProvider>();
 builder.Services.AddAuthorizationCore();

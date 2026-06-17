@@ -1,0 +1,38 @@
+@using PersonalHub.Web.Services.Auth
+
+@if (_initialized)
+{
+    @ChildContent
+}
+else
+{
+    <div>Loading...</div>
+}
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Inject]
+    public AuthService AuthService { get; set; } = null!;
+
+    [Inject]
+    public ILogger<AuthInitializer> Logger { get; set; } = null!;
+
+    private bool _initialized = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("=== AuthInitializer: Starting token restoration ===");
+
+        // Initialize token BEFORE rendering children
+        await AuthService.InitializeAsync();
+
+        var token = AuthService.GetToken();
+        Logger.LogInformation("=== AuthInitializer: Token after init = {TokenPresent}, Length: {Length}", 
+            token != null, token?.Length ?? 0);
+
+        _initialized = true;
+    }
+}
+

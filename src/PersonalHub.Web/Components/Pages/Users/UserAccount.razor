@@ -81,8 +81,20 @@
 
                     </MudChip>
 
-                    <InputFile OnChange="UploadPicture" />
-
+                    <MudFileUpload T="IBrowserFile"
+                                   FilesChanged="UploadPicture"
+                                   Accept=".jpg,.jpeg,.png,.webp"
+                                   MaximumFileCount="1">
+                        <ActivatorContent>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Image"
+                                       Size="Size.Small"
+                                       Disabled="_uploading">
+                                       @(_uploading ? "Uploading..." : "Browse")
+                            </MudButton>
+                        </ActivatorContent>
+                    </MudFileUpload>
                     <MudText Typo="Typo.caption">
                         JPG, PNG, WEBP (max 2 MB)
                     </MudText>
@@ -294,7 +306,7 @@
                     Address = user.Address ?? string.Empty
                 };
             }
-       
+
         }
         finally
         {
@@ -380,29 +392,28 @@
         }
     }
 
-    private async Task UploadPicture(
-        InputFileChangeEventArgs e)
-    {
-        var file = e.File;
+    private bool _uploading = false;
 
-        var url =
-            await UserService.UploadProfilePictureAsync(file);
+    private async Task UploadPicture(IBrowserFile? file)
+    {
+        if (file is null) return;
+
+        _uploading = true;
+        StateHasChanged();
+
+        var url = await UserService.UploadProfilePictureAsync(file);
+
+        _uploading = false;
 
         if (url is null)
         {
-            Snackbar.Add(
-                "Unable to upload image.",
-                Severity.Error);
-
+            Snackbar.Add("Unable to upload image.", Severity.Error);
             return;
         }
 
         _profilePictureUrl = url;
-        Console.WriteLine($"PROFILE URL = {_profilePictureUrl}");
 
-        Snackbar.Add(
-            "Profile picture updated.",
-            Severity.Success);
+        Snackbar.Add("Profile picture updated.", Severity.Success);
 
         StateHasChanged();
     }
@@ -432,6 +443,12 @@
         if (string.IsNullOrWhiteSpace(_profilePictureUrl))
             return "/images/default-avatar.png";
 
-        return _profilePictureUrl;
+        // If it's already a full URL, return as-is
+        if (_profilePictureUrl.StartsWith("http://") || _profilePictureUrl.StartsWith("https://"))
+            return _profilePictureUrl;
+
+        // If it's a relative URL, prepend the API base URL
+        var apiUrl = ApiSettings.Value.BaseUrl;
+        return $"{apiUrl}{_profilePictureUrl}";
     }
 }
