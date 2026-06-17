@@ -83,9 +83,6 @@ public class UserService
 
         var body = await response.Content.ReadAsStringAsync();
 
-        Console.WriteLine($"STATUS = {response.StatusCode}");
-        Console.WriteLine($"BODY = {body}");
-
         return response.IsSuccessStatusCode;
     }
 
@@ -144,6 +141,7 @@ public class UserService
     {
         public string? Url { get; set; }
     }
+
 
     private void ApplyToken()
     {
