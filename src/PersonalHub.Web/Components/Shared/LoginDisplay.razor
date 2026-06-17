@@ -142,6 +142,6 @@
 
     private string GetProfileImageUrl()
     {
-        return $"{ApiBaseUrl}{_profilePictureUrl}";
+        return _profilePictureUrl ?? string.Empty;
     }
 }
