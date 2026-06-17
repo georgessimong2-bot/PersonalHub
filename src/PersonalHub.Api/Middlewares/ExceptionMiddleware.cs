@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using PersonalHub.Application.Common.Exceptions;
 using System.Text.Json;
 
 namespace PersonalHub.Api.Middlewares;
@@ -49,6 +50,18 @@ public class ExceptionMiddleware
             };
 
             await context.Response.WriteAsJsonAsync(response, options);
+        }
+        catch (BusinessException ex)
+        {
+            _logger.LogWarning(ex, ex.Message);
+
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = "application/json";
+
+            await context.Response.WriteAsJsonAsync(new
+            {
+                error = ex.Message
+            });
         }
         catch (Exception ex)
         {

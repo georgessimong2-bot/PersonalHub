@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using PersonalHub.Application.Common.Exceptions;
 using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Application.Features.Users.Common;
 using PersonalHub.Infrastructure.Auth;
@@ -44,7 +45,9 @@ public class IdentityService : IIdentityService
 
         if (!result.Succeeded)
         {
-            throw new Exception(string.Join(", ", result.Errors.Select(x => x.Description)));
+            throw new BusinessException(
+                string.Join(", ",
+                    result.Errors.Select(x => x.Description)));
         }
 
         // IMPORTANT: rôle cohérent
@@ -62,12 +65,12 @@ public class IdentityService : IIdentityService
         var user = await _userManager.FindByEmailAsync(email);
 
         if (user is null)
-            throw new Exception("Invalid credentials");
+            throw new BusinessException("User not found");
 
         var validPassword = await _userManager.CheckPasswordAsync(user, password);
 
         if (!validPassword)
-            throw new Exception("Invalid credentials");
+            throw new BusinessException("Invalid credentials");
 
         var roles = await _userManager.GetRolesAsync(user);
 
