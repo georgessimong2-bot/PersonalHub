@@ -1,8 +1,8 @@
 using MediatR;
 
-namespace PersonalHub.Application.Features.AssetClasses.CreateAssetClass;
+namespace PersonalHub.Application.Features.InvestmentStrategies.CreateInvestmentStrategy;
 
-public class CreateAssetClassCommand : IRequest<Guid>
+public class CreateInvestmentStrategyCommand : IRequest<Guid>
 {
     public string Name { get; set; } = string.Empty;
 

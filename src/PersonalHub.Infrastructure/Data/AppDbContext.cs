@@ -23,7 +23,7 @@ public class AppDbContext
     public DbSet<ShareClass> ShareClasses => Set<ShareClass>();
     public DbSet<Currency> Currencies => Set<Currency>();
     public DbSet<Benchmark> Benchmarks => Set<Benchmark>();
-    public DbSet<AssetClass> AssetClasses => Set<AssetClass>();
+    public DbSet<InvestmentStrategy> InvestmentStrategies => Set<InvestmentStrategy>();
     public DbSet<SfdrClassification> SfdrClassifications => Set<SfdrClassification>();
     public DbSet<FundType> FundTypes => Set<FundType>();
 
@@ -47,9 +47,9 @@ public class AppDbContext
             .HasForeignKey(x => x.BenchmarkId);
 
         builder.Entity<SubFund>()
-            .HasOne(x => x.AssetClass)
+            .HasOne(x => x.InvestmentStrategy)
             .WithMany()
-            .HasForeignKey(x => x.AssetClassId);
+            .HasForeignKey(x => x.InvestmentStrategyId);
 
         builder.Entity<SubFund>()
             .HasOne(x => x.SfdrClassification)

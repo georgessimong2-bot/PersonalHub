@@ -23,7 +23,7 @@ public class CreateSubFundHandler
             Id = Guid.NewGuid(),
             FundId = request.FundId,
             BenchmarkId = request.BenchmarkId,
-            AssetClassId = request.AssetClassId,
+            InvestmentStrategyId = request.InvestmentStrategyId,
             SfdrClassificationId = request.SfdrClassificationId,
             Name = request.Name,
             InternalCode = request.InternalCode,

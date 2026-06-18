@@ -8,7 +8,7 @@ public class CreateSubFundCommand : IRequest<Guid>
 
     public Guid? BenchmarkId { get; set; }
 
-    public Guid? AssetClassId { get; set; }
+    public Guid? InvestmentStrategyId { get; set; }
 
     public Guid? SfdrClassificationId { get; set; }
 

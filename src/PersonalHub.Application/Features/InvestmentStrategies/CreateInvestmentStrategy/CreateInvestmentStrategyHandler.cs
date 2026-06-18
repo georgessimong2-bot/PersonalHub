@@ -2,23 +2,23 @@ using MediatR;
 using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Domain.Entities;
 
-namespace PersonalHub.Application.Features.AssetClasses.CreateAssetClass;
+namespace PersonalHub.Application.Features.InvestmentStrategies.CreateInvestmentStrategy;
 
-public class CreateAssetClassHandler
-    : IRequestHandler<CreateAssetClassCommand, Guid>
+public class CreateInvestmentStrategyHandler
+    : IRequestHandler<CreateInvestmentStrategyCommand, Guid>
 {
     private readonly IAppDbContext _context;
 
-    public CreateAssetClassHandler(IAppDbContext context)
+    public CreateInvestmentStrategyHandler(IAppDbContext context)
     {
         _context = context;
     }
 
     public async Task<Guid> Handle(
-        CreateAssetClassCommand request,
+        CreateInvestmentStrategyCommand request,
         CancellationToken cancellationToken)
     {
-        var assetClass = new AssetClass
+        var investmentStrategy = new InvestmentStrategy
         {
             Id = Guid.NewGuid(),
             Name = request.Name,
@@ -26,9 +26,9 @@ public class CreateAssetClassHandler
             IsActive = request.IsActive
         };
 
-        _context.AssetClasses.Add(assetClass);
+        _context.InvestmentStrategies.Add(investmentStrategy);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return assetClass.Id;
+        return investmentStrategy.Id;
     }
 }

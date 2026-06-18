@@ -1,6 +1,6 @@
-namespace PersonalHub.Application.Features.AssetClasses.Common;
+namespace PersonalHub.Application.Features.InvestmentStrategies.Common;
 
-public class AssetClassDto
+public class InvestmentStrategyDto
 {
     public Guid Id { get; set; }
 

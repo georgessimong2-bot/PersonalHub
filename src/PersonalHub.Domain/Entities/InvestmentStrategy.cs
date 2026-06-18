@@ -1,6 +1,6 @@
-﻿namespace PersonalHub.Domain.Entities;
+namespace PersonalHub.Domain.Entities;
 
-public class AssetClass : BaseAuditableEntity
+public class InvestmentStrategy : BaseAuditableEntity
 {
     public Guid Id { get; set; }
 

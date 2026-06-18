@@ -18,7 +18,7 @@ public static class ApiExtensions
         app.MapFundTypeEndpoints();
         app.MapDashboardEndpoints();
         app.MapCurrencyEndpoints();
-        app.MapAssetClassesEndpoints();
+        app.MapInvestmentStrategiesEndpoints();
         app.MapBenchmarksEndpoints();
         app.MapSfdrClassificationsEndpoints();
         app.MapShareClassesEndpoints();
