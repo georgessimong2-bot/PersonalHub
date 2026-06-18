@@ -1,0 +1,130 @@
+@page "/shareclasses/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.ShareClasses.Common
+@using PersonalHub.Web.Services
+
+@inject ILogger<ShareClassDetails> Logger
+@inject NavigationManager Navigation
+@inject ShareClassService ShareClassService
+
+<PageTitle>Share Class Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading share class...</MudText>
+        </MudPaper>
+    }
+    else if (_shareClass == null)
+    {
+        <MudAlert Severity="Severity.Error">Share Class not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-6">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">@_shareClass.Name</MudText>
+                    <MudText Typo="Typo.body2">Share Class Details</MudText>
+                </div>
+                <MudChip T="string" Color="@(_shareClass.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled">
+                    @(_shareClass.IsActive ? "Active" : "Inactive")
+                </MudChip>
+            </MudStack>
+
+            <MudDivider Class="my-4" />
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Name</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@_shareClass.Name</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">ISIN</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@_shareClass.ISIN</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Management Fee</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_shareClass.ManagementFee?.ToString("P") ?? "-")</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Performance Fee</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_shareClass.PerformanceFee?.ToString("P") ?? "-")</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Is Hedged</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_shareClass.IsHedged ? "Yes" : "No")</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Is Distribution</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_shareClass.IsDistribution ? "Yes" : "No")</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Is Institutional</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_shareClass.IsInstitutional ? "Yes" : "No")</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Launch Date</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_shareClass.LaunchDate?.ToString("yyyy-MM-dd") ?? "-")</MudText>
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Href="@($"/shareclasses/edit/{Id}")">Edit</MudButton>
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="GoBack">Back</MudButton>
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private ShareClassDto? _shareClass;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadShareClass();
+    }
+
+    private async Task LoadShareClass()
+    {
+        try
+        {
+            _shareClass = await ShareClassService.GetShareClassByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading share class {ShareClassId}", Id);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/shareclasses");
+    }
+}
+}

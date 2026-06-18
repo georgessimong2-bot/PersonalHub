@@ -1,0 +1,234 @@
+@page "/shareclasses/create"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.ShareClasses.CreateShareClass
+@using PersonalHub.Application.Features.SubFunds.Common
+@using PersonalHub.Application.Features.Currency.Common
+@using PersonalHub.Web.Services
+
+@inject ShareClassService ShareClassService
+@inject SubFundService SubFundService
+@inject CurrencyService CurrencyService
+@inject NavigationManager Navigation
+@inject ILogger<ShareClassCreate> Logger
+
+<PageTitle>Create Share Class</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    <MudPaper Class="pa-6">
+
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+            <div>
+                <MudText Typo="Typo.h4">Create Share Class</MudText>
+                <MudText Typo="Typo.body2">Create a new share class</MudText>
+            </div>
+            <MudChip T="string" Color="Color.Info" Variant="Variant.Filled">New Share Class</MudChip>
+        </MudStack>
+
+        <MudPaper Class="pa-4 mb-4" Outlined="true">
+            <MudText Typo="Typo.subtitle2">Preview</MudText>
+            <MudText Typo="Typo.h6" Class="mt-2">
+                @(string.IsNullOrWhiteSpace(_name) ? "Unnamed Share Class" : _name)
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mt-2">
+                ISIN: @(string.IsNullOrWhiteSpace(_isin) ? "Not specified" : _isin)
+            </MudText>
+        </MudPaper>
+
+        <MudGrid>
+            <MudItem xs="12">
+                <MudSelect T="SubFundDto" 
+                    @bind-Value="_selectedSubFund" 
+                    Label="Sub Fund *" 
+                    Variant="Variant.Outlined" 
+                    FullWidth="true" 
+                    Required="true" 
+                    Class="mb-4"
+                    ToStringFunc="x => x?.Name ?? string.Empty">
+                    @foreach (var subFund in _subFundsList)
+                    {
+                        <MudSelectItem T="SubFundDto" Value="@subFund">@subFund.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudSelect T="CurrencyDto" 
+                    @bind-Value="_selectedCurrency" 
+                    Label="Currency *" 
+                    Variant="Variant.Outlined" 
+                    FullWidth="true" 
+                    Required="true" 
+                    Class="mb-4"
+                    ToStringFunc="x => x?.Code ?? string.Empty">
+                    @foreach (var currency in _currenciesList)
+                    {
+                        <MudSelectItem T="CurrencyDto" Value="@currency">@currency.Code - @currency.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudTextField T="string" @bind-Value="_name" Label="Name" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudTextField T="string" @bind-Value="_isin" Label="ISIN" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudCheckBox T="bool" @bind-Checked="_isHedged" Label="Is Hedged" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudCheckBox T="bool" @bind-Checked="_isDistribution" Label="Is Distribution" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudCheckBox T="bool" @bind-Checked="_isInstitutional" Label="Is Institutional" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudCheckBox T="bool" @bind-Checked="_isActive" Label="Is Active" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudNumericField T="decimal?" @bind-Value="_managementFee" Label="Management Fee (%)" Variant="Variant.Outlined" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudNumericField T="decimal?" @bind-Value="_performanceFee" Label="Performance Fee (%)" Variant="Variant.Outlined" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudNumericField T="decimal?" @bind-Value="_minimumInvestment" Label="Minimum Investment" Variant="Variant.Outlined" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudDatePicker @bind-Date="_launchDate" Label="Launch Date" Variant="Variant.Outlined" Class="mb-4" />
+            </MudItem>
+        </MudGrid>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+        }
+
+        <MudDivider Class="my-4" />
+
+        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Disabled="_isSubmitting || _selectedSubFund is null || _selectedCurrency is null" OnClick="HandleCreate">
+                @if (_isSubmitting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                    <span class="ms-2">Creating...</span>
+                }
+                else
+                {
+                    <span>Create Share Class</span>
+                }
+            </MudButton>
+        </MudStack>
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    private List<SubFundDto> _subFundsList = [];
+    private List<CurrencyDto> _currenciesList = [];
+    private SubFundDto? _selectedSubFund;
+    private CurrencyDto? _selectedCurrency;
+    private string _name = string.Empty;
+    private string _isin = string.Empty;
+    private bool _isHedged = false;
+    private bool _isDistribution = false;
+    private bool _isInstitutional = false;
+    private bool _isActive = true;
+    private decimal? _managementFee;
+    private decimal? _performanceFee;
+    private decimal? _minimumInvestment;
+    private DateTime? _launchDate;
+    private string _error = string.Empty;
+    private bool _isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _subFundsList = await SubFundService.GetSubFundsAsync();
+            _currenciesList = await CurrencyService.GetCurrenciesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading data");
+            _error = "Failed to load sub funds or currencies.";
+        }
+    }
+
+    private async Task HandleCreate()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _error = "Name is required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_isin))
+        {
+            _error = "ISIN is required.";
+            return;
+        }
+
+        if (_selectedSubFund is null)
+        {
+            _error = "Sub Fund is required.";
+            return;
+        }
+
+        if (_selectedCurrency is null)
+        {
+            _error = "Currency is required.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = string.Empty;
+
+        try
+        {
+            var command = new CreateShareClassCommand
+            {
+                SubFundId = _selectedSubFund.Id,
+                CurrencyId = _selectedCurrency.Id,
+                Name = _name,
+                ISIN = _isin,
+                IsHedged = _isHedged,
+                IsDistribution = _isDistribution,
+                IsInstitutional = _isInstitutional,
+                ManagementFee = _managementFee,
+                PerformanceFee = _performanceFee,
+                MinimumInvestment = _minimumInvestment,
+                LaunchDate = _launchDate,
+                IsActive = _isActive
+            };
+
+            var id = await ShareClassService.CreateShareClassAsync(command);
+            Navigation.NavigateTo($"/shareclasses/{id}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating share class");
+            _error = "An error occurred while creating the share class.";
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/shareclasses");
+    }
+}

@@ -1,0 +1,138 @@
+@page "/subfunds"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.SubFunds.Common
+@using PersonalHub.Web.Services
+
+@inject SubFundService SubFundService
+@inject ILogger<SubFunds> Logger
+@inject NavigationManager Navigation
+
+<PageTitle>Sub Funds</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading sub funds...</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-4">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Sub Funds</MudText>
+                    <MudText Typo="Typo.body2">@_filteredSubFunds.Count sub fund(s)</MudText>
+                </div>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/subfunds/create" StartIcon="@Icons.Material.Filled.Add">
+                    Create Sub Fund
+                </MudButton>
+            </MudStack>
+
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" md="8">
+                    <MudTextField T="string" @bind-Value="SearchTerm" Label="Search Sub Funds" Variant="Variant.Outlined" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Clear" OnClick="ClearFilters">
+                        Clear Filters
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+
+            <MudTable Items="@_filteredSubFunds" Hover="true" Dense="true" Striped="true" Bordered="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Internal Code</MudTh>
+                    <MudTh>Investment Objective</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Name">
+                        <MudTooltip Text="@context.Name">
+                            @context.Name
+                        </MudTooltip>
+                    </MudTd>
+                    <MudTd DataLabel="Internal Code">@(string.IsNullOrWhiteSpace(context.InternalCode) ? "-" : context.InternalCode)</MudTd>
+                    <MudTd DataLabel="Investment Objective">@(string.IsNullOrWhiteSpace(context.InvestmentObjective) ? "-" : context.InvestmentObjective.Length > 40 ? context.InvestmentObjective.Substring(0, 40) + "..." : context.InvestmentObjective)</MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/subfunds/{context.Id}")" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/subfunds/edit/{context.Id}")" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    private List<SubFundDto> _subFunds = new();
+    private List<SubFundDto> _filteredSubFunds = new();
+    private string _searchTerm = string.Empty;
+    private bool _isLoading = true;
+
+    public string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            FilterSubFunds();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSubFunds();
+    }
+
+    private async Task LoadSubFunds()
+    {
+        try
+        {
+            _subFunds = await SubFundService.GetSubFundsAsync() ?? new List<SubFundDto>();
+            FilterSubFunds();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading sub funds");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void FilterSubFunds()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _filteredSubFunds = _subFunds;
+        }
+        else
+        {
+            var searchLower = _searchTerm.ToLower();
+            _filteredSubFunds = _subFunds
+                .Where(s => s.Name.ToLower().Contains(searchLower) || 
+                           (s.InternalCode != null && s.InternalCode.ToLower().Contains(searchLower)) ||
+                           (s.InvestmentObjective != null && s.InvestmentObjective.ToLower().Contains(searchLower)))
+                .ToList();
+        }
+    }
+
+    private void ClearFilters()
+    {
+        SearchTerm = string.Empty;
+    }
+}
+}

@@ -3,11 +3,12 @@
 
 @using MudBlazor
 @using PersonalHub.Application.Features.Notes.Common
+@using PersonalHub.Application.Features.Notes.UpdateNote
 @using PersonalHub.Web.Services
 
 @inject ILogger<NoteEdit> Logger
 @inject NavigationManager Navigation
-@inject NotesService NotesService
+@inject NoteService NoteService
 
 <PageTitle>Edit Note</PageTitle>
 
@@ -232,8 +233,7 @@
     {
         try
         {
-            _note =
-                await NotesService.GetNoteByIdAsync(Id);
+            _note = await NoteService.GetNoteByIdAsync(Id);
 
             if (_note is not null)
             {
@@ -275,20 +275,13 @@
                 return;
             }
 
-            var success =
-                await NotesService.UpdateAsync(
-                    Id,
-                    _title.Trim(),
-                    _content.Trim());
+            var command = new UpdateNoteCommand(
+                Id,
+                _title.Trim(),
+                _content.Trim());
 
-            if (!success)
-            {
-                _error = "Failed to update note.";
-                return;
-            }
-
-            Navigation.NavigateTo(
-                $"/notes/details/{Id}");
+            await NoteService.UpdateNoteAsync(Id, command);
+            Navigation.NavigateTo($"/notes/details/{Id}");
         }
         catch (Exception ex)
         {

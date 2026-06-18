@@ -1,0 +1,135 @@
+@page "/sfdrclassifications"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.SfdrClassifications.Common
+@using PersonalHub.Web.Services
+
+@inject SfdrClassificationService SfdrClassificationService
+@inject ILogger<SfdrClassifications> Logger
+@inject NavigationManager Navigation
+
+<PageTitle>SFDR Classifications</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading SFDR classifications...</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-4">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">SFDR Classifications</MudText>
+                    <MudText Typo="Typo.body2">@_filteredSfdrClassifications.Count classification(s)</MudText>
+                </div>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/sfdrclassifications/create" StartIcon="@Icons.Material.Filled.Add">
+                    Create Classification
+                </MudButton>
+            </MudStack>
+
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" md="8">
+                    <MudTextField T="string" @bind-Value="SearchTerm" Label="Search Classifications" Variant="Variant.Outlined" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Clear" OnClick="ClearFilters">
+                        Clear Filters
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+
+            <MudTable Items="@_filteredSfdrClassifications" Hover="true" Dense="true" Striped="true" Bordered="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Description</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Name">
+                        <MudTooltip Text="@(context.Description ?? "No description")">
+                            @context.Name
+                        </MudTooltip>
+                    </MudTd>
+                    <MudTd DataLabel="Description">@(string.IsNullOrWhiteSpace(context.Description) ? "-" : context.Description.Length > 50 ? context.Description.Substring(0, 50) + "..." : context.Description)</MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/sfdrclassifications/{context.Id}")" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/sfdrclassifications/edit/{context.Id}")" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    private List<SfdrClassificationDto> _sfdrClassifications = new();
+    private List<SfdrClassificationDto> _filteredSfdrClassifications = new();
+    private string _searchTerm = string.Empty;
+    private bool _isLoading = true;
+
+    public string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            FilterSfdrClassifications();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSfdrClassifications();
+    }
+
+    private async Task LoadSfdrClassifications()
+    {
+        try
+        {
+            _sfdrClassifications = await SfdrClassificationService.GetSfdrClassificationsAsync() ?? new List<SfdrClassificationDto>();
+            FilterSfdrClassifications();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading SFDR classifications");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void FilterSfdrClassifications()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _filteredSfdrClassifications = _sfdrClassifications;
+        }
+        else
+        {
+            var searchLower = _searchTerm.ToLower();
+            _filteredSfdrClassifications = _sfdrClassifications
+                .Where(s => s.Name.ToLower().Contains(searchLower) || 
+                           (s.Description != null && s.Description.ToLower().Contains(searchLower)))
+                .ToList();
+        }
+    }
+
+    private void ClearFilters()
+    {
+        SearchTerm = string.Empty;
+    }
+}
+}

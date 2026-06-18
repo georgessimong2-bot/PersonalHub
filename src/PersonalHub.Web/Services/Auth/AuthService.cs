@@ -8,7 +8,8 @@ namespace PersonalHub.Web.Services.Auth;
 
 public class AuthService
 {
-    private readonly HttpClient _http;
+    private readonly IHttpClientFactory _factory;
+    private HttpClient? _http;
     private readonly IJSRuntime _js;
     private readonly TokenStore _store;
     private readonly ILogger<AuthService> _logger;
@@ -28,10 +29,20 @@ public class AuthService
         TokenStore store,
         ILogger<AuthService> logger)
     {
-        _http = factory.CreateClient("Api");
+        _factory = factory;
         _js = js;
         _store = store;
         _logger = logger;
+        // Defer HttpClient creation until first use
+    }
+
+    private HttpClient Http
+    {
+        get
+        {
+            _http ??= _factory.CreateClient("Api");
+            return _http;
+        }
     }
 
     public async Task InitializeAsync()
@@ -52,7 +63,7 @@ public class AuthService
 
     public async Task<bool> LoginAsync(string email, string password)
     {
-        var response = await _http.PostAsJsonAsync("api/auth/login", new
+        var response = await Http.PostAsJsonAsync("api/auth/login", new
         {
             Email = email,
             Password = password
@@ -72,7 +83,7 @@ public class AuthService
 
     public async Task<RegisterResult> RegisterAsync(string email, string password)
     {
-        var response = await _http.PostAsJsonAsync("api/auth/register", new
+        var response = await Http.PostAsJsonAsync("api/auth/register", new
         {
             email,
             password

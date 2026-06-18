@@ -1,74 +1,57 @@
-﻿using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Forms;
 using PersonalHub.Application.Features.Account.Common;
 using PersonalHub.Application.Features.Users.Common;
 using PersonalHub.Application.Features.Users.CreateUser;
 using PersonalHub.Application.Features.Users.UpdateUser;
-using System.Text.Json;
 
 namespace PersonalHub.Web.Services;
 
-public class UserService
+public class UserService : BaseHttpService
 {
-    private readonly HttpClient _http;
     private readonly ILogger<UserService> _logger;
-
-    private static readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
 
     public UserService(
         IHttpClientFactory factory,
         ILogger<UserService> logger)
+        : base(factory)
     {
-        _http = factory.CreateClient("Api");
         _logger = logger;
     }
 
     public async Task<List<UserDto>> GetUsersAsync()
     {
-        var json = await _http.GetStringAsync("api/users");
-
-        return JsonSerializer.Deserialize<List<UserDto>>(json, _jsonOptions) ?? [];
+        return await GetAllAsync<UserDto>("api/users");
     }
 
     public async Task<UserDto?> GetByIdAsync(string id)
     {
-        var response = await _http.GetAsync($"api/users/{id}");
-
-        if (!response.IsSuccessStatusCode)
-            return null;
-
-        return await response.Content.ReadFromJsonAsync<UserDto>(_jsonOptions);
+        return await GetByIdAsync<UserDto>($"api/users/{id}");
     }
 
-    public async Task<bool> CreateAsync(CreateUserCommand request)
+    public async Task CreateAsync(CreateUserCommand request)
     {
-        var response = await _http.PostAsJsonAsync("api/users", request);
-        return response.IsSuccessStatusCode;
+        await CreateAsync("api/users", request);
     }
 
-    public async Task<bool> UpdateAsync(string id, UpdateUserCommand request)
+    public async Task UpdateAsync(string id, UpdateUserCommand request)
     {
-        var response = await _http.PutAsJsonAsync($"api/users/{id}", request);
-        return response.IsSuccessStatusCode;
+        await UpdateAsync($"api/users/{id}", request);
     }
 
-    public async Task<bool> DeleteAsync(string id)
+    public async Task DeleteAsync(string id)
     {
-        var response = await _http.DeleteAsync($"api/users/{id}");
-        return response.IsSuccessStatusCode;
+        await DeleteAsync($"api/users/{id}");
     }
 
     public async Task<bool> UpdateProfileAsync(UpdateProfileDto dto)
     {
-        var response = await _http.PutAsJsonAsync("api/account/profile", dto);
+        var response = await Http.PutAsJsonAsync("api/account/profile", dto);
         return response.IsSuccessStatusCode;
     }
 
     public async Task<bool> ChangePasswordAsync(ChangePasswordDto dto)
     {
-        var response = await _http.PutAsJsonAsync("api/account/password", dto);
+        var response = await Http.PutAsJsonAsync("api/account/password", dto);
         return response.IsSuccessStatusCode;
     }
 
@@ -101,7 +84,7 @@ public class UserService
 
             _logger.LogInformation("Sending request to api/account/profile-picture");
 
-            var response = await _http.PostAsync("api/account/profile-picture", content);
+            var response = await Http.PostAsync("api/account/profile-picture", content);
 
             _logger.LogInformation("Response status: {StatusCode}", response.StatusCode);
 

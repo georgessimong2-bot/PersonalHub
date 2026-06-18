@@ -1,0 +1,96 @@
+@page "/sfdrclassifications/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.SfdrClassifications.Common
+@using PersonalHub.Web.Services
+
+@inject ILogger<SfdrClassificationDetails> Logger
+@inject NavigationManager Navigation
+@inject SfdrClassificationService SfdrClassificationService
+
+<PageTitle>SFDR Classification Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading SFDR classification...</MudText>
+        </MudPaper>
+    }
+    else if (_sfdrClassification == null)
+    {
+        <MudAlert Severity="Severity.Error">SFDR Classification not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-6">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">@_sfdrClassification.Name</MudText>
+                    <MudText Typo="Typo.body2">SFDR Classification Details</MudText>
+                </div>
+            </MudStack>
+
+            <MudDivider Class="my-4" />
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Name</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@_sfdrClassification.Name</MudText>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2">Description</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_sfdrClassification.Description ?? "No description")</MudText>
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Href="@($"/sfdrclassifications/edit/{Id}")">Edit</MudButton>
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="GoBack">Back</MudButton>
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private SfdrClassificationDto? _sfdrClassification;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSfdrClassification();
+    }
+
+    private async Task LoadSfdrClassification()
+    {
+        try
+        {
+            _sfdrClassification = await SfdrClassificationService.GetSfdrClassificationByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading SFDR classification {SfdrClassificationId}", Id);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/sfdrclassifications");
+    }
+}

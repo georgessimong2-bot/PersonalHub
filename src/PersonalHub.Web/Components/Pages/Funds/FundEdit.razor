@@ -408,19 +408,19 @@
                 _description,
                 _fundTypeId);
 
-            var success =
+            try
+            {
                 await FundService.UpdateFundAsync(
                     Id,
                     command);
 
-            if (!success)
-            {
-                _error = "Unable to update fund.";
-                return;
+                Navigation.NavigateTo(
+                    $"/funds/details/{Id}");
             }
-
-            Navigation.NavigateTo(
-                $"/funds/details/{Id}");
+            catch (HttpRequestException ex)
+            {
+                _error = $"Unable to update fund: {ex.Message}";
+            }
         }
         catch (Exception ex)
         {

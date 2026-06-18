@@ -7,6 +7,7 @@ public static class ApiExtensions
     public static void MapEndpoints(
         this WebApplication app)
     {
+        app.MapDiagnosticEndpoints();
         app.MapAuthEndpoints();
         app.MapNotesEndpoints();
         app.MapUsersEndpoints();
@@ -16,5 +17,11 @@ public static class ApiExtensions
         app.MapFundEndpoints();
         app.MapFundTypeEndpoints();
         app.MapDashboardEndpoints();
+        app.MapCurrencyEndpoints();
+        app.MapAssetClassesEndpoints();
+        app.MapBenchmarksEndpoints();
+        app.MapSfdrClassificationsEndpoints();
+        app.MapShareClassesEndpoints();
+        app.MapSubFundsEndpoints();
     }
 }

@@ -1,0 +1,126 @@
+@page "/subfunds/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.SubFunds.Common
+@using PersonalHub.Web.Services
+
+@inject ILogger<SubFundDetails> Logger
+@inject NavigationManager Navigation
+@inject SubFundService SubFundService
+
+<PageTitle>Sub Fund Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading sub fund...</MudText>
+        </MudPaper>
+    }
+    else if (_subFund == null)
+    {
+        <MudAlert Severity="Severity.Error">Sub Fund not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-6">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">@_subFund.Name</MudText>
+                    <MudText Typo="Typo.body2">Sub Fund Details</MudText>
+                </div>
+            </MudStack>
+
+            <MudDivider Class="my-4" />
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Name</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@_subFund.Name</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Internal Code</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_subFund.InternalCode ?? "-")</MudText>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2">Investment Objective</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_subFund.InvestmentObjective ?? "No objective")</MudText>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2">Investment Policy</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_subFund.InvestmentPolicy ?? "No policy")</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Geographic Focus</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_subFund.GeographicFocus ?? "-")</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Sector Focus</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_subFund.SectorFocus ?? "-")</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Risk Profile</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_subFund.RiskProfile ?? "-")</MudText>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2">Description</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_subFund.Description ?? "No description")</MudText>
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Href="@($"/subfunds/edit/{Id}")">Edit</MudButton>
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="GoBack">Back</MudButton>
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private SubFundDto? _subFund;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSubFund();
+    }
+
+    private async Task LoadSubFund()
+    {
+        try
+        {
+            _subFund = await SubFundService.GetSubFundByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading sub fund {SubFundId}", Id);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/subfunds");
+    }
+}

@@ -1,0 +1,140 @@
+@page "/assetclasses"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.AssetClasses.Common
+@using PersonalHub.Web.Services
+
+@inject AssetClassService AssetClassService
+@inject ILogger<AssetClasses> Logger
+@inject NavigationManager Navigation
+
+<PageTitle>Asset Classes</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading asset classes...</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-4">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Asset Classes</MudText>
+                    <MudText Typo="Typo.body2">@_filteredAssetClasses.Count asset class(es)</MudText>
+                </div>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/assetclasses/create" StartIcon="@Icons.Material.Filled.Add">
+                    Create Asset Class
+                </MudButton>
+            </MudStack>
+
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" md="8">
+                    <MudTextField T="string" @bind-Value="SearchTerm" Label="Search Asset Classes" Variant="Variant.Outlined" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Clear" OnClick="ClearFilters">
+                        Clear Filters
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+
+            <MudTable Items="@_filteredAssetClasses" Hover="true" Dense="true" Striped="true" Bordered="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Description</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Name">
+                        <MudTooltip Text="@context.Description">
+                            @context.Name
+                        </MudTooltip>
+                    </MudTd>
+                    <MudTd DataLabel="Description">@(string.IsNullOrWhiteSpace(context.Description) ? "-" : context.Description.Length > 50 ? context.Description.Substring(0, 50) + "..." : context.Description)</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Color="@(context.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">
+                            @(context.IsActive ? "Active" : "Inactive")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/assetclasses/{context.Id}")" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/assetclasses/edit/{context.Id}")" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    private List<AssetClassDto> _assetClasses = new();
+    private List<AssetClassDto> _filteredAssetClasses = new();
+    private string _searchTerm = string.Empty;
+    private bool _isLoading = true;
+
+    public string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            FilterAssetClasses();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAssetClasses();
+    }
+
+    private async Task LoadAssetClasses()
+    {
+        try
+        {
+            _assetClasses = await AssetClassService.GetAssetClassesAsync() ?? new List<AssetClassDto>();
+            FilterAssetClasses();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading asset classes");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void FilterAssetClasses()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _filteredAssetClasses = _assetClasses;
+        }
+        else
+        {
+            var searchLower = _searchTerm.ToLower();
+            _filteredAssetClasses = _assetClasses
+                .Where(ac => ac.Name.ToLower().Contains(searchLower) || 
+                             (ac.Description != null && ac.Description.ToLower().Contains(searchLower)))
+                .ToList();
+        }
+    }
+
+    private void ClearFilters()
+    {
+        SearchTerm = string.Empty;
+    }
+}

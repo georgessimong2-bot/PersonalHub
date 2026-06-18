@@ -1,0 +1,118 @@
+@page "/benchmarks/create"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Benchmarks.CreateBenchmark
+@using PersonalHub.Web.Services
+
+@inject BenchmarkService BenchmarkService
+@inject NavigationManager Navigation
+@inject ILogger<BenchmarkCreate> Logger
+
+<PageTitle>Create Benchmark</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    <MudPaper Class="pa-6">
+
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+            <div>
+                <MudText Typo="Typo.h4">Create Benchmark</MudText>
+                <MudText Typo="Typo.body2">Create a new benchmark</MudText>
+            </div>
+            <MudChip T="string" Color="Color.Info" Variant="Variant.Filled">New Benchmark</MudChip>
+        </MudStack>
+
+        <MudPaper Class="pa-4 mb-4" Outlined="true">
+            <MudText Typo="Typo.subtitle2">Preview</MudText>
+            <MudText Typo="Typo.h6" Class="mt-2">
+                @(string.IsNullOrWhiteSpace(_name) ? "Unnamed Benchmark" : _name)
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mt-2">
+                @(string.IsNullOrWhiteSpace(_provider) ? "No provider specified." : _provider)
+            </MudText>
+        </MudPaper>
+
+        <MudTextField T="string" @bind-Value="_name" Label="Name" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
+
+        <MudTextField T="string" @bind-Value="_bloombergTicker" Label="Bloomberg Ticker" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+
+        <MudTextField T="string" @bind-Value="_reutersCode" Label="Reuters Code" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+
+        <MudTextField T="string" @bind-Value="_provider" Label="Provider" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+
+        <MudTextField T="string" @bind-Value="_description" Label="Description" Variant="Variant.Outlined" Lines="6" FullWidth="true" Class="mb-4" />
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+        }
+
+        <MudDivider Class="my-4" />
+
+        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Disabled="_isSubmitting" OnClick="HandleCreate">
+                @if (_isSubmitting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                    <span class="ms-2">Creating...</span>
+                }
+                else
+                {
+                    <span>Create Benchmark</span>
+                }
+            </MudButton>
+        </MudStack>
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    private string _name = string.Empty;
+    private string _bloombergTicker = string.Empty;
+    private string _reutersCode = string.Empty;
+    private string _provider = string.Empty;
+    private string _description = string.Empty;
+    private string _error = string.Empty;
+    private bool _isSubmitting = false;
+
+    private async Task HandleCreate()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _error = "Name is required.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = string.Empty;
+
+        try
+        {
+            var command = new CreateBenchmarkCommand
+            {
+                Name = _name,
+                BloombergTicker = _bloombergTicker,
+                ReutersCode = _reutersCode,
+                Provider = _provider,
+                Description = _description
+            };
+
+            var id = await BenchmarkService.CreateBenchmarkAsync(command);
+            Navigation.NavigateTo($"/benchmarks/{id}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating benchmark");
+            _error = "An error occurred while creating the benchmark.";
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/benchmarks");
+    }
+}

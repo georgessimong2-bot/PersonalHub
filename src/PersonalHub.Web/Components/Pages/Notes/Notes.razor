@@ -5,7 +5,7 @@
 @using OfficeOpenXml
 @using PersonalHub.Application.Features.Notes.Common
 
-@inject NotesService NotesService
+@inject NoteService NoteService
 @inject ILogger<Notes> Logger
 @inject IJSRuntime JSRuntime
 
@@ -33,6 +33,15 @@
             </MudText>
 
         </MudPaper>
+    }
+    else if (!string.IsNullOrEmpty(_error))
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">
+            @_error
+            <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/login" Class="ml-2">
+                Go to Login
+            </MudButton>
+        </MudAlert>
     }
     else
     {
@@ -229,6 +238,8 @@
 
     private bool _isLoading = true;
 
+    private string? _error;
+
     private List<NoteDto> _notes = [];
     private List<NoteDto> _filteredNotes = [];
 
@@ -246,8 +257,18 @@
     {
         try
         {
-            _notes = await NotesService.GetNotesAsync() ?? [];
+            _notes = await NoteService.GetNotesAsync();
             ApplyFilters();
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _error = "🔐 Authentication failed. Your session may have expired. Please log in again.";
+            Logger.LogError(ex, "Unauthorized access to notes");
+        }
+        catch (Exception ex)
+        {
+            _error = $"❌ Error loading notes: {ex.Message}";
+            Logger.LogError(ex, "Error loading notes");
         }
         finally
         {
@@ -313,16 +334,21 @@
         if (_noteToDelete == Guid.Empty)
             return;
 
-        var success = await NotesService.DeleteAsync(_noteToDelete);
-
-        if (success)
+        try
         {
+            await NoteService.DeleteNoteAsync(_noteToDelete);
             _notes.RemoveAll(x => x.Id == _noteToDelete);
             ApplyFilters();
         }
-
-        _noteToDelete = Guid.Empty;
-        _showConfirmDialog = false;
+        catch (HttpRequestException ex)
+        {
+            Logger.LogError(ex, "Error deleting note");
+        }
+        finally
+        {
+            _noteToDelete = Guid.Empty;
+            _showConfirmDialog = false;
+        }
     }
 
     private Task CancelDelete()

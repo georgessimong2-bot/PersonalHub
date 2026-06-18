@@ -1,0 +1,188 @@
+@page "/subfunds/create"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.SubFunds.CreateSubFund
+@using PersonalHub.Application.Features.Funds.Common
+@using PersonalHub.Web.Services
+
+@inject SubFundService SubFundService
+@inject FundService FundService
+@inject NavigationManager Navigation
+@inject ILogger<SubFundCreate> Logger
+
+<PageTitle>Create Sub Fund</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    <MudPaper Class="pa-6">
+
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+            <div>
+                <MudText Typo="Typo.h4">Create Sub Fund</MudText>
+                <MudText Typo="Typo.body2">Create a new sub fund</MudText>
+            </div>
+            <MudChip T="string" Color="Color.Info" Variant="Variant.Filled">New Sub Fund</MudChip>
+        </MudStack>
+
+        <MudPaper Class="pa-4 mb-4" Outlined="true">
+            <MudText Typo="Typo.subtitle2">Preview</MudText>
+            <MudText Typo="Typo.h6" Class="mt-2">
+                @(string.IsNullOrWhiteSpace(_name) ? "Unnamed Sub Fund" : _name)
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mt-2">
+                @(string.IsNullOrWhiteSpace(_investmentObjective) ? "No objective provided." : _investmentObjective)
+            </MudText>
+        </MudPaper>
+
+        <MudGrid>
+            <MudItem xs="12">
+                <MudSelect T="FundDto" 
+                    @bind-Value="_selectedFund" 
+                    Label="Fund *" 
+                    Variant="Variant.Outlined" 
+                    FullWidth="true" 
+                    Required="true" 
+                    Class="mb-4"
+                    ToStringFunc="x => x?.Name ?? string.Empty">
+                    @foreach (var fund in _fundsList)
+                    {
+                        <MudSelectItem T="FundDto" Value="@fund">@fund.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudTextField T="string" @bind-Value="_name" Label="Name" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudTextField T="string" @bind-Value="_internalCode" Label="Internal Code" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField T="string" @bind-Value="_investmentObjective" Label="Investment Objective" Variant="Variant.Outlined" FullWidth="true" Lines="3" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField T="string" @bind-Value="_investmentPolicy" Label="Investment Policy" Variant="Variant.Outlined" FullWidth="true" Lines="3" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudTextField T="string" @bind-Value="_geographicFocus" Label="Geographic Focus" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudTextField T="string" @bind-Value="_sectorFocus" Label="Sector Focus" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField T="string" @bind-Value="_riskProfile" Label="Risk Profile" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField T="string" @bind-Value="_description" Label="Description" Variant="Variant.Outlined" FullWidth="true" Lines="6" Class="mb-4" />
+            </MudItem>
+        </MudGrid>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+        }
+
+        <MudDivider Class="my-4" />
+
+        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Disabled="_isSubmitting || _selectedFund is null" OnClick="HandleCreate">
+                @if (_isSubmitting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                    <span class="ms-2">Creating...</span>
+                }
+                else
+                {
+                    <span>Create Sub Fund</span>
+                }
+            </MudButton>
+        </MudStack>
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    private List<FundDto> _fundsList = [];
+    private FundDto? _selectedFund;
+    private string _name = string.Empty;
+    private string _internalCode = string.Empty;
+    private string _investmentObjective = string.Empty;
+    private string _investmentPolicy = string.Empty;
+    private string _geographicFocus = string.Empty;
+    private string _sectorFocus = string.Empty;
+    private string _riskProfile = string.Empty;
+    private string _description = string.Empty;
+    private string _error = string.Empty;
+    private bool _isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _fundsList = await FundService.GetFundsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading funds");
+            _error = "Failed to load funds.";
+        }
+    }
+
+    private async Task HandleCreate()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _error = "Name is required.";
+            return;
+        }
+
+        if (_selectedFund is null)
+        {
+            _error = "Fund is required.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = string.Empty;
+
+        try
+        {
+            var command = new CreateSubFundCommand
+            {
+                FundId = _selectedFund.Id,
+                Name = _name,
+                InternalCode = _internalCode,
+                InvestmentObjective = _investmentObjective,
+                InvestmentPolicy = _investmentPolicy,
+                GeographicFocus = _geographicFocus,
+                SectorFocus = _sectorFocus,
+                RiskProfile = _riskProfile,
+                Description = _description
+            };
+
+            var id = await SubFundService.CreateSubFundAsync(command);
+            Navigation.NavigateTo($"/subfunds/{id}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating sub fund");
+            _error = "An error occurred while creating the sub fund.";
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/subfunds");
+    }
+}

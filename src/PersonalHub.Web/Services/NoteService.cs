@@ -1,95 +1,38 @@
 ﻿using PersonalHub.Application.Features.Notes.Common;
-using PersonalHub.Web.Services.Auth;
-using System.Net.Http.Headers;
+using PersonalHub.Application.Features.Notes.CreateNote;
+using PersonalHub.Application.Features.Notes.UpdateNote;
 
-public class NotesService
+namespace PersonalHub.Web.Services;
+
+public class NoteService : BaseHttpService
 {
-    private readonly HttpClient _http;
-    private readonly AuthService _authService;
-
-    public NotesService(
-        IHttpClientFactory factory,
-        AuthService authService)
+    public NoteService(IHttpClientFactory factory)
+        : base(factory)
     {
-        _http = factory.CreateClient("Api");
-        _authService = authService;
     }
 
-    private void SetAuthorizationHeader()
+    public async Task<List<NoteDto>> GetNotesAsync()
     {
-        var token = _authService.GetToken();
-
-        if (!string.IsNullOrWhiteSpace(token))
-        {
-            _http.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue(
-                    "Bearer",
-                    token);
-        }
-        else
-        {
-            _http.DefaultRequestHeaders.Authorization = null;
-        }
+        return await GetAllAsync<NoteDto>("api/notes");
     }
-
-    public async Task<List<NoteDto>?> GetNotesAsync()
-    {
-        SetAuthorizationHeader();
-
-        return await _http.GetFromJsonAsync<List<NoteDto>>(
-            "api/notes");
-    }
-
 
     public async Task<NoteDto?> GetNoteByIdAsync(Guid id)
     {
-        return await _http.GetFromJsonAsync<NoteDto>(
-            $"api/notes/{id}");
+        return await GetByIdAsync<NoteDto>($"api/notes/{id}");
     }
 
-    public async Task<bool> CreateAsync(
-        string title,
-        string content)
+    public async Task<Guid> CreateNoteAsync(CreateNoteCommand command)
     {
-        SetAuthorizationHeader();
-
-        var response = await _http.PostAsJsonAsync(
-            "api/notes",
-            new
-            {
-                Title = title,
-                Content = content
-            });
-
-        return response.IsSuccessStatusCode;
+        return await CreateAsync("api/notes", command);
     }
 
-    public async Task<bool> UpdateAsync(
-        Guid id,
-        string title,
-        string content)
+    public async Task UpdateNoteAsync(Guid id, UpdateNoteCommand command)
     {
-        SetAuthorizationHeader();
-
-        var response = await _http.PutAsJsonAsync(
-            $"api/notes/{id}",
-            new
-            {
-                Id = id,
-                Title = title,
-                Content = content
-            });
-
-        return response.IsSuccessStatusCode;
+        await UpdateAsync($"api/notes/{id}", command);
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task DeleteNoteAsync(Guid id)
     {
-        SetAuthorizationHeader();
-
-        var response = await _http.DeleteAsync(
-            $"api/notes/{id}");
-
-        return response.IsSuccessStatusCode;
+        await DeleteAsync($"api/notes/{id}");
     }
 }

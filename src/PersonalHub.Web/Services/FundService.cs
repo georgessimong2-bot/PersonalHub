@@ -4,44 +4,35 @@ using PersonalHub.Application.Features.Funds.UpdateFund;
 
 namespace PersonalHub.Web.Services;
 
-public class FundService
+public class FundService : BaseHttpService
 {
-    private readonly HttpClient _http;
-
     public FundService(IHttpClientFactory factory)
+        : base(factory)
     {
-        _http = factory.CreateClient("Api");
     }
 
     public async Task<List<FundDto>> GetFundsAsync()
     {
-        return await _http.GetFromJsonAsync<List<FundDto>>("api/funds")
-               ?? [];
+        return await GetAllAsync<FundDto>("api/funds");
     }
 
     public async Task<FundDto?> GetFundByIdAsync(Guid id)
     {
-        return await _http.GetFromJsonAsync<FundDto>($"api/funds/{id}");
+        return await GetByIdAsync<FundDto>($"api/funds/{id}");
     }
 
     public async Task CreateFundAsync(CreateFundCommand command)
     {
-        await _http.PostAsJsonAsync("api/funds", command);
+        await CreateAsync("api/funds", command);
     }
 
-    public async Task<bool> UpdateFundAsync(
-    Guid id,
-    UpdateFundCommand command)
+    public async Task UpdateFundAsync(Guid id, UpdateFundCommand command)
     {
-        var response = await _http.PutAsJsonAsync(
-            $"api/funds/{id}",
-            command);
-
-        return response.IsSuccessStatusCode;
+        await UpdateAsync($"api/funds/{id}", command);
     }
 
     public async Task DeleteFundAsync(Guid id)
     {
-        await _http.DeleteAsync($"api/funds/{id}");
+        await DeleteAsync($"api/funds/{id}");
     }
 }

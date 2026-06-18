@@ -368,19 +368,18 @@
                 _currentValue,
                 _deadline);
 
-            var success =
+            try
+            {
                 await GoalService.UpdateGoalAsync(
                     Id,
                     command);
 
-            if (!success)
-            {
-                _error = "Failed to update goal.";
-                return;
+                Navigation.NavigateTo($"/goals/{Id}");
             }
-
-            Navigation.NavigateTo(
-                $"/goals/details/{Id}");
+            catch (HttpRequestException ex)
+            {
+                _error = $"Failed to update goal: {ex.Message}";
+            }
         }
         catch (Exception ex)
         {

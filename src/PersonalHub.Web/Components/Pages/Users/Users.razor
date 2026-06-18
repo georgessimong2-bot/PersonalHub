@@ -283,14 +283,7 @@
         {
             Logger.LogInformation("Deleting user {Id}", id);
 
-            var success = await UsersService.DeleteAsync(id);
-
-            if (!success)
-            {
-                Logger.LogError("Failed to delete user {Id}", id);
-                return;
-            }
-
+            await UsersService.DeleteAsync(id);
             _users.RemoveAll(x => x.Id == id);
 
             ApplyFilters();

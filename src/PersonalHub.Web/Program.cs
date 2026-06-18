@@ -28,6 +28,19 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 #endregion
 
+#region HTTP CLIENT (IMPORTANT - Must be registered BEFORE services that use it)
+builder.Services.AddTransient<AuthHeaderHandler>();
+builder.Services.AddTransient<LoggingHttpHandler>();
+
+builder.Services.AddHttpClient("Api", (sp, client) =>
+{
+    var config = sp.GetRequiredService<IOptions<ApiSettings>>().Value;
+    client.BaseAddress = new Uri(config.BaseUrl);
+})
+.AddHttpMessageHandler<LoggingHttpHandler>()
+.AddHttpMessageHandler<AuthHeaderHandler>();
+#endregion
+
 #region AUTH CORE SERVICES
 builder.Services.AddSingleton<TokenStore>();
 builder.Services.AddScoped<AuthService>();
@@ -36,24 +49,20 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
 #endregion
 
-#region HTTP CLIENT (IMPORTANT)
-builder.Services.AddTransient<AuthHeaderHandler>();
-
-builder.Services.AddHttpClient("Api", (sp, client) =>
-{
-    var config = sp.GetRequiredService<IOptions<ApiSettings>>().Value;
-    client.BaseAddress = new Uri(config.BaseUrl);
-})
-.AddHttpMessageHandler<AuthHeaderHandler>();
-#endregion
-
 #region APP SERVICES
-builder.Services.AddScoped<NotesService>();
+builder.Services.AddScoped<NoteService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<GoalService>();
 builder.Services.AddScoped<FundService>();
 builder.Services.AddScoped<FundTypeService>();
 builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<CurrencyService>();
+builder.Services.AddScoped<AssetClassService>();
+builder.Services.AddScoped<BenchmarkService>();
+builder.Services.AddScoped<SfdrClassificationService>();
+builder.Services.AddScoped<ShareClassService>();
+builder.Services.AddScoped<SubFundService>();
+
 #endregion
 
 #region MUD BLAZOR

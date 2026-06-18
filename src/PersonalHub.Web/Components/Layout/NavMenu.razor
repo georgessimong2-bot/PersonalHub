@@ -42,6 +42,47 @@
         </Authorized>
     </AuthorizeView>
 
+   
+
+    <MudDivider Class="my-2" />
+    <MudText Typo="Typo.overline" Class="px-4">Fund Metadata</MudText>
+
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/assetclasses"
+                        Icon="@Icons.Material.Filled.Layers">
+                Asset Classes
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/sfdrclassifications"
+                        Icon="@Icons.Material.Filled.Category">
+                SFDR Classifications
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/currencies"
+                        Icon="@Icons.Material.Filled.AttachMoney">
+                Currencies
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/benchmarks"
+                        Icon="@Icons.Material.Filled.TrendingUp">
+                Benchmarks
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
     <AuthorizeView Roles="USER, ADMIN">
         <Authorized>
             <MudNavLink Href="/fundtypes"
@@ -59,5 +100,25 @@
             </MudNavLink>
         </Authorized>
     </AuthorizeView>
+
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/subfunds"
+                        Icon="@Icons.Material.Filled.Workspaces">
+                Sub Funds
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/shareclasses"
+                        Icon="@Icons.Material.Filled.PieChart">
+                Share Classes
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>   
+
+  
 </MudNavMenu>
 
