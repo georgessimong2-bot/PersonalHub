@@ -13,7 +13,7 @@ public interface IAppDbContext
     DbSet<FundType> FundTypes { get; }
     DbSet<Currency> Currencies { get; }
     DbSet<Benchmark> Benchmarks { get; }
-    DbSet<AssetClass> AssetClasses { get; }
+    DbSet<InvestmentStrategy> InvestmentStrategies { get; }
     DbSet<SfdrClassification> SfdrClassifications { get; }
 
     Task<int> SaveChangesAsync(

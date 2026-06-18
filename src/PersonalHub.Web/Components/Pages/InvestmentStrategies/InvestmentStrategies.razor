@@ -1,15 +1,15 @@
-@page "/assetclasses"
+@page "/investmentstrategies"
 @rendermode InteractiveServer
 
 @using MudBlazor
-@using PersonalHub.Application.Features.AssetClasses.Common
+@using PersonalHub.Application.Features.InvestmentStrategies.Common
 @using PersonalHub.Web.Services
 
-@inject AssetClassService AssetClassService
-@inject ILogger<AssetClasses> Logger
+@inject InvestmentStrategyService InvestmentStrategyService
+@inject ILogger<InvestmentStrategies> Logger
 @inject NavigationManager Navigation
 
-<PageTitle>Asset Classes</PageTitle>
+<PageTitle>Investment Strategies</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
@@ -17,7 +17,7 @@
     {
         <MudPaper Class="pa-8 text-center">
             <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-            <MudText Class="mt-4">Loading asset classes...</MudText>
+            <MudText Class="mt-4">Loading investment strategies...</MudText>
         </MudPaper>
     }
     else
@@ -26,17 +26,17 @@
 
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
                 <div>
-                    <MudText Typo="Typo.h4">Asset Classes</MudText>
-                    <MudText Typo="Typo.body2">@_filteredAssetClasses.Count asset class(es)</MudText>
+                    <MudText Typo="Typo.h4">Investment Strategies</MudText>
+                    <MudText Typo="Typo.body2">@_filteredInvestmentStrategies.Count investment strateg(y/ies)</MudText>
                 </div>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/assetclasses/create" StartIcon="@Icons.Material.Filled.Add">
-                    Create Asset Class
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/investmentstrategies/create" StartIcon="@Icons.Material.Filled.Add">
+                    Create Investment Strategy
                 </MudButton>
             </MudStack>
 
             <MudGrid Class="mb-4">
                 <MudItem xs="12" md="8">
-                    <MudTextField T="string" @bind-Value="SearchTerm" Label="Search Asset Classes" Variant="Variant.Outlined" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                    <MudTextField T="string" @bind-Value="SearchTerm" Label="Search Investment Strategies" Variant="Variant.Outlined" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
                 </MudItem>
                 <MudItem xs="12" md="4">
                     <MudButton Variant="Variant.Text" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Clear" OnClick="ClearFilters">
@@ -45,7 +45,7 @@
                 </MudItem>
             </MudGrid>
 
-            <MudTable Items="@_filteredAssetClasses" Hover="true" Dense="true" Striped="true" Bordered="true" Elevation="0">
+            <MudTable Items="@_filteredInvestmentStrategies" Hover="true" Dense="true" Striped="true" Bordered="true" Elevation="0">
                 <HeaderContent>
                     <MudTh>Name</MudTh>
                     <MudTh>Description</MudTh>
@@ -65,8 +65,8 @@
                         </MudChip>
                     </MudTd>
                     <MudTd DataLabel="Actions">
-                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/assetclasses/{context.Id}")" />
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/assetclasses/edit/{context.Id}")" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/investmentstrategies/{context.Id}")" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/investmentstrategies/edit/{context.Id}")" />
                     </MudTd>
                 </RowTemplate>
                 <PagerContent>
@@ -80,8 +80,8 @@
 </MudContainer>
 
 @code {
-    private List<AssetClassDto> _assetClasses = new();
-    private List<AssetClassDto> _filteredAssetClasses = new();
+    private List<InvestmentStrategyDto> _investmentStrategies = new();
+    private List<InvestmentStrategyDto> _filteredInvestmentStrategies = new();
     private string _searchTerm = string.Empty;
     private bool _isLoading = true;
 
@@ -91,25 +91,25 @@
         set
         {
             _searchTerm = value;
-            FilterAssetClasses();
+            FilterInvestmentStrategies();
         }
     }
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAssetClasses();
+        await LoadInvestmentStrategies();
     }
 
-    private async Task LoadAssetClasses()
+    private async Task LoadInvestmentStrategies()
     {
         try
         {
-            _assetClasses = await AssetClassService.GetAssetClassesAsync() ?? new List<AssetClassDto>();
-            FilterAssetClasses();
+            _investmentStrategies = await InvestmentStrategyService.GetInvestmentStrategiesAsync() ?? new List<InvestmentStrategyDto>();
+            FilterInvestmentStrategies();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error loading asset classes");
+            Logger.LogError(ex, "Error loading investment strategies");
         }
         finally
         {
@@ -117,18 +117,18 @@
         }
     }
 
-    private void FilterAssetClasses()
+    private void FilterInvestmentStrategies()
     {
         if (string.IsNullOrWhiteSpace(_searchTerm))
         {
-            _filteredAssetClasses = _assetClasses;
+            _filteredInvestmentStrategies = _investmentStrategies;
         }
         else
         {
             var searchLower = _searchTerm.ToLower();
-            _filteredAssetClasses = _assetClasses
-                .Where(ac => ac.Name.ToLower().Contains(searchLower) || 
-                             (ac.Description != null && ac.Description.ToLower().Contains(searchLower)))
+            _filteredInvestmentStrategies = _investmentStrategies
+                .Where(s => s.Name.ToLower().Contains(searchLower) || 
+                             (s.Description != null && s.Description.ToLower().Contains(searchLower)))
                 .ToList();
         }
     }

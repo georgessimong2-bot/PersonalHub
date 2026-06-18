@@ -1,16 +1,16 @@
-@page "/assetclasses/edit/{Id:guid}"
+@page "/investmentstrategies/edit/{Id:guid}"
 @rendermode InteractiveServer
 
 @using MudBlazor
-@using PersonalHub.Application.Features.AssetClasses.Common
-@using PersonalHub.Application.Features.AssetClasses.UpdateAssetClass
+@using PersonalHub.Application.Features.InvestmentStrategies.Common
+@using PersonalHub.Application.Features.InvestmentStrategies.UpdateInvestmentStrategy
 @using PersonalHub.Web.Services
 
-@inject AssetClassService AssetClassService
+@inject InvestmentStrategyService InvestmentStrategyService
 @inject NavigationManager Navigation
-@inject ILogger<AssetClassEdit> Logger
+@inject ILogger<InvestmentStrategyEdit> Logger
 
-<PageTitle>Edit Asset Class</PageTitle>
+<PageTitle>Edit Investment Strategy</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
 
@@ -18,12 +18,12 @@
     {
         <MudPaper Class="pa-8 text-center">
             <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-            <MudText Class="mt-4">Loading asset class...</MudText>
+            <MudText Class="mt-4">Loading investment strategy...</MudText>
         </MudPaper>
     }
-    else if (_assetClass == null)
+    else if (_investmentStrategy == null)
     {
-        <MudAlert Severity="Severity.Error">Asset Class not found.</MudAlert>
+        <MudAlert Severity="Severity.Error">Investment Strategy not found.</MudAlert>
     }
     else
     {
@@ -31,8 +31,8 @@
 
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
                 <div>
-                    <MudText Typo="Typo.h4">Edit Asset Class</MudText>
-                    <MudText Typo="Typo.body2">Update asset class information</MudText>
+                    <MudText Typo="Typo.h4">Edit Investment Strategy</MudText>
+                    <MudText Typo="Typo.body2">Update investment strategy information</MudText>
                 </div>
                 <MudChip T="string" Color="@(_isActive ? Color.Success : Color.Error)" Variant="Variant.Filled">
                     @(_isActive ? "Active" : "Inactive")
@@ -42,7 +42,7 @@
             <MudPaper Class="pa-4 mb-4" Outlined="true">
                 <MudText Typo="Typo.subtitle2">Preview</MudText>
                 <MudText Typo="Typo.h6" Class="mt-2">
-                    @(string.IsNullOrWhiteSpace(_name) ? "Unnamed Asset Class" : _name)
+                    @(string.IsNullOrWhiteSpace(_name) ? "Unnamed Investment Strategy" : _name)
                 </MudText>
                 <MudText Typo="Typo.body2" Class="mt-2">
                     @(string.IsNullOrWhiteSpace(_description) ? "No description provided." : _description)
@@ -86,7 +86,7 @@
     [Parameter]
     public Guid Id { get; set; }
 
-    private AssetClassDto? _assetClass;
+    private InvestmentStrategyDto? _investmentStrategy;
     private string _name = string.Empty;
     private string _description = string.Empty;
     private bool _isActive = false;
@@ -96,25 +96,25 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAssetClass();
+        await LoadInvestmentStrategy();
     }
 
-    private async Task LoadAssetClass()
+    private async Task LoadInvestmentStrategy()
     {
         try
         {
-            _assetClass = await AssetClassService.GetAssetClassByIdAsync(Id);
-            if (_assetClass != null)
+            _investmentStrategy = await InvestmentStrategyService.GetInvestmentStrategyByIdAsync(Id);
+            if (_investmentStrategy != null)
             {
-                _name = _assetClass.Name;
-                _description = _assetClass.Description ?? string.Empty;
-                _isActive = _assetClass.IsActive;
+                _name = _investmentStrategy.Name;
+                _description = _investmentStrategy.Description ?? string.Empty;
+                _isActive = _investmentStrategy.IsActive;
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error loading asset class {AssetClassId}", Id);
-            _error = "An error occurred while loading the asset class.";
+            Logger.LogError(ex, "Error loading investment strategy {InvestmentStrategyId}", Id);
+            _error = "An error occurred while loading the investment strategy.";
         }
         finally
         {
@@ -135,26 +135,26 @@
 
         try
         {
-            var command = new UpdateAssetClassCommand(
+            var command = new UpdateInvestmentStrategyCommand(
                 Id,
                 _name,
                 _description,
                 _isActive
             );
 
-            await AssetClassService.UpdateAssetClassAsync(Id, command);
-            Navigation.NavigateTo($"/assetclasses/{Id}");
+            await InvestmentStrategyService.UpdateInvestmentStrategyAsync(Id, command);
+            Navigation.NavigateTo($"/investmentstrategies/{Id}");
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error updating asset class");
-            _error = "An error occurred while updating the asset class.";
+            Logger.LogError(ex, "Error updating investment strategy");
+            _error = "An error occurred while updating the investment strategy.";
             _isSubmitting = false;
         }
     }
 
     private void Cancel()
     {
-        Navigation.NavigateTo($"/assetclasses/{Id}");
+        Navigation.NavigateTo($"/investmentstrategies/{Id}");
     }
 }

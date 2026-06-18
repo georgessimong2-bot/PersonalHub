@@ -26,7 +26,7 @@ public class GetSubFundByIdHandler
                 Id = x.Id,
                 FundId = x.FundId,
                 BenchmarkId = x.BenchmarkId,
-                AssetClassId = x.AssetClassId,
+                InvestmentStrategyId = x.InvestmentStrategyId,
                 SfdrClassificationId = x.SfdrClassificationId,
                 Name = x.Name,
                 InternalCode = x.InternalCode,

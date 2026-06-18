@@ -1,15 +1,15 @@
-@page "/assetclasses/{Id:guid}"
+@page "/investmentstrategies/{Id:guid}"
 @rendermode InteractiveServer
 
 @using MudBlazor
-@using PersonalHub.Application.Features.AssetClasses.Common
+@using PersonalHub.Application.Features.InvestmentStrategies.Common
 @using PersonalHub.Web.Services
 
-@inject ILogger<AssetClassDetails> Logger
+@inject ILogger<InvestmentStrategyDetails> Logger
 @inject NavigationManager Navigation
-@inject AssetClassService AssetClassService
+@inject InvestmentStrategyService InvestmentStrategyService
 
-<PageTitle>Asset Class Details</PageTitle>
+<PageTitle>Investment Strategy Details</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
 
@@ -17,12 +17,12 @@
     {
         <MudPaper Class="pa-8 text-center">
             <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-            <MudText Class="mt-4">Loading asset class...</MudText>
+            <MudText Class="mt-4">Loading investment strategy...</MudText>
         </MudPaper>
     }
-    else if (_assetClass == null)
+    else if (_investmentStrategy == null)
     {
-        <MudAlert Severity="Severity.Error">Asset Class not found.</MudAlert>
+        <MudAlert Severity="Severity.Error">Investment Strategy not found.</MudAlert>
     }
     else
     {
@@ -30,11 +30,11 @@
 
             <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
                 <div>
-                    <MudText Typo="Typo.h4">@_assetClass.Name</MudText>
-                    <MudText Typo="Typo.body2">Asset Class Details</MudText>
+                    <MudText Typo="Typo.h4">@_investmentStrategy.Name</MudText>
+                    <MudText Typo="Typo.body2">Investment Strategy Details</MudText>
                 </div>
-                <MudChip T="string" Color="@(_assetClass.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled">
-                    @(_assetClass.IsActive ? "Active" : "Inactive")
+                <MudChip T="string" Color="@(_investmentStrategy.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled">
+                    @(_investmentStrategy.IsActive ? "Active" : "Inactive")
                 </MudChip>
             </MudStack>
 
@@ -43,24 +43,24 @@
             <MudGrid>
                 <MudItem xs="12" md="6">
                     <MudText Typo="Typo.subtitle2">Name</MudText>
-                    <MudText Typo="Typo.body1" Class="mt-2">@_assetClass.Name</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@_investmentStrategy.Name</MudText>
                 </MudItem>
 
                 <MudItem xs="12" md="6">
                     <MudText Typo="Typo.subtitle2">Status</MudText>
-                    <MudText Typo="Typo.body1" Class="mt-2">@(_assetClass.IsActive ? "Active" : "Inactive")</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_investmentStrategy.IsActive ? "Active" : "Inactive")</MudText>
                 </MudItem>
 
                 <MudItem xs="12">
                     <MudText Typo="Typo.subtitle2">Description</MudText>
-                    <MudText Typo="Typo.body1" Class="mt-2">@(_assetClass.Description ?? "No description")</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_investmentStrategy.Description ?? "No description")</MudText>
                 </MudItem>
             </MudGrid>
 
             <MudDivider Class="my-4" />
 
             <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Href="@($"/assetclasses/edit/{Id}")">Edit</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Href="@($"/investmentstrategies/edit/{Id}")">Edit</MudButton>
                 <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="GoBack">Back</MudButton>
             </MudStack>
 
@@ -73,23 +73,23 @@
     [Parameter]
     public Guid Id { get; set; }
 
-    private AssetClassDto? _assetClass;
+    private InvestmentStrategyDto? _investmentStrategy;
     private bool _isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAssetClass();
+        await LoadInvestmentStrategy();
     }
 
-    private async Task LoadAssetClass()
+    private async Task LoadInvestmentStrategy()
     {
         try
         {
-            _assetClass = await AssetClassService.GetAssetClassByIdAsync(Id);
+            _investmentStrategy = await InvestmentStrategyService.GetInvestmentStrategyByIdAsync(Id);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error loading asset class {AssetClassId}", Id);
+            Logger.LogError(ex, "Error loading investment strategy {InvestmentStrategyId}", Id);
         }
         finally
         {
@@ -99,7 +99,6 @@
 
     private void GoBack()
     {
-        Navigation.NavigateTo("/assetclasses");
+        Navigation.NavigateTo("/investmentstrategies");
     }
-}
 }
