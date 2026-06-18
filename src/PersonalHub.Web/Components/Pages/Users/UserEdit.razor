@@ -245,21 +245,22 @@
             if (string.IsNullOrWhiteSpace(_model.Email))
             {
                 _error = "Email is required.";
+                _isSubmitting = false;
                 return;
             }
 
-            var success =
+            try
+            {
                 await UserService.UpdateAsync(
                     Id,
                     _model);
 
-            if (!success)
-            {
-                _error = "Failed to update user.";
-                return;
+                Navigation.NavigateTo("/users");
             }
-
-            Navigation.NavigateTo("/users");
+            catch (HttpRequestException ex)
+            {
+                _error = $"Failed to update user: {ex.Message}";
+            }
         }
         catch (Exception ex)
         {

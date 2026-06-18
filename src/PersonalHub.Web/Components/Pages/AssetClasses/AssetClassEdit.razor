@@ -1,0 +1,160 @@
+@page "/assetclasses/edit/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.AssetClasses.Common
+@using PersonalHub.Application.Features.AssetClasses.UpdateAssetClass
+@using PersonalHub.Web.Services
+
+@inject AssetClassService AssetClassService
+@inject NavigationManager Navigation
+@inject ILogger<AssetClassEdit> Logger
+
+<PageTitle>Edit Asset Class</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading asset class...</MudText>
+        </MudPaper>
+    }
+    else if (_assetClass == null)
+    {
+        <MudAlert Severity="Severity.Error">Asset Class not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-6">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Edit Asset Class</MudText>
+                    <MudText Typo="Typo.body2">Update asset class information</MudText>
+                </div>
+                <MudChip T="string" Color="@(_isActive ? Color.Success : Color.Error)" Variant="Variant.Filled">
+                    @(_isActive ? "Active" : "Inactive")
+                </MudChip>
+            </MudStack>
+
+            <MudPaper Class="pa-4 mb-4" Outlined="true">
+                <MudText Typo="Typo.subtitle2">Preview</MudText>
+                <MudText Typo="Typo.h6" Class="mt-2">
+                    @(string.IsNullOrWhiteSpace(_name) ? "Unnamed Asset Class" : _name)
+                </MudText>
+                <MudText Typo="Typo.body2" Class="mt-2">
+                    @(string.IsNullOrWhiteSpace(_description) ? "No description provided." : _description)
+                </MudText>
+            </MudPaper>
+
+            <MudTextField T="string" @bind-Value="_name" Label="Name" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
+
+            <MudTextField T="string" @bind-Value="_description" Label="Description" Variant="Variant.Outlined" Lines="6" FullWidth="true" Class="mb-4" />
+
+            <MudSwitch T="bool" @bind-Checked="_isActive" Label="Active" Class="mb-4" />
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+            }
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel">Cancel</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" Disabled="_isSubmitting" OnClick="HandleUpdate">
+                    @if (_isSubmitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        <span class="ms-2">Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save Changes</span>
+                    }
+                </MudButton>
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private AssetClassDto? _assetClass;
+    private string _name = string.Empty;
+    private string _description = string.Empty;
+    private bool _isActive = false;
+    private string _error = string.Empty;
+    private bool _isSubmitting = false;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAssetClass();
+    }
+
+    private async Task LoadAssetClass()
+    {
+        try
+        {
+            _assetClass = await AssetClassService.GetAssetClassByIdAsync(Id);
+            if (_assetClass != null)
+            {
+                _name = _assetClass.Name;
+                _description = _assetClass.Description ?? string.Empty;
+                _isActive = _assetClass.IsActive;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading asset class {AssetClassId}", Id);
+            _error = "An error occurred while loading the asset class.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleUpdate()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _error = "Name is required.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = string.Empty;
+
+        try
+        {
+            var command = new UpdateAssetClassCommand(
+                Id,
+                _name,
+                _description,
+                _isActive
+            );
+
+            await AssetClassService.UpdateAssetClassAsync(Id, command);
+            Navigation.NavigateTo($"/assetclasses/{Id}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating asset class");
+            _error = "An error occurred while updating the asset class.";
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo($"/assetclasses/{Id}");
+    }
+}

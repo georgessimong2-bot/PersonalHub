@@ -1,0 +1,143 @@
+@page "/currencies"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Currency.Common
+@using PersonalHub.Web.Services
+
+@inject CurrencyService CurrencyService
+@inject ILogger<Currencies> Logger
+@inject NavigationManager Navigation
+
+<PageTitle>Currencies</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading currencies...</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-4">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Currencies</MudText>
+                    <MudText Typo="Typo.body2">@_filteredCurrencies.Count currency(ies)</MudText>
+                </div>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/currencies/create" StartIcon="@Icons.Material.Filled.Add">
+                    Create Currency
+                </MudButton>
+            </MudStack>
+
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" md="8">
+                    <MudTextField T="string" @bind-Value="SearchTerm" Label="Search Currencies" Variant="Variant.Outlined" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Clear" OnClick="ClearFilters">
+                        Clear Filters
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+
+            <MudTable Items="@_filteredCurrencies" Hover="true" Dense="true" Striped="true" Bordered="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Code</MudTh>
+                    <MudTh>Symbol</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Name">
+                        <MudTooltip Text="@context.Name">
+                            @context.Name
+                        </MudTooltip>
+                    </MudTd>
+                    <MudTd DataLabel="Code">@context.Code</MudTd>
+                    <MudTd DataLabel="Symbol">@context.Symbol</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Color="@(context.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">
+                            @(context.IsActive ? "Active" : "Inactive")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/currencies/{context.Id}")" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/currencies/edit/{context.Id}")" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    private List<CurrencyDto> _currencies = new();
+    private List<CurrencyDto> _filteredCurrencies = new();
+    private string _searchTerm = string.Empty;
+    private bool _isLoading = true;
+
+    public string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            FilterCurrencies();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrencies();
+    }
+
+    private async Task LoadCurrencies()
+    {
+        try
+        {
+            _currencies = await CurrencyService.GetCurrenciesAsync() ?? new List<CurrencyDto>();
+            FilterCurrencies();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading currencies");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void FilterCurrencies()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _filteredCurrencies = _currencies;
+        }
+        else
+        {
+            var searchLower = _searchTerm.ToLower();
+            _filteredCurrencies = _currencies
+                .Where(c => c.Name.ToLower().Contains(searchLower) || 
+                             c.Code.ToLower().Contains(searchLower) ||
+                             c.Symbol.ToLower().Contains(searchLower))
+                .ToList();
+        }
+    }
+
+    private void ClearFilters()
+    {
+        SearchTerm = string.Empty;
+    }
+}

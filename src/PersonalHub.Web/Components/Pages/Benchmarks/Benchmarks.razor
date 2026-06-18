@@ -1,0 +1,142 @@
+@page "/benchmarks"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Benchmarks.Common
+@using PersonalHub.Web.Services
+
+@inject BenchmarkService BenchmarkService
+@inject ILogger<Benchmarks> Logger
+@inject NavigationManager Navigation
+
+<PageTitle>Benchmarks</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading benchmarks...</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-4">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Benchmarks</MudText>
+                    <MudText Typo="Typo.body2">@_filteredBenchmarks.Count benchmark(s)</MudText>
+                </div>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/benchmarks/create" StartIcon="@Icons.Material.Filled.Add">
+                    Create Benchmark
+                </MudButton>
+            </MudStack>
+
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" md="8">
+                    <MudTextField T="string" @bind-Value="SearchTerm" Label="Search Benchmarks" Variant="Variant.Outlined" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Clear" OnClick="ClearFilters">
+                        Clear Filters
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+
+            <MudTable Items="@_filteredBenchmarks" Hover="true" Dense="true" Striped="true" Bordered="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Provider</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Name">
+                        <MudTooltip Text="@(context.Description ?? "No description")">
+                            @context.Name
+                        </MudTooltip>
+                    </MudTd>
+                    <MudTd DataLabel="Provider">@(context.Provider ?? "-")</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Color="@(context.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">
+                            @(context.IsActive ? "Active" : "Inactive")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/benchmarks/{context.Id}")" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/benchmarks/edit/{context.Id}")" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    private List<BenchmarkDto> _benchmarks = new();
+    private List<BenchmarkDto> _filteredBenchmarks = new();
+    private string _searchTerm = string.Empty;
+    private bool _isLoading = true;
+
+    public string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            FilterBenchmarks();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBenchmarks();
+    }
+
+    private async Task LoadBenchmarks()
+    {
+        try
+        {
+            _benchmarks = await BenchmarkService.GetBenchmarksAsync() ?? new List<BenchmarkDto>();
+            FilterBenchmarks();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading benchmarks");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void FilterBenchmarks()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _filteredBenchmarks = _benchmarks;
+        }
+        else
+        {
+            var searchLower = _searchTerm.ToLower();
+            _filteredBenchmarks = _benchmarks
+                .Where(b => b.Name.ToLower().Contains(searchLower) || 
+                            (b.Provider != null && b.Provider.ToLower().Contains(searchLower)) ||
+                            (b.Description != null && b.Description.ToLower().Contains(searchLower)))
+                .ToList();
+        }
+    }
+
+    private void ClearFilters()
+    {
+        SearchTerm = string.Empty;
+    }
+}
+}

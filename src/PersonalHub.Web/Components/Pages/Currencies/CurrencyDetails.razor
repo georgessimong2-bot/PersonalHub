@@ -1,0 +1,109 @@
+@page "/currencies/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Currency.Common
+@using PersonalHub.Web.Services
+
+@inject ILogger<CurrencyDetails> Logger
+@inject NavigationManager Navigation
+@inject CurrencyService CurrencyService
+
+<PageTitle>Currency Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading currency...</MudText>
+        </MudPaper>
+    }
+    else if (_currency == null)
+    {
+        <MudAlert Severity="Severity.Error">Currency not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-6">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">@_currency.Name</MudText>
+                    <MudText Typo="Typo.body2">Currency Details</MudText>
+                </div>
+                <MudChip T="string" Color="@(_currency.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled">
+                    @(_currency.IsActive ? "Active" : "Inactive")
+                </MudChip>
+            </MudStack>
+
+            <MudDivider Class="my-4" />
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Name</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@_currency.Name</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Code</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@_currency.Code</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Symbol</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@_currency.Symbol</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Status</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_currency.IsActive ? "Active" : "Inactive")</MudText>
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Href="@($"/currencies/edit/{Id}")">Edit</MudButton>
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="GoBack">Back</MudButton>
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private CurrencyDto? _currency;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrency();
+    }
+
+    private async Task LoadCurrency()
+    {
+        try
+        {
+            _currency = await CurrencyService.GetByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading currency {CurrencyId}", Id);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/currencies");
+    }
+}

@@ -6,23 +6,29 @@ public class ShareClass : BaseAuditableEntity
 
     public Guid SubFundId { get; set; }
 
-    public SubFund SubFund { get; set; } = null!;
+    public Guid CurrencyId { get; set; }
 
     public string Name { get; set; } = string.Empty;
 
     public string ISIN { get; set; } = string.Empty;
 
-    public string Currency { get; set; } = "EUR";
+    public bool IsHedged { get; set; }
 
-    public bool Hedged { get; set; }
+    public bool IsDistribution { get; set; }
 
-    public bool Distributing { get; set; }
-
-    public string InvestorType { get; set; } = string.Empty;
+    public bool IsInstitutional { get; set; }
 
     public decimal? ManagementFee { get; set; }
 
+    public decimal? PerformanceFee { get; set; }
+
     public decimal? MinimumInvestment { get; set; }
 
+    public DateTime? LaunchDate { get; set; }
+
     public bool IsActive { get; set; } = true;
+
+    public SubFund SubFund { get; set; } = null!;
+
+    public Currency Currency { get; set; } = null!;
 }

@@ -2,20 +2,15 @@
 
 namespace PersonalHub.Web.Services;
 
-public class DashboardService
+public class DashboardService : BaseHttpService
 {
-    private readonly HttpClient _http;
-
-    public DashboardService(
-        IHttpClientFactory factory)
+    public DashboardService(IHttpClientFactory factory)
+        : base(factory)
     {
-        _http = factory.CreateClient("Api");
     }
 
     public async Task<DashboardDto?> GetAsync()
     {
-        return await _http
-            .GetFromJsonAsync<DashboardDto>(
-                "api/dashboard");
+        return await GetAsync<DashboardDto>("api/dashboard");
     }
 }

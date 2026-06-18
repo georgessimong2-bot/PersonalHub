@@ -6,20 +6,41 @@ public class SubFund : BaseAuditableEntity
 
     public Guid FundId { get; set; }
 
-    public Fund Fund { get; set; } = null!;
+    public Guid? BenchmarkId { get; set; }
+
+    public Guid? AssetClassId { get; set; }
+
+    public Guid? SfdrClassificationId { get; set; }
 
     public string Name { get; set; } = string.Empty;
 
+    public string? InternalCode { get; set; }
+
     public string? InvestmentObjective { get; set; }
 
-    public string? Benchmark { get; set; }
+    public string? InvestmentPolicy { get; set; }
 
-    public string Currency { get; set; } = "EUR";
+    public string? GeographicFocus { get; set; }
+
+    public string? SectorFocus { get; set; }
+
+    public string? RiskProfile { get; set; }
+
+    public string? Description { get; set; }
 
     public DateTime? LaunchDate { get; set; }
 
+    public DateTime? OnboardingDate { get; set; }
+
     public bool IsActive { get; set; } = true;
 
-    public ICollection<ShareClass> ShareClasses { get; set; }
-        = new List<ShareClass>();
+    public Fund Fund { get; set; } = null!;
+
+    public Benchmark? Benchmark { get; set; }
+
+    public AssetClass? AssetClass { get; set; }
+
+    public SfdrClassification? SfdrClassification { get; set; }
+
+    public ICollection<ShareClass> ShareClasses { get; set; } = [];
 }

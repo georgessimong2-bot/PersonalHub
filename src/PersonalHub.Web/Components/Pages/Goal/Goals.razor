@@ -29,6 +29,15 @@
 
         </MudPaper>
     }
+    else if (!string.IsNullOrEmpty(_error))
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">
+            @_error
+            <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/login" Class="ml-2">
+                Go to Login
+            </MudButton>
+        </MudAlert>
+    }
     else
     {
         <MudPaper Class="pa-4">
@@ -234,6 +243,8 @@
 
     private bool _isLoading = true;
 
+    private string? _error;
+
     private string _searchTerm = string.Empty;
 
     protected override async Task OnInitializedAsync()
@@ -242,9 +253,26 @@
         {
             _currentUserId = AuthService.GetUserId();
 
+            // Check if token is still valid
+            if (!AuthService.IsAuthenticated())
+            {
+                _error = "🔑 Your session has expired. Please log in again.";
+                return;
+            }
+
             _goals = await GoalService.GetGoalsAsync();
 
             ApplyFilters();
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _error = "🔐 Authentication failed. Your session may have expired. Please log in again.";
+            Logger.LogError(ex, "Unauthorized access to goals");
+        }
+        catch (Exception ex)
+        {
+            _error = $"❌ Error loading goals: {ex.Message}";
+            Logger.LogError(ex, "Error loading goals");
         }
         finally
         {

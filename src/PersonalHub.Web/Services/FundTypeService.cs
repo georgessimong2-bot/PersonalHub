@@ -4,45 +4,35 @@ using PersonalHub.Application.Features.FundTypes.UpdateFundType;
 
 namespace PersonalHub.Web.Services;
 
-public class FundTypeService
+public class FundTypeService : BaseHttpService
 {
-    private readonly HttpClient _http;
-
     public FundTypeService(IHttpClientFactory factory)
+        : base(factory)
     {
-        _http = factory.CreateClient("Api");
     }
 
     public async Task<List<FundTypeDto>> GetFundTypesAsync()
     {
-        return await _http.GetFromJsonAsync<List<FundTypeDto>>("api/fundtypes")
-               ?? [];
+        return await GetAllAsync<FundTypeDto>("api/fundtypes");
     }
 
     public async Task CreateFundTypeAsync(CreateFundTypeCommand command)
     {
-        await _http.PostAsJsonAsync("api/fundtypes", command);
+        await CreateAsync("api/fundtypes", command);
     }
 
     public async Task<FundTypeDto?> GetFundTypeByIdAsync(Guid id)
     {
-        return await _http.GetFromJsonAsync<FundTypeDto>(
-            $"api/fundtypes/{id}");
+        return await GetByIdAsync<FundTypeDto>($"api/fundtypes/{id}");
     }
 
-    public async Task UpdateFundTypeAsync(
-    Guid id,
-    UpdateFundTypeCommand command)
+    public async Task UpdateFundTypeAsync(Guid id, UpdateFundTypeCommand command)
     {
-        await _http.PutAsJsonAsync(
-            $"api/fundtypes/{id}",
-            command);
+        await UpdateAsync($"api/fundtypes/{id}", command);
     }
 
-    public async Task DeleteFundTypeAsync(
-       Guid id)
+    public async Task DeleteFundTypeAsync(Guid id)
     {
-        await _http.DeleteAsync(
-            $"api/fundtypes/{id}");
+        await DeleteAsync($"api/fundtypes/{id}");
     }
 }

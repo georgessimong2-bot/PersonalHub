@@ -1,0 +1,110 @@
+@page "/currencies/create"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Currency.CreateCurrency
+@using PersonalHub.Web.Services
+
+@inject CurrencyService CurrencyService
+@inject NavigationManager Navigation
+@inject ILogger<CurrencyCreate> Logger
+
+<PageTitle>Create Currency</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    <MudPaper Class="pa-6">
+
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+            <div>
+                <MudText Typo="Typo.h4">Create Currency</MudText>
+                <MudText Typo="Typo.body2">Create a new currency</MudText>
+            </div>
+            <MudChip T="string" Color="Color.Info" Variant="Variant.Filled">New Currency</MudChip>
+        </MudStack>
+
+        <MudPaper Class="pa-4 mb-4" Outlined="true">
+            <MudText Typo="Typo.subtitle2">Preview</MudText>
+            <MudText Typo="Typo.h6" Class="mt-2">
+                @(string.IsNullOrWhiteSpace(_name) ? "Unnamed Currency" : _name)
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mt-2">
+                Code: @(string.IsNullOrWhiteSpace(_code) ? "-" : _code) | Symbol: @(string.IsNullOrWhiteSpace(_symbol) ? "-" : _symbol)
+            </MudText>
+        </MudPaper>
+
+        <MudTextField T="string" @bind-Value="_name" Label="Name" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
+
+        <MudTextField T="string" @bind-Value="_code" Label="Code" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+
+        <MudTextField T="string" @bind-Value="_symbol" Label="Symbol" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+        }
+
+        <MudDivider Class="my-4" />
+
+        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Disabled="_isSubmitting" OnClick="HandleCreate">
+                @if (_isSubmitting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                    <span class="ms-2">Creating...</span>
+                }
+                else
+                {
+                    <span>Create Currency</span>
+                }
+            </MudButton>
+        </MudStack>
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    private string _name = string.Empty;
+    private string _code = string.Empty;
+    private string _symbol = string.Empty;
+    private string _error = string.Empty;
+    private bool _isSubmitting = false;
+
+    private async Task HandleCreate()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _error = "Name is required.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = string.Empty;
+
+        try
+        {
+            var command = new CreateCurrencyCommand
+            {
+                Name = _name,
+                Code = _code,
+                Symbol = _symbol
+            };
+
+            await CurrencyService.CreateCurrencyAsync(command);
+            Navigation.NavigateTo("/currencies");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating currency");
+            _error = "An error occurred while creating the currency.";
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/currencies");
+    }
+}

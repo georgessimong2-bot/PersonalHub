@@ -19,6 +19,10 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+#region USER SECRETS
+builder.Configuration.AddUserSecrets<Program>();
+#endregion
+
 #region OpenAPI / Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -101,7 +105,7 @@ builder.Services
                 Encoding.UTF8.GetBytes(jwtSettings.Secret)),
 
             RoleClaimType = ClaimTypes.Role,
-            NameClaimType = ClaimTypes.Email,
+            NameClaimType = ClaimTypes.NameIdentifier,
 
             ClockSkew = TimeSpan.Zero
         };
@@ -110,20 +114,34 @@ builder.Services
         {
             OnMessageReceived = context =>
             {
-                Console.WriteLine("JWT HEADER RECEIVED");
+                var authHeader = context.Request.Headers["Authorization"].ToString();
+                Console.WriteLine($"JWT MESSAGE RECEIVED - Authorization header: {(string.IsNullOrEmpty(authHeader) ? "MISSING" : "PRESENT")}");
+                if (!string.IsNullOrEmpty(authHeader))
+                {
+                    Console.WriteLine($"   Header length: {authHeader.Length}");
+                }
                 return Task.CompletedTask;
             },
 
             OnAuthenticationFailed = context =>
             {
-                Console.WriteLine("JWT FAILED");
-                Console.WriteLine(context.Exception.ToString());
+                Console.WriteLine($"JWT AUTHENTICATION FAILED");
+                Console.WriteLine($"   Exception: {context.Exception?.GetType().Name}");
+                Console.WriteLine($"   Message: {context.Exception?.Message}");
+                if (context.Exception is not null)
+                {
+                    Console.WriteLine($"   Stack trace (first 200 chars): {context.Exception.StackTrace?.Substring(0, Math.Min(200, context.Exception.StackTrace.Length))}");
+                }
                 return Task.CompletedTask;
             },
 
             OnTokenValidated = context =>
             {
-                Console.WriteLine("JWT VALIDATED");
+                var userId = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var email = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                Console.WriteLine($"JWT TOKEN VALIDATED");
+                Console.WriteLine($"   UserId: {userId ?? "NOT FOUND"}");
+                Console.WriteLine($"   Email: {email ?? "NOT FOUND"}");
                 return Task.CompletedTask;
             }
         };

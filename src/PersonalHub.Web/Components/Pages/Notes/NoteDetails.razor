@@ -5,7 +5,7 @@
 @using PersonalHub.Application.Features.Notes.Common
 @using PersonalHub.Web.Services
 
-@inject NotesService NotesService
+@inject NoteService NoteService
 @inject NavigationManager Navigation
 @inject ILogger<NoteDetails> Logger
 
@@ -171,8 +171,7 @@
     {
         try
         {
-            _note =
-                await NotesService.GetNoteByIdAsync(Id);
+            _note = await NoteService.GetNoteByIdAsync(Id);
         }
         catch (Exception ex)
         {

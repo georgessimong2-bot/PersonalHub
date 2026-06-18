@@ -1,0 +1,166 @@
+@page "/currencies/edit/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Currency.Common
+@using PersonalHub.Application.Features.Currency.UpdateCurrency
+@using PersonalHub.Web.Services
+
+@inject CurrencyService CurrencyService
+@inject NavigationManager Navigation
+@inject ILogger<CurrencyEdit> Logger
+
+<PageTitle>Edit Currency</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading currency...</MudText>
+        </MudPaper>
+    }
+    else if (_currency == null)
+    {
+        <MudAlert Severity="Severity.Error">Currency not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-6">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Edit Currency</MudText>
+                    <MudText Typo="Typo.body2">Update currency information</MudText>
+                </div>
+                <MudChip T="string" Color="@(_isActive ? Color.Success : Color.Error)" Variant="Variant.Filled">
+                    @(_isActive ? "Active" : "Inactive")
+                </MudChip>
+            </MudStack>
+
+            <MudPaper Class="pa-4 mb-4" Outlined="true">
+                <MudText Typo="Typo.subtitle2">Preview</MudText>
+                <MudText Typo="Typo.h6" Class="mt-2">
+                    @(string.IsNullOrWhiteSpace(_name) ? "Unnamed Currency" : _name)
+                </MudText>
+                <MudText Typo="Typo.body2" Class="mt-2">
+                    Code: @(string.IsNullOrWhiteSpace(_code) ? "-" : _code) | Symbol: @(string.IsNullOrWhiteSpace(_symbol) ? "-" : _symbol)
+                </MudText>
+            </MudPaper>
+
+            <MudTextField T="string" @bind-Value="_name" Label="Name" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
+
+            <MudTextField T="string" @bind-Value="_code" Label="Code" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+
+            <MudTextField T="string" @bind-Value="_symbol" Label="Symbol" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+
+            <MudSwitch T="bool" @bind-Checked="_isActive" Label="Active" Class="mb-4" />
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+            }
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel">Cancel</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" Disabled="_isSubmitting" OnClick="HandleUpdate">
+                    @if (_isSubmitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        <span class="ms-2">Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save Changes</span>
+                    }
+                </MudButton>
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private CurrencyDto? _currency;
+    private string _name = string.Empty;
+    private string _code = string.Empty;
+    private string _symbol = string.Empty;
+    private bool _isActive = false;
+    private string _error = string.Empty;
+    private bool _isSubmitting = false;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrency();
+    }
+
+    private async Task LoadCurrency()
+    {
+        try
+        {
+            _currency = await CurrencyService.GetByIdAsync(Id);
+            if (_currency != null)
+            {
+                _name = _currency.Name;
+                _code = _currency.Code;
+                _symbol = _currency.Symbol;
+                _isActive = _currency.IsActive;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading currency {CurrencyId}", Id);
+            _error = "An error occurred while loading the currency.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleUpdate()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _error = "Name is required.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = string.Empty;
+
+        try
+        {
+            var command = new UpdateCurrencyCommand
+            {
+                Id = Id,
+                Name = _name,
+                Code = _code,
+                Symbol = _symbol,
+                IsActive = _isActive
+            };
+
+            await CurrencyService.UpdateCurrencyAsync(Id, command);
+            Navigation.NavigateTo($"/currencies/{Id}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating currency");
+            _error = "An error occurred while updating the currency.";
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo($"/currencies/{Id}");
+    }
+}

@@ -3,8 +3,9 @@
 
 @using MudBlazor
 @using PersonalHub.Web.Services
+@using PersonalHub.Application.Features.Notes.CreateNote
 
-@inject NotesService NotesService
+@inject NoteService NoteService
 @inject NavigationManager Navigation
 @inject ILogger<NoteCreate> Logger
 
@@ -181,17 +182,11 @@ private string _title = string.Empty;
                 return;
             }
 
-            var success =
-                await NotesService.CreateAsync(
-                    _title.Trim(),
-                    _content.Trim());
+            var command = new CreateNoteCommand(
+                _title.Trim(),
+                _content.Trim());
 
-            if (!success)
-            {
-                _error = "Failed to create note.";
-                return;
-            }
-
+            await NoteService.CreateNoteAsync(command);
             Navigation.NavigateTo("/notes");
         }
         catch (Exception ex)

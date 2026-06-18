@@ -1,0 +1,223 @@
+@page "/shareclasses/edit/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.ShareClasses.Common
+@using PersonalHub.Application.Features.ShareClasses.UpdateShareClass
+@using PersonalHub.Web.Services
+
+@inject ShareClassService ShareClassService
+@inject NavigationManager Navigation
+@inject ILogger<ShareClassEdit> Logger
+
+<PageTitle>Edit Share Class</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading share class...</MudText>
+        </MudPaper>
+    }
+    else if (_shareClass == null)
+    {
+        <MudAlert Severity="Severity.Error">Share Class not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-6">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Edit Share Class</MudText>
+                    <MudText Typo="Typo.body2">Update share class information</MudText>
+                </div>
+                <MudChip T="string" Color="@(_isActive ? Color.Success : Color.Error)" Variant="Variant.Filled">
+                    @(_isActive ? "Active" : "Inactive")
+                </MudChip>
+            </MudStack>
+
+            <MudPaper Class="pa-4 mb-4" Outlined="true">
+                <MudText Typo="Typo.subtitle2">Preview</MudText>
+                <MudText Typo="Typo.h6" Class="mt-2">
+                    @(string.IsNullOrWhiteSpace(_name) ? "Unnamed Share Class" : _name)
+                </MudText>
+                <MudText Typo="Typo.body2" Class="mt-2">
+                    ISIN: @(string.IsNullOrWhiteSpace(_isin) ? "Not specified" : _isin)
+                </MudText>
+            </MudPaper>
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string" @bind-Value="_name" Label="Name" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string" @bind-Value="_isin" Label="ISIN" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudCheckBox T="bool" @bind-Checked="_isHedged" Label="Is Hedged" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudCheckBox T="bool" @bind-Checked="_isDistribution" Label="Is Distribution" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudCheckBox T="bool" @bind-Checked="_isInstitutional" Label="Is Institutional" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudCheckBox T="bool" @bind-Checked="_isActive" Label="Is Active" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudNumericField T="decimal?" @bind-Value="_managementFee" Label="Management Fee (%)" Variant="Variant.Outlined" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudNumericField T="decimal?" @bind-Value="_performanceFee" Label="Performance Fee (%)" Variant="Variant.Outlined" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudNumericField T="decimal?" @bind-Value="_minimumInvestment" Label="Minimum Investment" Variant="Variant.Outlined" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="_launchDate" Label="Launch Date" Variant="Variant.Outlined" Class="mb-4" />
+                </MudItem>
+            </MudGrid>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+            }
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel">Cancel</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" Disabled="_isSubmitting" OnClick="HandleUpdate">
+                    @if (_isSubmitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        <span class="ms-2">Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save Changes</span>
+                    }
+                </MudButton>
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private ShareClassDto? _shareClass;
+    private string _name = string.Empty;
+    private string _isin = string.Empty;
+    private bool _isHedged = false;
+    private bool _isDistribution = false;
+    private bool _isInstitutional = false;
+    private bool _isActive = true;
+    private decimal? _managementFee;
+    private decimal? _performanceFee;
+    private decimal? _minimumInvestment;
+    private DateTime? _launchDate;
+    private string _error = string.Empty;
+    private bool _isSubmitting = false;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadShareClass();
+    }
+
+    private async Task LoadShareClass()
+    {
+        try
+        {
+            _shareClass = await ShareClassService.GetShareClassByIdAsync(Id);
+            if (_shareClass != null)
+            {
+                _name = _shareClass.Name;
+                _isin = _shareClass.ISIN;
+                _isHedged = _shareClass.IsHedged;
+                _isDistribution = _shareClass.IsDistribution;
+                _isInstitutional = _shareClass.IsInstitutional;
+                _isActive = _shareClass.IsActive;
+                _managementFee = _shareClass.ManagementFee;
+                _performanceFee = _shareClass.PerformanceFee;
+                _minimumInvestment = _shareClass.MinimumInvestment;
+                _launchDate = _shareClass.LaunchDate;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading share class {ShareClassId}", Id);
+            _error = "An error occurred while loading the share class.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleUpdate()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _error = "Name is required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_isin))
+        {
+            _error = "ISIN is required.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = string.Empty;
+
+        try
+        {
+            var command = new UpdateShareClassCommand(
+                Id,
+                _name,
+                _isin,
+                _isHedged,
+                _isDistribution,
+                _isInstitutional,
+                _managementFee,
+                _performanceFee,
+                _minimumInvestment,
+                _launchDate,
+                _isActive
+            );
+
+            await ShareClassService.UpdateShareClassAsync(Id, command);
+            Navigation.NavigateTo($"/shareclasses/{Id}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating share class");
+            _error = "An error occurred while updating the share class.";
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo($"/shareclasses/{Id}");
+    }
+}

@@ -1,4 +1,4 @@
-﻿@page "/users/create"
+@page "/users/create"
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "ADMIN")]
 
@@ -14,68 +14,33 @@
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
 
-    
     <MudPaper Class="pa-6">
 
         <!-- HEADER -->
-
         <MudStack Row="true"
                   Justify="Justify.SpaceBetween"
                   AlignItems="AlignItems.Center"
                   Class="mb-4">
 
             <div>
-
-                <MudText Typo="Typo.h4">
-                    Create User
-                </MudText>
-
-                <MudText Typo="Typo.body2">
-                    Create a new application user
-                </MudText>
-
+                <MudText Typo="Typo.h4">Create User</MudText>
+                <MudText Typo="Typo.body2">Create a new application user</MudText>
             </div>
 
             <MudChip T="string"
                      Color="Color.Info"
                      Variant="Variant.Filled">
-
                 New User
-
             </MudChip>
-
         </MudStack>
 
-        <!-- PREVIEW -->
-
-        <MudPaper Class="pa-4 mb-4"
-                  Outlined="true">
-
-            <MudText Typo="Typo.subtitle2">
-                Preview
-            </MudText>
-
-            <MudText Typo="Typo.h6"
-                     Class="mt-2">
-
-                @(string.IsNullOrWhiteSpace(_model.Email)
-                    ? "user@example.com"
-                    : _model.Email)
-
-            </MudText>
-
-            <MudChip T="string"
-                     Color="@GetRoleColor()"
-                     Class="mt-2">
-
-                @(_model.Role ?? "USER")
-
-            </MudChip>
-
-        </MudPaper>
+        <!-- ERROR -->
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+        }
 
         <!-- FORM -->
-
         <MudTextField T="string"
                       @bind-Value="_model.Email"
                       Label="Email"
@@ -98,129 +63,73 @@
                    Variant="Variant.Outlined"
                    FullWidth="true"
                    @bind-Value="_model.Role"
-                   Class="mb-4">
-
-            <MudSelectItem T="string"
-                           Value="@("USER")">
-
-                User
-
-            </MudSelectItem>
-
-            <MudSelectItem T="string"
-                           Value="@("ADMIN")">
-
-                Administrator
-
-            </MudSelectItem>
-
+                   Class="mb-6">
+            <MudSelectItem T="string" Value="@("USER")">User</MudSelectItem>
+            <MudSelectItem T="string" Value="@("ADMIN")">Admin</MudSelectItem>
         </MudSelect>
 
-        @if (!string.IsNullOrWhiteSpace(_error))
-        {
-            <MudAlert Severity="Severity.Error"
-                      Class="mb-4">
-
-                @_error
-
-            </MudAlert>
-        }
-
-        <MudDivider Class="my-4" />
-
-        <!-- ACTIONS -->
-
-        <MudStack Row="true"
-                  Justify="Justify.FlexEnd"
-                  Spacing="2">
-
-            <MudButton Variant="Variant.Outlined"
-                       StartIcon="@Icons.Material.Filled.Close"
-                       OnClick="Cancel">
-
+        <!-- BUTTONS -->
+        <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-6">
+            <MudButton Variant="Variant.Text" OnClick="Cancel">
                 Cancel
-
             </MudButton>
-
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.PersonAdd"
-                       Disabled="_isSubmitting"
-                       OnClick="Save">
-
+                       OnClick="HandleCreate"
+                       Disabled="@_isSubmitting">
                 @if (_isSubmitting)
                 {
-                    <MudProgressCircular Size="Size.Small"
-                                         Indeterminate="true" />
-
-                    <span class="ms-2">
-                        Creating...
-                    </span>
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">Creating...</MudText>
                 }
                 else
                 {
-                    <span>
-                        Create User
-                    </span>
+                    <MudText>Create User</MudText>
                 }
-
             </MudButton>
-
         </MudStack>
 
     </MudPaper>
-    
 
 </MudContainer>
 
 @code {
 
+    private CreateUserCommand _model = new();
+    private string _error = string.Empty;
+    private bool _isSubmitting = false;
 
-private CreateUserCommand _model = new()
-{
-    Role = "USER"
-};
-
-    private bool _isSubmitting;
-
-    private string? _error;
-
-    private async Task Save()
+    private async Task HandleCreate()
     {
+        _error = string.Empty;
+        _isSubmitting = true;
+
+        if (string.IsNullOrWhiteSpace(_model.Email))
+        {
+            _error = "Email is required.";
+            _isSubmitting = false;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_model.Password))
+        {
+            _error = "Password is required.";
+            _isSubmitting = false;
+            return;
+        }
+
         try
         {
-            _isSubmitting = true;
-            _error = null;
-
-            if (string.IsNullOrWhiteSpace(_model.Email))
-            {
-                _error = "Email is required.";
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(_model.Password))
-            {
-                _error = "Password is required.";
-                return;
-            }
-
-            var success =
-                await UserService.CreateAsync(_model);
-
-            if (!success)
-            {
-                _error = "Failed to create user.";
-                return;
-            }
-
+            await UserService.CreateAsync(_model);
             Navigation.NavigateTo("/users");
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = $"Failed to create user: {ex.Message}";
         }
         catch (Exception ex)
         {
-            Logger.LogError(
-                ex,
-                "Error creating user");
-
+            Logger.LogError(ex, "Error creating user");
             _error = ex.Message;
         }
         finally
@@ -229,17 +138,8 @@ private CreateUserCommand _model = new()
         }
     }
 
-    private Color GetRoleColor()
-    {
-        return _model.Role == "ADMIN"
-            ? Color.Error
-            : Color.Success;
-    }
-
     private void Cancel()
     {
         Navigation.NavigateTo("/users");
     }
-
-
 }

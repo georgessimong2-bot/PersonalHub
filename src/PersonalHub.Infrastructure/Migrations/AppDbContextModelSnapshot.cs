@@ -155,6 +155,83 @@ namespace PersonalHub.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("PersonalHub.Domain.Entities.AssetClass", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AssetClasses");
+                });
+
+            modelBuilder.Entity("PersonalHub.Domain.Entities.Benchmark", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BloombergTicker")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Provider")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReutersCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Benchmarks");
+                });
+
+            modelBuilder.Entity("PersonalHub.Domain.Entities.Currency", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Currencies");
+                });
+
             modelBuilder.Entity("PersonalHub.Domain.Entities.Fund", b =>
                 {
                     b.Property<Guid>("Id")
@@ -277,6 +354,24 @@ namespace PersonalHub.Infrastructure.Migrations
                     b.ToTable("Notes");
                 });
 
+            modelBuilder.Entity("PersonalHub.Domain.Entities.SfdrClassification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SfdrClassifications");
+                });
+
             modelBuilder.Entity("PersonalHub.Infrastructure.Identity.AppUser", b =>
                 {
                     b.Property<string>("Id")
@@ -360,26 +455,27 @@ namespace PersonalHub.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("Distributing")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("Hedged")
-                        .HasColumnType("bit");
+                    b.Property<Guid>("CurrencyId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ISIN")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("InvestorType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
+
+                    b.Property<bool>("IsDistribution")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsHedged")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsInstitutional")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LaunchDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<decimal?>("ManagementFee")
                         .HasColumnType("decimal(18,2)");
@@ -391,14 +487,19 @@ namespace PersonalHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal?>("PerformanceFee")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<Guid>("SubFundId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CurrencyId");
+
                     b.HasIndex("SubFundId");
 
-                    b.ToTable("ShareClass");
+                    b.ToTable("ShareClasses");
                 });
 
             modelBuilder.Entity("SubFund", b =>
@@ -407,17 +508,28 @@ namespace PersonalHub.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Benchmark")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid?>("AssetClassId")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Currency")
-                        .IsRequired()
+                    b.Property<Guid?>("BenchmarkId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("FundId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("GeographicFocus")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InternalCode")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("InvestmentObjective")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InvestmentPolicy")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
@@ -430,11 +542,29 @@ namespace PersonalHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("OnboardingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RiskProfile")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SectorFocus")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("SfdrClassificationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("AssetClassId");
+
+                    b.HasIndex("BenchmarkId");
 
                     b.HasIndex("FundId");
 
-                    b.ToTable("SubFund");
+                    b.HasIndex("SfdrClassificationId");
+
+                    b.ToTable("SubFunds");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -501,24 +631,55 @@ namespace PersonalHub.Infrastructure.Migrations
 
             modelBuilder.Entity("ShareClass", b =>
                 {
+                    b.HasOne("PersonalHub.Domain.Entities.Currency", "Currency")
+                        .WithMany()
+                        .HasForeignKey("CurrencyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("SubFund", "SubFund")
                         .WithMany("ShareClasses")
                         .HasForeignKey("SubFundId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Currency");
+
                     b.Navigation("SubFund");
                 });
 
             modelBuilder.Entity("SubFund", b =>
                 {
+                    b.HasOne("PersonalHub.Domain.Entities.AssetClass", "AssetClass")
+                        .WithMany()
+                        .HasForeignKey("AssetClassId");
+
+                    b.HasOne("PersonalHub.Domain.Entities.Benchmark", "Benchmark")
+                        .WithMany("SubFunds")
+                        .HasForeignKey("BenchmarkId");
+
                     b.HasOne("PersonalHub.Domain.Entities.Fund", "Fund")
                         .WithMany("SubFunds")
                         .HasForeignKey("FundId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("PersonalHub.Domain.Entities.SfdrClassification", "SfdrClassification")
+                        .WithMany()
+                        .HasForeignKey("SfdrClassificationId");
+
+                    b.Navigation("AssetClass");
+
+                    b.Navigation("Benchmark");
+
                     b.Navigation("Fund");
+
+                    b.Navigation("SfdrClassification");
+                });
+
+            modelBuilder.Entity("PersonalHub.Domain.Entities.Benchmark", b =>
+                {
+                    b.Navigation("SubFunds");
                 });
 
             modelBuilder.Entity("PersonalHub.Domain.Entities.Fund", b =>
