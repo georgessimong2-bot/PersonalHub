@@ -50,6 +50,7 @@ builder.Services.AddCascadingAuthenticationState();
 #endregion
 
 #region APP SERVICES
+builder.Services.AddScoped<AuthCheckService>();
 builder.Services.AddScoped<NoteService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<GoalService>();
