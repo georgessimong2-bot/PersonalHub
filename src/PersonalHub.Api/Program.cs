@@ -13,6 +13,7 @@ using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Infrastructure;
 using PersonalHub.Infrastructure.Auth;
 using PersonalHub.Infrastructure.Data;
+using PersonalHub.Infrastructure.Identity;
 using System.Security.Claims;
 using System.Text;
 
@@ -163,6 +164,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 await SeedRoles(app);
+await SeedAdmin(app);
 
 async Task SeedRoles(WebApplication app)
 {
@@ -178,6 +180,24 @@ async Task SeedRoles(WebApplication app)
         {
             await roleManager.CreateAsync(new IdentityRole(role));
         }
+    }
+}
+async Task SeedAdmin(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+
+    var userManager =
+        scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+    var user =
+        await userManager.FindByEmailAsync("ton.email@gmail.com");
+
+    if (user is null)
+        return;
+
+    if (!await userManager.IsInRoleAsync(user, "ADMIN"))
+    {
+        await userManager.AddToRoleAsync(user, "ADMIN");
     }
 }
 

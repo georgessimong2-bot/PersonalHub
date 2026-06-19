@@ -4,12 +4,22 @@
 @using MudBlazor
 @using PersonalHub.Application.Features.ShareClasses.Common
 @using PersonalHub.Web.Services
+@using PersonalHub.Web.Services.Auth
 
 @inject ShareClassService ShareClassService
 @inject ILogger<ShareClasses> Logger
 @inject NavigationManager Navigation
+@inject AuthService AuthService
 
 <PageTitle>Share Classes</PageTitle>
+
+<ConfirmDialog @ref="_confirmDialog"
+               Title="Delete Share Class"
+               Message="Are you sure you want to delete this share class? This action cannot be undone."
+               ConfirmButtonText="Delete"
+               IsVisible="_showConfirmDialog"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
@@ -69,6 +79,10 @@
                     <MudTd DataLabel="Actions">
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/shareclasses/{context.Id}")" />
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/shareclasses/edit/{context.Id}")" />
+                        @if (AuthService.GetUserRole() == "ADMIN")
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => ShowDeleteConfirm(context.Id))" />
+                        }
                     </MudTd>
                 </RowTemplate>
                 <PagerContent>
@@ -86,6 +100,10 @@
     private List<ShareClassDto> _filteredShareClasses = new();
     private string _searchTerm = string.Empty;
     private bool _isLoading = true;
+
+    private ConfirmDialog? _confirmDialog;
+    private bool _showConfirmDialog = false;
+    private Guid _shareClassToDelete = Guid.Empty;
 
     public string SearchTerm
     {
@@ -138,6 +156,47 @@
     private void ClearFilters()
     {
         SearchTerm = string.Empty;
+    }
+
+    private async Task ShowDeleteConfirm(Guid id)
+    {
+        _shareClassToDelete = id;
+        _showConfirmDialog = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_shareClassToDelete == Guid.Empty)
+            return;
+
+        await Delete(_shareClassToDelete);
+        _shareClassToDelete = Guid.Empty;
+    }
+
+    private async Task Delete(Guid id)
+    {
+        try
+        {
+            Logger.LogInformation("Deleting share class {Id}", id);
+
+            await ShareClassService.DeleteShareClassAsync(id);
+            _shareClasses.RemoveAll(x => x.Id == id);
+
+            FilterShareClasses();
+
+            Logger.LogInformation("Share class {Id} deleted", id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting share class {Id}", id);
+        }
+    }
+
+    private Task CancelDelete()
+    {
+        _shareClassToDelete = Guid.Empty;
+        return Task.CompletedTask;
     }
 }
 }

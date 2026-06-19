@@ -4,10 +4,12 @@
 @using MudBlazor
 @using OfficeOpenXml
 @using PersonalHub.Application.Features.Notes.Common
+@using PersonalHub.Web.Services.Auth
 
 @inject NoteService NoteService
 @inject ILogger<Notes> Logger
 @inject IJSRuntime JSRuntime
+@inject AuthService AuthService
 
 <PageTitle>Notes</PageTitle>
 
@@ -211,9 +213,12 @@
                                        Color="Color.Info"
                                        Href="@($"/notes/details/{context.Id}")" />
 
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                       Color="Color.Error"
-                                       OnClick="@(() => ShowDeleteConfirm(context.Id))" />
+                        @if (AuthService.GetUserRole() == "ADMIN")
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           OnClick="@(() => ShowDeleteConfirm(context.Id))" />
+                        }
 
                     </MudTd>
 

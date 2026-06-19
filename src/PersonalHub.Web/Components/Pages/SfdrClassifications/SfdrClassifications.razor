@@ -4,12 +4,22 @@
 @using MudBlazor
 @using PersonalHub.Application.Features.SfdrClassifications.Common
 @using PersonalHub.Web.Services
+@using PersonalHub.Web.Services.Auth
 
 @inject SfdrClassificationService SfdrClassificationService
 @inject ILogger<SfdrClassifications> Logger
 @inject NavigationManager Navigation
+@inject AuthService AuthService
 
 <PageTitle>SFDR Classifications</PageTitle>
+
+<ConfirmDialog @ref="_confirmDialog"
+               Title="Delete Classification"
+               Message="Are you sure you want to delete this SFDR classification? This action cannot be undone."
+               ConfirmButtonText="Delete"
+               IsVisible="_showConfirmDialog"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
@@ -61,6 +71,10 @@
                     <MudTd DataLabel="Actions">
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/sfdrclassifications/{context.Id}")" />
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/sfdrclassifications/edit/{context.Id}")" />
+                        @if (AuthService.GetUserRole() == "ADMIN")
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => ShowDeleteConfirm(context.Id))" />
+                        }
                     </MudTd>
                 </RowTemplate>
                 <PagerContent>
@@ -78,6 +92,10 @@
     private List<SfdrClassificationDto> _filteredSfdrClassifications = new();
     private string _searchTerm = string.Empty;
     private bool _isLoading = true;
+
+    private ConfirmDialog? _confirmDialog;
+    private bool _showConfirmDialog = false;
+    private Guid _classificationToDelete = Guid.Empty;
 
     public string SearchTerm
     {
@@ -131,5 +149,45 @@
     {
         SearchTerm = string.Empty;
     }
-}
+
+    private async Task ShowDeleteConfirm(Guid id)
+    {
+        _classificationToDelete = id;
+        _showConfirmDialog = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_classificationToDelete == Guid.Empty)
+            return;
+
+        await Delete(_classificationToDelete);
+        _classificationToDelete = Guid.Empty;
+    }
+
+    private async Task Delete(Guid id)
+    {
+        try
+        {
+            Logger.LogInformation("Deleting SFDR classification {Id}", id);
+
+            await SfdrClassificationService.DeleteSfdrClassificationAsync(id);
+            _sfdrClassifications.RemoveAll(x => x.Id == id);
+
+            FilterSfdrClassifications();
+
+            Logger.LogInformation("SFDR classification {Id} deleted", id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting SFDR classification {Id}", id);
+        }
+    }
+
+    private Task CancelDelete()
+    {
+        _classificationToDelete = Guid.Empty;
+        return Task.CompletedTask;
+    }
 }

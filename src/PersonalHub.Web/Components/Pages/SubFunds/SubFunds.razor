@@ -4,12 +4,22 @@
 @using MudBlazor
 @using PersonalHub.Application.Features.SubFunds.Common
 @using PersonalHub.Web.Services
+@using PersonalHub.Web.Services.Auth
 
 @inject SubFundService SubFundService
 @inject ILogger<SubFunds> Logger
 @inject NavigationManager Navigation
+@inject AuthService AuthService
 
 <PageTitle>Sub Funds</PageTitle>
+
+<ConfirmDialog @ref="_confirmDialog"
+               Title="Delete Sub Fund"
+               Message="Are you sure you want to delete this sub fund? This action cannot be undone."
+               ConfirmButtonText="Delete"
+               IsVisible="_showConfirmDialog"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
@@ -63,6 +73,10 @@
                     <MudTd DataLabel="Actions">
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/subfunds/{context.Id}")" />
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/subfunds/edit/{context.Id}")" />
+                        @if (AuthService.GetUserRole() == "ADMIN")
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => ShowDeleteConfirm(context.Id))" />
+                        }
                     </MudTd>
                 </RowTemplate>
                 <PagerContent>
@@ -80,6 +94,10 @@
     private List<SubFundDto> _filteredSubFunds = new();
     private string _searchTerm = string.Empty;
     private bool _isLoading = true;
+
+    private ConfirmDialog? _confirmDialog;
+    private bool _showConfirmDialog = false;
+    private Guid _subFundToDelete = Guid.Empty;
 
     public string SearchTerm
     {
@@ -133,6 +151,47 @@
     private void ClearFilters()
     {
         SearchTerm = string.Empty;
+    }
+
+    private async Task ShowDeleteConfirm(Guid id)
+    {
+        _subFundToDelete = id;
+        _showConfirmDialog = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_subFundToDelete == Guid.Empty)
+            return;
+
+        await Delete(_subFundToDelete);
+        _subFundToDelete = Guid.Empty;
+    }
+
+    private async Task Delete(Guid id)
+    {
+        try
+        {
+            Logger.LogInformation("Deleting sub fund {Id}", id);
+
+            await SubFundService.DeleteSubFundAsync(id);
+            _subFunds.RemoveAll(x => x.Id == id);
+
+            FilterSubFunds();
+
+            Logger.LogInformation("Sub fund {Id} deleted", id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting sub fund {Id}", id);
+        }
+    }
+
+    private Task CancelDelete()
+    {
+        _subFundToDelete = Guid.Empty;
+        return Task.CompletedTask;
     }
 }
 }
