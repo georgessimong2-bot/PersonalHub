@@ -5,6 +5,7 @@
 @using PersonalHub.Application.Features.SfdrClassifications.Common
 @using PersonalHub.Web.Services
 @using PersonalHub.Web.Services.Auth
+@using PersonalHub.Web.Components.Shared
 
 @inject SfdrClassificationService SfdrClassificationService
 @inject ILogger<SfdrClassifications> Logger
@@ -71,10 +72,7 @@
                     <MudTd DataLabel="Actions">
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/sfdrclassifications/{context.Id}")" />
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/sfdrclassifications/edit/{context.Id}")" />
-                        @if (AuthService.GetUserRole() == "ADMIN")
-                        {
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => ShowDeleteConfirm(context.Id))" />
-                        }
+                        <DeleteButtonAdmin OnClick="@(() => ShowDeleteConfirm(context.Id))" />
                     </MudTd>
                 </RowTemplate>
                 <PagerContent>

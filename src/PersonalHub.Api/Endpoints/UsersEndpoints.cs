@@ -5,6 +5,7 @@ using PersonalHub.Application.Features.Users.CreateUser;
 using PersonalHub.Application.Features.Users.DeleteUser;
 using PersonalHub.Application.Features.Users.GetUserById;
 using PersonalHub.Application.Features.Users.UpdateUser;
+using PersonalHub.Application.Features.Users.AssignRole;
 
 namespace PersonalHub.Api.Endpoints;
 
@@ -78,6 +79,21 @@ public static class UsersEndpoints
                 IMediator mediator) =>
             {
                 command.Id = id;
+
+                await mediator.Send(command);
+
+                return Results.NoContent();
+            });
+
+        // ASSIGN ROLE
+
+        group.MapPost("{id}/assign-role",
+            async (
+                string id,
+                AssignRoleCommand command,
+                IMediator mediator) =>
+            {
+                command.UserId = id;
 
                 await mediator.Send(command);
 

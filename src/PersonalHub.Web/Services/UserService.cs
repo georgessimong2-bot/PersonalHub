@@ -43,6 +43,12 @@ public class UserService : BaseHttpService
         await base.DeleteAsync($"api/users/{id}");
     }
 
+    public async Task AssignRoleAsync(string id, string role)
+    {
+        var command = new { role };
+        await Http.PostAsJsonAsync($"api/users/{id}/assign-role", command);
+    }
+
     public async Task<bool> UpdateProfileAsync(UpdateProfileDto dto)
     {
         var response = await Http.PutAsJsonAsync("api/account/profile", dto);

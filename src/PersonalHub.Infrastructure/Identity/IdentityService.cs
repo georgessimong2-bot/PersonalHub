@@ -298,4 +298,24 @@ public class IdentityService : IIdentityService
                     result.Errors.Select(x => x.Description)));
         }
     }
+
+    public async Task AssignRoleAsync(string userId, string role)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user is null)
+            throw new BusinessException("User not found.");
+
+        if (!await _userManager.IsInRoleAsync(user, role))
+        {
+            var result = await _userManager.AddToRoleAsync(user, role);
+
+            if (!result.Succeeded)
+            {
+                throw new BusinessException(
+                    string.Join(", ",
+                        result.Errors.Select(x => x.Description)));
+            }
+        }
+    }
 }

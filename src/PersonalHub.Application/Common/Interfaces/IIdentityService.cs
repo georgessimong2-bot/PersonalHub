@@ -36,4 +36,6 @@ public interface IIdentityService
     string userId,
     string currentPassword,
     string newPassword);
+
+    Task AssignRoleAsync(string userId, string role);
 }

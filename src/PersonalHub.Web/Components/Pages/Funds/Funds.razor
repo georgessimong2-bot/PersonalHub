@@ -6,6 +6,7 @@
 @using PersonalHub.Application.Features.Funds.Common
 @using PersonalHub.Web.Services
 @using PersonalHub.Web.Services.Auth
+@using PersonalHub.Web.Components.Shared
 
 @inject FundService FundService
 @inject ILogger<Funds> Logger
@@ -254,12 +255,7 @@
                                        Color="Color.Primary"
                                        Href="@($"/funds/edit/{context.Id}")" />
 
-                        @if (AuthService.GetUserRole() == "ADMIN")
-                        {
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Color="Color.Error"
-                                           OnClick="@(() => ShowDeleteConfirm(context.Id))" />
-                        }
+                        <DeleteButtonAdmin OnClick="@(() => ShowDeleteConfirm(context.Id))" />
 
                     </MudTd>
 

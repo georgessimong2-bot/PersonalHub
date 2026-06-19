@@ -6,6 +6,7 @@
 @using PersonalHub.Application.Features.Goals.Common
 @using PersonalHub.Web.Services
 @using PersonalHub.Web.Services.Auth
+@using PersonalHub.Web.Components.Shared
 
 @inject GoalService GoalService
 @inject AuthService AuthService
@@ -223,11 +224,9 @@
                                            Href="@($"/goals/edit/{context.Id}")" />
                         }
 
-                        @if (context.UserId == _currentUserId || AuthService.GetUserRole() == "ADMIN")
+                        @if (context.UserId == _currentUserId || _isCurrentUserAdmin)
                         {
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Color="Color.Error"
-                                           OnClick="@(() => ShowDeleteConfirm(context.Id))" />
+                            <DeleteButtonAdmin OnClick="@(() => ShowDeleteConfirm(context.Id))" />
                         }
 
                     </MudTd>
@@ -251,6 +250,7 @@
     private List<GoalDto> _filteredGoals = [];
 
     private string? _currentUserId;
+    private bool _isCurrentUserAdmin;
 
     private bool _isLoading = true;
 
@@ -267,6 +267,7 @@
         try
         {
             _currentUserId = AuthService.GetUserId();
+            _isCurrentUserAdmin = AuthService.GetUserRole() == "ADMIN";
 
             // Check if token is still valid
             if (!AuthService.IsAuthenticated())

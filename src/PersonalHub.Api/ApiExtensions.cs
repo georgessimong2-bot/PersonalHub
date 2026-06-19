@@ -9,6 +9,7 @@ public static class ApiExtensions
     {
         app.MapDiagnosticEndpoints();
         app.MapAuthEndpoints();
+        app.MapAuthCheckEndpoints();
         app.MapNotesEndpoints();
         app.MapUsersEndpoints();
         app.MapAccountEndpoints();

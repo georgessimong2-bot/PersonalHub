@@ -131,8 +131,24 @@ public class AuthService
     }
 
     public string? GetUserRole()
-        => GetParsedToken()?.Claims
+    {
+        var jwt = GetParsedToken();
+        if (jwt == null)
+        {
+            _logger.LogWarning("Token JWT not found or invalid");
+            return null;
+        }
+
+        var role = jwt.Claims
             .FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role")?.Value;
+
+        _logger.LogInformation("User role retrieved: {Role}", role ?? "null");
+
+        // Log all claims for debugging
+        _logger.LogDebug("JWT Claims: {Claims}", string.Join(", ", jwt.Claims.Select(c => $"{c.Type}={c.Value}")));
+
+        return role;
+    }
 
     public string? GetUserEmail()
         => GetParsedToken()?.Claims
