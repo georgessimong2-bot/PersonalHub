@@ -25,22 +25,22 @@ public class UserService : BaseHttpService
 
     public async Task<UserDto?> GetByIdAsync(string id)
     {
-        return await GetByIdAsync<UserDto>($"api/users/{id}");
+        return await base.GetByIdAsync<UserDto>($"api/users/{id}");
     }
 
     public async Task CreateAsync(CreateUserCommand request)
     {
-        await CreateAsync("api/users", request);
+        await base.CreateAsync("api/users", request);
     }
 
     public async Task UpdateAsync(string id, UpdateUserCommand request)
     {
-        await UpdateAsync($"api/users/{id}", request);
+        await UpdateAsync<UpdateUserCommand>($"api/users/{id}", request);
     }
 
     public async Task DeleteAsync(string id)
     {
-        await DeleteAsync($"api/users/{id}");
+        await base.DeleteAsync($"api/users/{id}");
     }
 
     public async Task<bool> UpdateProfileAsync(UpdateProfileDto dto)
