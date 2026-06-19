@@ -32,6 +32,9 @@ else
         Logger.LogInformation("=== AuthInitializer: Token after init = {TokenPresent}, Length: {Length}", 
             token != null, token?.Length ?? 0);
 
+        // Add a small delay to ensure token is available
+        await Task.Delay(100);
+
         _initialized = true;
     }
 }

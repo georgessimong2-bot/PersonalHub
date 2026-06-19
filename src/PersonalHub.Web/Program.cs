@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 using PersonalHub.Web.Components;
@@ -42,6 +43,10 @@ builder.Services.AddHttpClient("Api", (sp, client) =>
 #endregion
 
 #region AUTH CORE SERVICES
+builder.Services
+    .AddAuthentication()
+    .AddScheme<NoOpAuthenticationSchemeOptions, NoOpAuthenticationHandler>("NoOp", options => { });
+
 builder.Services.AddSingleton<TokenStore>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStateProvider>();
