@@ -12,5 +12,8 @@ public class CreateBenchmarkCommand : IRequest<Guid>
 
     public string? Provider { get; set; }
 
+    public Guid? CurrencyId { get; set; }
+
     public string? Description { get; set; }
 }
+

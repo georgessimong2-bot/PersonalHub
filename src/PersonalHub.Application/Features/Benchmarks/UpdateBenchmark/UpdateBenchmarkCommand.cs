@@ -8,6 +8,8 @@ public record UpdateBenchmarkCommand(
     string? BloombergTicker,
     string? ReutersCode,
     string? Provider,
+    Guid? CurrencyId,
     string? Description,
     bool IsActive)
     : IRequest;
+

@@ -1,5 +1,7 @@
 namespace PersonalHub.Application.Features.Benchmarks.Common;
 
+using PersonalHub.Application.Features.Currency.Common;
+
 public class BenchmarkDto
 {
     public Guid Id { get; set; }
@@ -12,7 +14,12 @@ public class BenchmarkDto
 
     public string? Provider { get; set; }
 
+    public Guid? CurrencyId { get; set; }
+
+    public CurrencyDto? Currency { get; set; }
+
     public string? Description { get; set; }
 
     public bool IsActive { get; set; }
 }
+

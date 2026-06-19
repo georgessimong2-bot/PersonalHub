@@ -12,6 +12,10 @@ public class Benchmark : BaseAuditableEntity
 
     public string? Provider { get; set; }
 
+    public Guid? CurrencyId { get; set; }
+
+    public Currency? Currency { get; set; }
+
     public string? Description { get; set; }
 
     public bool IsActive { get; set; } = true;

@@ -4,9 +4,11 @@
 @using MudBlazor
 @using PersonalHub.Application.Features.Benchmarks.Common
 @using PersonalHub.Application.Features.Benchmarks.UpdateBenchmark
+@using PersonalHub.Application.Features.Currency.Common
 @using PersonalHub.Web.Services
 
 @inject BenchmarkService BenchmarkService
+@inject CurrencyService CurrencyService
 @inject NavigationManager Navigation
 @inject ILogger<BenchmarkEdit> Logger
 
@@ -57,6 +59,14 @@
 
             <MudTextField T="string" @bind-Value="_provider" Label="Provider" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
 
+            <MudSelect T="Guid?" @bind-Value="_currencyId" Label="Currency" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" AnchorOrigin="Origin.BottomCenter">
+                <MudSelectItem T="Guid?" Value="@(null)">None</MudSelectItem>
+                @foreach (var currency in _currencies)
+                {
+                    <MudSelectItem T="Guid?" Value="@currency.Id">@currency.Code - @currency.Name</MudSelectItem>
+                }
+            </MudSelect>
+
             <MudTextField T="string" @bind-Value="_description" Label="Description" Variant="Variant.Outlined" Lines="6" FullWidth="true" Class="mb-4" />
 
             <MudSwitch T="bool" @bind-Checked="_isActive" Label="Active" Class="mb-4" />
@@ -97,14 +107,25 @@
     private string _bloombergTicker = string.Empty;
     private string _reutersCode = string.Empty;
     private string _provider = string.Empty;
+    private Guid? _currencyId = null;
     private string _description = string.Empty;
     private bool _isActive = false;
     private string _error = string.Empty;
     private bool _isSubmitting = false;
     private bool _isLoading = true;
+    private List<CurrencyDto> _currencies = new();
 
     protected override async Task OnInitializedAsync()
     {
+        try
+        {
+            _currencies = await CurrencyService.GetCurrenciesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading currencies");
+        }
+
         await LoadBenchmark();
     }
 
@@ -119,6 +140,7 @@
                 _bloombergTicker = _benchmark.BloombergTicker ?? string.Empty;
                 _reutersCode = _benchmark.ReutersCode ?? string.Empty;
                 _provider = _benchmark.Provider ?? string.Empty;
+                _currencyId = _benchmark.CurrencyId;
                 _description = _benchmark.Description ?? string.Empty;
                 _isActive = _benchmark.IsActive;
             }
@@ -153,6 +175,7 @@
                 _bloombergTicker,
                 _reutersCode,
                 _provider,
+                _currencyId,
                 _description,
                 _isActive
             );
