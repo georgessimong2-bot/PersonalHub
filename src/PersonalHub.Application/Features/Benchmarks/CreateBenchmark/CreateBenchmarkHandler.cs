@@ -25,6 +25,7 @@ public class CreateBenchmarkHandler
             BloombergTicker = request.BloombergTicker,
             ReutersCode = request.ReutersCode,
             Provider = request.Provider,
+            CurrencyId = request.CurrencyId,
             Description = request.Description,
             IsActive = true
         };
@@ -35,3 +36,4 @@ public class CreateBenchmarkHandler
         return benchmark.Id;
     }
 }
+

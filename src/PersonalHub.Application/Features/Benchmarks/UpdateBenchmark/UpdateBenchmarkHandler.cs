@@ -28,6 +28,7 @@ public class UpdateBenchmarkHandler
         benchmark.BloombergTicker = request.BloombergTicker;
         benchmark.ReutersCode = request.ReutersCode;
         benchmark.Provider = request.Provider;
+        benchmark.CurrencyId = request.CurrencyId;
         benchmark.Description = request.Description;
         benchmark.IsActive = request.IsActive;
 

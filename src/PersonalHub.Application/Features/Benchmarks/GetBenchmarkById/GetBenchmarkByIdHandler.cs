@@ -28,6 +28,15 @@ public class GetBenchmarkByIdHandler
                 BloombergTicker = x.BloombergTicker,
                 ReutersCode = x.ReutersCode,
                 Provider = x.Provider,
+                CurrencyId = x.CurrencyId,
+                Currency = x.Currency != null ? new PersonalHub.Application.Features.Currency.Common.CurrencyDto
+                {
+                    Id = x.Currency.Id,
+                    Code = x.Currency.Code,
+                    Name = x.Currency.Name,
+                    Symbol = x.Currency.Symbol,
+                    IsActive = x.Currency.IsActive
+                } : null,
                 Description = x.Description,
                 IsActive = x.IsActive
             })

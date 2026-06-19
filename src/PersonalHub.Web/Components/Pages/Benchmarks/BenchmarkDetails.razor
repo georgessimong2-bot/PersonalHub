@@ -61,6 +61,11 @@
                     <MudText Typo="Typo.body1" Class="mt-2">@(_benchmark.Provider ?? "-")</MudText>
                 </MudItem>
 
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Currency</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_benchmark.Currency != null ? $"{_benchmark.Currency.Code} - {_benchmark.Currency.Name}" : "-")</MudText>
+                </MudItem>
+
                 <MudItem xs="12">
                     <MudText Typo="Typo.subtitle2">Description</MudText>
                     <MudText Typo="Typo.body1" Class="mt-2">@(_benchmark.Description ?? "No description")</MudText>

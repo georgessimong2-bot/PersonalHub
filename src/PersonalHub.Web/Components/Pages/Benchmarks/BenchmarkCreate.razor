@@ -3,9 +3,11 @@
 
 @using MudBlazor
 @using PersonalHub.Application.Features.Benchmarks.CreateBenchmark
+@using PersonalHub.Application.Features.Currency.Common
 @using PersonalHub.Web.Services
 
 @inject BenchmarkService BenchmarkService
+@inject CurrencyService CurrencyService
 @inject NavigationManager Navigation
 @inject ILogger<BenchmarkCreate> Logger
 
@@ -41,6 +43,14 @@
 
         <MudTextField T="string" @bind-Value="_provider" Label="Provider" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
 
+        <MudSelect T="Guid?" @bind-Value="_currencyId" Label="Currency" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" AnchorOrigin="Origin.BottomCenter">
+            <MudSelectItem T="Guid?" Value="@(null)">None</MudSelectItem>
+            @foreach (var currency in _currencies)
+            {
+                <MudSelectItem T="Guid?" Value="@currency.Id">@currency.Code - @currency.Name</MudSelectItem>
+            }
+        </MudSelect>
+
         <MudTextField T="string" @bind-Value="_description" Label="Description" Variant="Variant.Outlined" Lines="6" FullWidth="true" Class="mb-4" />
 
         @if (!string.IsNullOrWhiteSpace(_error))
@@ -74,9 +84,23 @@
     private string _bloombergTicker = string.Empty;
     private string _reutersCode = string.Empty;
     private string _provider = string.Empty;
+    private Guid? _currencyId = null;
     private string _description = string.Empty;
     private string _error = string.Empty;
     private bool _isSubmitting = false;
+    private List<CurrencyDto> _currencies = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _currencies = await CurrencyService.GetCurrenciesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading currencies");
+        }
+    }
 
     private async Task HandleCreate()
     {
@@ -97,6 +121,7 @@
                 BloombergTicker = _bloombergTicker,
                 ReutersCode = _reutersCode,
                 Provider = _provider,
+                CurrencyId = _currencyId,
                 Description = _description
             };
 
