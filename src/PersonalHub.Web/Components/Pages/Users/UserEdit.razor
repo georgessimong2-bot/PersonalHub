@@ -1,16 +1,21 @@
 ﻿@page "/users/edit/{Id}"
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "ADMIN")]
 
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using MudBlazor
 @using PersonalHub.Application.Features.Users.UpdateUser
 
 @inject UserService UserService
 @inject NavigationManager Navigation
 @inject ILogger<UserEdit> Logger
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Edit User</PageTitle>
+
+<CascadingAuthenticationState>
+    <AuthorizeView Roles="ADMIN">
+        <Authorized>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
 
@@ -189,9 +194,20 @@
 
         </MudPaper>
     }
-    
+
 
 </MudContainer>
+
+        </Authorized>
+        <NotAuthorized>
+            <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+                <MudAlert Severity="Severity.Warning">
+                    Only administrators can access this page.
+                </MudAlert>
+            </MudContainer>
+        </NotAuthorized>
+    </AuthorizeView>
+</CascadingAuthenticationState>
 
 @code {
 
@@ -210,14 +226,30 @@
     {
         try
         {
-            var user =
-                await UserService.GetByIdAsync(Id);
+            // Verify user is admin
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
 
-            if (user is not null)
+            if (!user.Identity?.IsAuthenticated ?? true)
             {
-                _model.Id = user.Id;
-                _model.Email = user.Email;
-                _model.Role = user.Role;
+                Navigation.NavigateTo("/login?returnUrl=/users", true);
+                return;
+            }
+
+            if (!user.IsInRole("ADMIN"))
+            {
+                Navigation.NavigateTo("/", true);
+                return;
+            }
+
+            // Load user to edit
+            var userToEdit = await UserService.GetByIdAsync(Id);
+
+            if (userToEdit is not null)
+            {
+                _model.Id = userToEdit.Id;
+                _model.Email = userToEdit.Email;
+                _model.Role = userToEdit.Role;
             }
         }
         catch (Exception ex)
@@ -288,6 +320,4 @@
     {
         Navigation.NavigateTo("/users");
     }
-
-
 }
