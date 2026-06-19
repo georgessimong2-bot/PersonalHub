@@ -190,7 +190,7 @@ async Task SeedAdmin(WebApplication app)
         scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
     var user =
-        await userManager.FindByEmailAsync("ton.email@gmail.com");
+        await userManager.FindByEmailAsync("Admin@PersonalHub.be");
 
     if (user is null)
         return;
