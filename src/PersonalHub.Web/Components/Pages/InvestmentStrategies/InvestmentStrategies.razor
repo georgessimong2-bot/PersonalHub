@@ -4,12 +4,22 @@
 @using MudBlazor
 @using PersonalHub.Application.Features.InvestmentStrategies.Common
 @using PersonalHub.Web.Services
+@using PersonalHub.Web.Services.Auth
 
 @inject InvestmentStrategyService InvestmentStrategyService
 @inject ILogger<InvestmentStrategies> Logger
 @inject NavigationManager Navigation
+@inject AuthService AuthService
 
 <PageTitle>Investment Strategies</PageTitle>
+
+<ConfirmDialog @ref="_confirmDialog"
+               Title="Delete Investment Strategy"
+               Message="Are you sure you want to delete this investment strategy? This action cannot be undone."
+               ConfirmButtonText="Delete"
+               IsVisible="_showConfirmDialog"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
@@ -67,6 +77,10 @@
                     <MudTd DataLabel="Actions">
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/investmentstrategies/{context.Id}")" />
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/investmentstrategies/edit/{context.Id}")" />
+                        @if (AuthService.GetUserRole() == "ADMIN")
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => ShowDeleteConfirm(context.Id))" />
+                        }
                     </MudTd>
                 </RowTemplate>
                 <PagerContent>
@@ -84,6 +98,10 @@
     private List<InvestmentStrategyDto> _filteredInvestmentStrategies = new();
     private string _searchTerm = string.Empty;
     private bool _isLoading = true;
+
+    private ConfirmDialog? _confirmDialog;
+    private bool _showConfirmDialog = false;
+    private Guid _investmentStrategyToDelete = Guid.Empty;
 
     public string SearchTerm
     {
@@ -136,5 +154,46 @@
     private void ClearFilters()
     {
         SearchTerm = string.Empty;
+    }
+
+    private async Task ShowDeleteConfirm(Guid id)
+    {
+        _investmentStrategyToDelete = id;
+        _showConfirmDialog = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_investmentStrategyToDelete == Guid.Empty)
+            return;
+
+        await Delete(_investmentStrategyToDelete);
+        _investmentStrategyToDelete = Guid.Empty;
+    }
+
+    private async Task Delete(Guid id)
+    {
+        try
+        {
+            Logger.LogInformation("Deleting investment strategy {Id}", id);
+
+            await InvestmentStrategyService.DeleteInvestmentStrategyAsync(id);
+            _investmentStrategies.RemoveAll(x => x.Id == id);
+
+            FilterInvestmentStrategies();
+
+            Logger.LogInformation("Investment strategy {Id} deleted", id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting investment strategy {Id}", id);
+        }
+    }
+
+    private Task CancelDelete()
+    {
+        _investmentStrategyToDelete = Guid.Empty;
+        return Task.CompletedTask;
     }
 }

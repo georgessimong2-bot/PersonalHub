@@ -14,6 +14,14 @@
 
 <PageTitle>Goals</PageTitle>
 
+<ConfirmDialog @ref="_confirmDialog"
+               Title="Delete Goal"
+               Message="Are you sure you want to delete this goal? This action cannot be undone."
+               ConfirmButtonText="Delete"
+               IsVisible="_showConfirmDialog"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
+
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
     @if (_isLoading)
@@ -213,10 +221,13 @@
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                            Color="Color.Primary"
                                            Href="@($"/goals/edit/{context.Id}")" />
+                        }
 
+                        @if (context.UserId == _currentUserId || AuthService.GetUserRole() == "ADMIN")
+                        {
                             <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                            Color="Color.Error"
-                                           OnClick="@(() => Delete(context.Id))" />
+                                           OnClick="@(() => ShowDeleteConfirm(context.Id))" />
                         }
 
                     </MudTd>
@@ -246,6 +257,10 @@
     private string? _error;
 
     private string _searchTerm = string.Empty;
+
+    private ConfirmDialog? _confirmDialog;
+    private bool _showConfirmDialog = false;
+    private Guid _goalToDelete = Guid.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -334,6 +349,28 @@
                 "Error deleting goal {GoalId}",
                 id);
         }
+    }
+
+    private async Task ShowDeleteConfirm(Guid id)
+    {
+        _goalToDelete = id;
+        _showConfirmDialog = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_goalToDelete == Guid.Empty)
+            return;
+
+        await Delete(_goalToDelete);
+        _goalToDelete = Guid.Empty;
+    }
+
+    private Task CancelDelete()
+    {
+        _goalToDelete = Guid.Empty;
+        return Task.CompletedTask;
     }
 
     private async Task ExportToExcel()

@@ -5,13 +5,23 @@
 @using OfficeOpenXml
 @using PersonalHub.Application.Features.FundTypes.Common
 @using PersonalHub.Web.Services
+@using PersonalHub.Web.Services.Auth
 
 @inject FundTypeService FundTypeService
 @inject ILogger<FundTypes> Logger
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject AuthService AuthService
 
 <PageTitle>Fund Types</PageTitle>
+
+<ConfirmDialog @ref="_confirmDialog"
+               Title="Delete Fund Type"
+               Message="Are you sure you want to delete this fund type? This action cannot be undone."
+               ConfirmButtonText="Delete"
+               IsVisible="_showConfirmDialog"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
@@ -157,10 +167,16 @@
                                        Color="Color.Info"
                                        Href="@($"/fundtypes/details/{context.Id}")" />
 
-
                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                        Color="Color.Primary"
                                        Href="@($"/fundtypes/edit/{context.Id}")" />
+
+                        @if (AuthService.GetUserRole() == "ADMIN")
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           OnClick="@(() => ShowDeleteConfirm(context.Id))" />
+                        }
 
                     </MudTd>
 
@@ -180,13 +196,16 @@
 
 @code {
 
-
 private List<FundTypeDto> _fundTypes = [];
     private List<FundTypeDto> _filteredFundTypes = [];
 
     private bool _isLoading = true;
 
     private string _searchTerm = string.Empty;
+
+    private ConfirmDialog? _confirmDialog;
+    private bool _showConfirmDialog = false;
+    private Guid _fundTypeToDelete = Guid.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -276,5 +295,45 @@ private List<FundTypeDto> _fundTypes = [];
             "fundtypes.xlsx");
     }
 
+    private async Task ShowDeleteConfirm(Guid id)
+    {
+        _fundTypeToDelete = id;
+        _showConfirmDialog = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_fundTypeToDelete == Guid.Empty)
+            return;
+
+        await Delete(_fundTypeToDelete);
+        _fundTypeToDelete = Guid.Empty;
+    }
+
+    private async Task Delete(Guid id)
+    {
+        try
+        {
+            Logger.LogInformation("Deleting fund type {Id}", id);
+
+            await FundTypeService.DeleteFundTypeAsync(id);
+            _fundTypes.RemoveAll(x => x.Id == id);
+
+            ApplyFilters();
+
+            Logger.LogInformation("Fund type {Id} deleted", id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting fund type {Id}", id);
+        }
+    }
+
+    private Task CancelDelete()
+    {
+        _fundTypeToDelete = Guid.Empty;
+        return Task.CompletedTask;
+    }
 
 }
