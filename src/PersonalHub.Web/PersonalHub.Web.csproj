@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Components\Pages\Account\" />
     <Folder Include="Components\Pages\Misc\" />
   </ItemGroup>
 

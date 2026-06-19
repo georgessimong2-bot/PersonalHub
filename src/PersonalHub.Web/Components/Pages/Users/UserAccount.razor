@@ -1,8 +1,8 @@
 ﻿@page "/account"
-@attribute [Authorize]
 @rendermode InteractiveServer
 
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.Extensions.Options
 @using MudBlazor
@@ -16,27 +16,32 @@
 @inject AuthService AuthService
 @inject ISnackbar Snackbar
 @inject IOptions<ApiSettings> ApiSettings
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>My Account</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+<CascadingAuthenticationState>
+    <AuthorizeView>
+        <Authorized>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
 
-    @if (_loading)
-    {
-        <MudPaper Class="pa-8 text-center">
+            @if (_loading)
+            {
+                <MudPaper Class="pa-8 text-center">
 
-            <MudProgressCircular Indeterminate="true"
-                                 Color="Color.Primary"
-                                 Size="Size.Large" />
+                    <MudProgressCircular Indeterminate="true"
+                                         Color="Color.Primary"
+                                         Size="Size.Large" />
 
-            <MudText Class="mt-4">
-                Loading account...
-            </MudText>
+                    <MudText Class="mt-4">
+                        Loading account...
+                    </MudText>
 
-        </MudPaper>
-    }
-    else
-    {
+                </MudPaper>
+            }
+            else
+            {
         <!-- PROFILE HEADER -->
 
         <MudPaper Class="pa-6 mb-6" Elevation="2">
@@ -259,6 +264,16 @@
     }
 
 </MudContainer>
+    </Authorized>
+    <NotAuthorized>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+            <MudAlert Severity="Severity.Warning">
+                You must be logged in to view this page.
+            </MudAlert>
+        </MudContainer>
+    </NotAuthorized>
+</AuthorizeView>
+</CascadingAuthenticationState>
 
 @code {
 
@@ -280,33 +295,62 @@
     private int _notesCount;
     private int _fundsCount;
 
+    private bool _dataLoaded = false;
+
     protected override async Task OnInitializedAsync()
     {
+        // Load data immediately - token should be in store by now
+        if (_dataLoaded) return;
+        _dataLoaded = true;
+
         try
         {
-            var userId = AuthService.GetUserId();
+            // Get the current auth state
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (!user.Identity?.IsAuthenticated ?? true)
+            {
+                Navigation.NavigateTo("/login?returnUrl=/account", true);
+                return;
+            }
+
+            // Get user ID from claims
+            var userId = user.FindFirst(c => 
+                c.Type == System.Security.Claims.ClaimTypes.NameIdentifier ||
+                c.Type.Contains("nameidentifier"))?.Value;
 
             if (string.IsNullOrWhiteSpace(userId))
-                return;
-
-            var user = await UserService.GetByIdAsync(userId);
-
-            if (user is not null)
             {
-                _email = user.Email;
-                _role = user.Role;
+                Navigation.NavigateTo("/login?returnUrl=/account", true);
+                return;
+            }
 
-                _profilePictureUrl = user.ProfilePictureUrl;
+            // Load user data
+            var userAccount = await UserService.GetByIdAsync(userId);
+
+            if (userAccount is not null)
+            {
+                _email = userAccount.Email;
+                _role = userAccount.Role;
+                _profilePictureUrl = userAccount.ProfilePictureUrl;
 
                 _model = new UpdateProfileDto
                 {
-                    FirstName = user.FirstName ?? string.Empty,
-                    LastName = user.LastName ?? string.Empty,
-                    PhoneNumber = user.PhoneNumber ?? string.Empty,
-                    Address = user.Address ?? string.Empty
+                    FirstName = userAccount.FirstName ?? string.Empty,
+                    LastName = userAccount.LastName ?? string.Empty,
+                    PhoneNumber = userAccount.PhoneNumber ?? string.Empty,
+                    Address = userAccount.Address ?? string.Empty
                 };
             }
-
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Navigation.NavigateTo("/login?returnUrl=/account", true);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Unable to load account data.", Severity.Error);
         }
         finally
         {

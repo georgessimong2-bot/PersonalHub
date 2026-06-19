@@ -1,8 +1,8 @@
 ﻿@page "/users"
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "ADMIN")]
 
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using MudBlazor
 @using PersonalHub.Application.Features.Users.Common
 @using OfficeOpenXml
@@ -10,8 +10,14 @@
 @inject UserService UsersService
 @inject ILogger<Users> Logger
 @inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 
 <PageTitle>Users</PageTitle>
+
+<CascadingAuthenticationState>
+    <AuthorizeView Roles="ADMIN">
+        <Authorized>
 
 <ConfirmDialog @ref="_confirmDialog"
                Title="Delete User"
@@ -195,6 +201,22 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Verify user is admin before loading
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Navigation.NavigateTo("/login?returnUrl=/users", true);
+            return;
+        }
+
+        if (!user.IsInRole("ADMIN"))
+        {
+            Navigation.NavigateTo("/", true);
+            return;
+        }
+
         await LoadUsers();
     }
 
@@ -302,5 +324,13 @@
         return Task.CompletedTask;
     }
 
-   
-}
+        </Authorized>
+        <NotAuthorized>
+            <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+                <MudAlert Severity="Severity.Warning">
+                    Only administrators can access this page.
+                </MudAlert>
+            </MudContainer>
+        </NotAuthorized>
+    </AuthorizeView>
+</CascadingAuthenticationState>
