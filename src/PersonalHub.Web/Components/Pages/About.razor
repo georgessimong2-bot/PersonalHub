@@ -1,0 +1,57 @@
+@page "/about"
+@rendermode InteractiveServer
+
+@using Microsoft.AspNetCore.Components
+
+<PageTitle>About Me - PersonalHub</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+
+   
+
+    <!-- Contact Section -->
+    <MudPaper Class="pa-6 mb-6">
+        <MudText Typo="Typo.h4" Class="mb-4">
+            Contact Me
+        </MudText>
+
+        <MudText Typo="Typo.body1" Class="mb-6">
+            Feel free to reach out to me for any questions or collaboration opportunities.
+        </MudText>
+
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudCard Class="pa-4">
+                    <MudCardContent>
+                        <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Large" Class="mb-2" />
+                        <MudText Typo="Typo.h6" Class="mb-2">Email</MudText>
+                        <MudLink Href="mailto:georgessimon.g2@gmail.com">georgessimon.g2@gmail.com</MudLink>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudCard Class="pa-4">
+                    <MudCardContent>
+                        <MudIcon Icon="@Icons.Material.Filled.Work" Size="Size.Large" Class="mb-2" />
+                        <MudText Typo="Typo.h6" Class="mb-2">LinkedIn</MudText>
+                        <MudLink Href="ttps://www.linkedin.com/in/simon-georges3bbb0b121/" Target="_blank">My LinkedIn Profile</MudLink>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudCard Class="pa-4">
+                    <MudCardContent>
+                        <MudIcon Icon="@Icons.Material.Filled.Code" Size="Size.Large" Class="mb-2" />
+                        <MudText Typo="Typo.h6" Class="mb-2">GitHub</MudText>
+                        <MudLink Href="https://github.com/georgessimong2-bot" Target="_blank">My GitHub Profile</MudLink>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+          
+        </MudGrid>
+    </MudPaper>
+
+</MudContainer>

@@ -5,6 +5,7 @@
 @using PersonalHub.Application.Features.AI
 @using PersonalHub.Application.Features.Goals.Common
 @using PersonalHub.Web.Services
+@using System.Text.Json
 
 @inject GoalService GoalService
 @inject NavigationManager Navigation
@@ -320,6 +321,7 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadGoal();
+        LoadExistingAdvice();
     }
 
     private async Task LoadGoal()
@@ -332,6 +334,26 @@
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private void LoadExistingAdvice()
+    {
+        if (_goal?.GeneratedAdvice is not null)
+        {
+            try
+            {
+                _advice = JsonSerializer.Deserialize<AiGoalAdvice>(
+                    _goal.GeneratedAdvice,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(
+                    ex,
+                    "Failed to deserialize existing advice for goal {GoalId}",
+                    Id);
+            }
         }
     }
 
@@ -348,6 +370,19 @@
 
             _advice =
                 await GoalService.GenerateAdviceAsync(Id);
+
+            if (_advice is not null)
+            {
+                // Serialize the advice to JSON and save it
+                var adviceJson = JsonSerializer.Serialize(_advice);
+                await GoalService.SaveGeneratedAdviceAsync(Id, adviceJson);
+
+                // Update the goal object with the saved advice
+                if (_goal is not null)
+                {
+                    _goal.GeneratedAdvice = adviceJson;
+                }
+            }
         }
         catch (Exception ex)
         {

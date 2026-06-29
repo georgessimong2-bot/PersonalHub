@@ -46,4 +46,11 @@ public class GoalService : BaseHttpService
     {
         return await PostAsync<AiGoalAdvice>($"api/ai/goals/{goalId}/advice");
     }
+
+    public async Task SaveGeneratedAdviceAsync(Guid goalId, string generatedAdvice)
+    {
+        var request = new { GeneratedAdvice = generatedAdvice };
+        var response = await Http.PatchAsJsonAsync($"api/goals/{goalId}/advice", request);
+        response.EnsureSuccessStatusCode();
+    }
 }

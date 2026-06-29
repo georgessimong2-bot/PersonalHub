@@ -1,4 +1,6 @@
 ﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
+using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Application.Features.Goals.CreateGoal;
 using PersonalHub.Application.Features.Goals.DeleteGoal;
 using PersonalHub.Application.Features.Goals.GetGoalById;
@@ -86,5 +88,34 @@ public static class GoalEndpoints
 
                 return Results.NoContent();
             });
+
+        group.MapPatch("/{id:guid}/advice",
+            async (
+                Guid id,
+                SaveAdviceRequest request,
+                IMediator mediator,
+                IAppDbContext context) =>
+            {
+                var goal = await context.Goals
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (goal is null)
+                    return Results.NotFound();
+
+                var command = new UpdateGoalCommand(
+                    id,
+                    goal.Title,
+                    goal.Description ?? string.Empty,
+                    goal.TargetValue,
+                    goal.CurrentValue,
+                    goal.Deadline,
+                    request.GeneratedAdvice);
+
+                await mediator.Send(command);
+
+                return Results.NoContent();
+            });
     }
 }
+
+public record SaveAdviceRequest(string GeneratedAdvice);

@@ -40,6 +40,7 @@ public class GetGoalsHandler
                 TargetValue = goal.TargetValue,
                 CurrentValue = goal.CurrentValue,
                 Deadline = goal.Deadline,
+                GeneratedAdvice = goal.GeneratedAdvice,
 
                 CreatedBy = user?.Email ?? "Unknown",
                 UserId = goal.UserId,

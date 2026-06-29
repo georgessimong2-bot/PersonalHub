@@ -8,5 +8,6 @@ public record UpdateGoalCommand(
     string Description,
     decimal TargetValue,
     decimal CurrentValue,
-    DateTime? Deadline)
+    DateTime? Deadline,
+    string? GeneratedAdvice = null)
     : IRequest;

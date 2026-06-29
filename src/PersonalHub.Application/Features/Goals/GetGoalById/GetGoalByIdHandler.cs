@@ -38,6 +38,7 @@ public class GetGoalByIdHandler
             TargetValue = goal.TargetValue,
             CurrentValue = goal.CurrentValue,
             Deadline = goal.Deadline,
+            GeneratedAdvice = goal.GeneratedAdvice,
 
             ProgressPercentage =
                 goal.TargetValue == 0
