@@ -8,6 +8,11 @@
         Home
     </MudNavLink>
 
+    <MudNavLink Href="/about"
+                Icon="@Icons.Material.Filled.Person">
+        About
+    </MudNavLink>
+
     <AuthorizeView Roles="ADMIN">
         <Authorized>
             <MudNavLink Href="/users"
@@ -43,9 +48,12 @@
     </AuthorizeView>
 
    
-
-    <MudDivider Class="my-2" />
-    <MudText Typo="Typo.overline" Class="px-4">Fund Metadata</MudText>
+     <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudDivider Class="my-2" />
+            <MudText Typo="Typo.overline" Class="px-4">Fund Metadata</MudText>
+        </Authorized>
+    </AuthorizeView>
 
     <AuthorizeView Roles="USER, ADMIN">
         <Authorized>

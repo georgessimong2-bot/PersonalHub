@@ -41,6 +41,11 @@ public class UpdateGoalHandler
         goal.CurrentValue = request.CurrentValue;
         goal.Deadline = request.Deadline;
 
+        if (!string.IsNullOrEmpty(request.GeneratedAdvice))
+        {
+            goal.GeneratedAdvice = request.GeneratedAdvice;
+        }
+
         await _context.SaveChangesAsync(
             cancellationToken);
     }

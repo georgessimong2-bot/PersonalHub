@@ -16,5 +16,7 @@ public class Goal
 
     public DateTime? Deadline { get; set; }
 
+    public string? GeneratedAdvice { get; set; }
+
     public string UserId { get; set; } = string.Empty;
 }

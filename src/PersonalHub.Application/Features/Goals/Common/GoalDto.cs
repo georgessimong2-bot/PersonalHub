@@ -21,4 +21,6 @@
     public string CreatedBy { get; set; } = string.Empty;
 
     public string UserId { get; set; } = string.Empty;
+
+    public string? GeneratedAdvice { get; set; }
 }
