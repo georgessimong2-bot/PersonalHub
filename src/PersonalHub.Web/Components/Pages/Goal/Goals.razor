@@ -217,7 +217,7 @@
                                        Color="Color.Info"
                                        Href="@($"/goals/details/{context.Id}")" />
 
-                        @if (context.UserId == _currentUserId)
+                        @if (context.UserId == _currentUserId || _isCurrentUserAdmin)
                         {
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                            Color="Color.Primary"

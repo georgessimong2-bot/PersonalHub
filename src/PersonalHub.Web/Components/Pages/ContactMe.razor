@@ -1,13 +1,11 @@
-@page "/about"
+@page "/contact-me"
 @rendermode InteractiveServer
 
 @using Microsoft.AspNetCore.Components
 
-<PageTitle>About Me - PersonalHub</PageTitle>
+<PageTitle>Contact Me - PersonalHub</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
-
-   
 
     <!-- Contact Section -->
     <MudPaper Class="pa-6 mb-6">
@@ -35,7 +33,7 @@
                     <MudCardContent>
                         <MudIcon Icon="@Icons.Material.Filled.Work" Size="Size.Large" Class="mb-2" />
                         <MudText Typo="Typo.h6" Class="mb-2">LinkedIn</MudText>
-                        <MudLink Href="ttps://www.linkedin.com/in/simon-georges3bbb0b121/" Target="_blank">My LinkedIn Profile</MudLink>
+                        <MudLink Href="https://www.linkedin.com/in/simon-georges3bbb0b121/" Target="_blank">My LinkedIn Profile</MudLink>
                     </MudCardContent>
                 </MudCard>
             </MudItem>
@@ -50,7 +48,16 @@
                 </MudCard>
             </MudItem>
 
-          
+            <MudItem xs="12" sm="6">
+                <MudCard Class="pa-4">
+                    <MudCardContent>
+                        <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Large" Class="mb-2" />
+                        <MudText Typo="Typo.h6" Class="mb-2">Phone</MudText>
+                        <MudLink Href="tel:+32497789663">+32 497 78 96 63</MudLink>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
         </MudGrid>
     </MudPaper>
 
