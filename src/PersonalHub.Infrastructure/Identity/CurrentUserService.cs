@@ -22,4 +22,13 @@ public class CurrentUserService : ICurrentUserService
             .Value
         ?? throw new UnauthorizedAccessException(
             "User is not authenticated");
+
+    public bool IsInRole(string role)
+    {
+        return _httpContextAccessor
+            .HttpContext?
+            .User?
+            .IsInRole(role)
+            ?? false;
+    }
 }
