@@ -28,6 +28,9 @@ public class AppDbContext
     public DbSet<FundType> FundTypes => Set<FundType>();
     public DbSet<InstrumentType> InstrumentTypes => Set<InstrumentType>();
     public DbSet<Instrument> Instruments => Set<Instrument>();
+    public DbSet<InstrumentPrice> InstrumentPrices => Set<InstrumentPrice>();
+    public DbSet<Portfolio> Portfolios => Set<Portfolio>();
+    public DbSet<PortfolioHolding> PortfolioHoldings => Set<PortfolioHolding>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -77,6 +80,38 @@ public class AppDbContext
 
         builder.Entity<Instrument>()
             .HasIndex(x => x.ISIN)
+            .IsUnique();
+
+        builder.Entity<InstrumentPrice>()
+            .HasOne(x => x.Instrument)
+            .WithMany(x => x.Prices)
+            .HasForeignKey(x => x.InstrumentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<InstrumentPrice>()
+            .HasIndex(x => new { x.InstrumentId, x.PriceDate })
+            .IsUnique();
+
+        builder.Entity<Portfolio>()
+            .HasOne(x => x.ShareClass)
+            .WithMany(x => x.Portfolios)
+            .HasForeignKey(x => x.ShareClassId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<PortfolioHolding>()
+            .HasOne(x => x.Portfolio)
+            .WithMany(x => x.Holdings)
+            .HasForeignKey(x => x.PortfolioId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<PortfolioHolding>()
+            .HasOne(x => x.Instrument)
+            .WithMany()
+            .HasForeignKey(x => x.InstrumentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<PortfolioHolding>()
+            .HasIndex(x => new { x.PortfolioId, x.InstrumentId })
             .IsUnique();
     }
 }

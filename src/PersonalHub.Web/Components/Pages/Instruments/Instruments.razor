@@ -1,0 +1,200 @@
+@page "/instruments"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Instruments.Common
+@using PersonalHub.Web.Services
+@using PersonalHub.Web.Services.Auth
+@using PersonalHub.Web.Components.Shared
+
+@inject InstrumentService InstrumentService
+@inject ILogger<Instruments> Logger
+@inject NavigationManager Navigation
+@inject AuthService AuthService
+
+<PageTitle>Instruments</PageTitle>
+
+<ConfirmDialog @ref="_confirmDialog"
+               Title="Delete Instrument"
+               Message="Are you sure you want to delete this instrument? This action cannot be undone."
+               ConfirmButtonText="Delete"
+               IsVisible="_showConfirmDialog"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading instruments...</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-4">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Instruments</MudText>
+                    <MudText Typo="Typo.body2">@_filteredInstruments.Count instrument(s)</MudText>
+                </div>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/instruments/create" StartIcon="@Icons.Material.Filled.Add">
+                    Create Instrument
+                </MudButton>
+            </MudStack>
+
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" md="8">
+                    <MudTextField T="string" @bind-Value="SearchTerm" Label="Search Instruments" Variant="Variant.Outlined" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Clear" OnClick="ClearFilters">
+                        Clear Filters
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+
+            <MudTable Items="@_filteredInstruments" Hover="true" Dense="true" Striped="true" Bordered="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>ISIN</MudTh>
+                    <MudTh>Ticker</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Name">
+                        <MudTooltip Text="@context.Name">
+                            @context.Name
+                        </MudTooltip>
+                    </MudTd>
+                    <MudTd DataLabel="ISIN">@(string.IsNullOrWhiteSpace(context.ISIN) ? "-" : context.ISIN)</MudTd>
+                    <MudTd DataLabel="Ticker">@(context.Ticker ?? "-")</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Color="@(context.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">
+                            @(context.IsActive ? "Active" : "Inactive")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/instruments/{context.Id}")" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/instruments/edit/{context.Id}")" />
+                        <DeleteButtonAdmin OnClick="@(() => ShowDeleteConfirm(context.Id))" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    private List<InstrumentDto> _instruments = new();
+    private List<InstrumentDto> _filteredInstruments = new();
+    private string _searchTerm = string.Empty;
+    private bool _isLoading = true;
+
+    private ConfirmDialog? _confirmDialog;
+    private bool _showConfirmDialog = false;
+    private Guid _instrumentToDelete = Guid.Empty;
+
+    public string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            FilterInstruments();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInstruments();
+    }
+
+    private async Task LoadInstruments()
+    {
+        try
+        {
+            _instruments = await InstrumentService.GetInstrumentsAsync() ?? new List<InstrumentDto>();
+            FilterInstruments();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading instruments");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void FilterInstruments()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _filteredInstruments = _instruments;
+        }
+        else
+        {
+            var searchLower = _searchTerm.ToLower();
+            _filteredInstruments = _instruments
+                .Where(i => i.Name.ToLower().Contains(searchLower) ||
+                             i.ISIN.ToLower().Contains(searchLower) ||
+                             (i.Ticker ?? string.Empty).ToLower().Contains(searchLower))
+                .ToList();
+        }
+    }
+
+    private void ClearFilters()
+    {
+        SearchTerm = string.Empty;
+    }
+
+    private async Task ShowDeleteConfirm(Guid id)
+    {
+        _instrumentToDelete = id;
+        _showConfirmDialog = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_instrumentToDelete == Guid.Empty)
+            return;
+
+        await Delete(_instrumentToDelete);
+        _instrumentToDelete = Guid.Empty;
+    }
+
+    private async Task Delete(Guid id)
+    {
+        try
+        {
+            Logger.LogInformation("Deleting instrument {Id}", id);
+
+            await InstrumentService.DeleteInstrumentAsync(id);
+            _instruments.RemoveAll(x => x.Id == id);
+
+            FilterInstruments();
+
+            Logger.LogInformation("Instrument {Id} deleted", id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting instrument {Id}", id);
+        }
+    }
+
+    private Task CancelDelete()
+    {
+        _instrumentToDelete = Guid.Empty;
+        return Task.CompletedTask;
+    }
+}

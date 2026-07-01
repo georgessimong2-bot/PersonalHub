@@ -25,4 +25,6 @@ public class Instrument : BaseAuditableEntity
     public InstrumentType InstrumentType { get; set; } = null!;
 
     public Currency Currency { get; set; } = null!;
+
+    public ICollection<InstrumentPrice> Prices { get; set; } = [];
 }

@@ -1,0 +1,242 @@
+@page "/portfolios"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Portfolios.Common
+@using PersonalHub.Application.Features.ShareClasses.Common
+@using PersonalHub.Web.Services
+@using PersonalHub.Web.Services.Auth
+@using PersonalHub.Web.Components.Shared
+
+@inject PortfolioService PortfolioService
+@inject ShareClassService ShareClassService
+@inject ILogger<Portfolios> Logger
+@inject NavigationManager Navigation
+@inject AuthService AuthService
+
+<PageTitle>Portfolios</PageTitle>
+
+<ConfirmDialog @ref="_confirmDialog"
+               Title="Delete Portfolio"
+               Message="Are you sure you want to delete this portfolio? This action cannot be undone."
+               ConfirmButtonText="Delete"
+               IsVisible="_showConfirmDialog"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading portfolios...</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-4">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Portfolios</MudText>
+                    <MudText Typo="Typo.body2">@_filteredPortfolios.Count portfolio(s)</MudText>
+                </div>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/portfolios/create" StartIcon="@Icons.Material.Filled.Add">
+                    Create Portfolio
+                </MudButton>
+            </MudStack>
+
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" md="5">
+                    <MudTextField T="string" @bind-Value="SearchTerm" Label="Search Portfolios" Variant="Variant.Outlined" Immediate="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="ShareClassDto" @bind-Value="_selectedShareClassFilter" Label="Share Class" Variant="Variant.Outlined" FullWidth="true" Clearable="true" ToStringFunc="x => x?.Name ?? string.Empty">
+                        @foreach (var shareClass in _shareClassesList)
+                        {
+                            <MudSelectItem T="ShareClassDto" Value="@shareClass">@shareClass.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="3">
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Clear" OnClick="ClearFilters">
+                        Clear Filters
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+
+            <MudTable Items="@_filteredPortfolios" Hover="true" Dense="true" Striped="true" Bordered="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Fund</MudTh>
+                    <MudTh>Sub Fund</MudTh>
+                    <MudTh>Share Class</MudTh>
+                    <MudTh>Valuation Date</MudTh>
+                    <MudTh>Holdings</MudTh>
+                    <MudTh>Total Market Value</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Fund">@context.FundName</MudTd>
+                    <MudTd DataLabel="Sub Fund">@context.SubFundName</MudTd>
+                    <MudTd DataLabel="Share Class">
+                        <MudTooltip Text="@context.ShareClassName">
+                            @context.ShareClassName
+                        </MudTooltip>
+                    </MudTd>
+                    <MudTd DataLabel="Valuation Date">@context.ValuationDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="Holdings">@context.HoldingsCount</MudTd>
+                    <MudTd DataLabel="Total Market Value">@(context.TotalMarketValue?.ToString("N2") ?? "-")</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Color="@(context.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">
+                            @(context.IsActive ? "Active" : "Inactive")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/portfolios/{context.Id}")" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/portfolios/edit/{context.Id}")" />
+                        <DeleteButtonAdmin OnClick="@(() => ShowDeleteConfirm(context.Id))" />
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    [SupplyParameterFromQuery(Name = "shareClassId")]
+    public Guid? ShareClassId { get; set; }
+
+    private List<PortfolioDto> _portfolios = new();
+    private List<PortfolioDto> _filteredPortfolios = new();
+    private List<ShareClassDto> _shareClassesList = new();
+    private ShareClassDto? _selectedShareClassFilter;
+    private string _searchTerm = string.Empty;
+    private bool _isLoading = true;
+
+    private ConfirmDialog? _confirmDialog;
+    private bool _showConfirmDialog = false;
+    private Guid _portfolioToDelete = Guid.Empty;
+
+    public string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            FilterPortfolios();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _shareClassesList = await ShareClassService.GetShareClassesAsync();
+
+            if (ShareClassId.HasValue)
+            {
+                _selectedShareClassFilter = _shareClassesList.FirstOrDefault(x => x.Id == ShareClassId.Value);
+            }
+
+            await LoadPortfolios();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading data");
+        }
+    }
+
+    private async Task LoadPortfolios()
+    {
+        try
+        {
+            _isLoading = true;
+            _portfolios = await PortfolioService.GetPortfoliosAsync() ?? new List<PortfolioDto>();
+            FilterPortfolios();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading portfolios");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void FilterPortfolios()
+    {
+        var filtered = _portfolios.AsEnumerable();
+
+        if (_selectedShareClassFilter is not null)
+        {
+            filtered = filtered.Where(p => p.ShareClassId == _selectedShareClassFilter.Id);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            var searchLower = _searchTerm.ToLower();
+            filtered = filtered.Where(p =>
+                p.FundName.ToLower().Contains(searchLower) ||
+                p.SubFundName.ToLower().Contains(searchLower) ||
+                p.ShareClassName.ToLower().Contains(searchLower));
+        }
+
+        _filteredPortfolios = filtered.ToList();
+    }
+
+    private void ClearFilters()
+    {
+        _searchTerm = string.Empty;
+        _selectedShareClassFilter = null;
+        FilterPortfolios();
+    }
+
+    private async Task ShowDeleteConfirm(Guid id)
+    {
+        _portfolioToDelete = id;
+        _showConfirmDialog = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_portfolioToDelete == Guid.Empty)
+            return;
+
+        await Delete(_portfolioToDelete);
+        _portfolioToDelete = Guid.Empty;
+    }
+
+    private async Task Delete(Guid id)
+    {
+        try
+        {
+            Logger.LogInformation("Deleting portfolio {Id}", id);
+
+            await PortfolioService.DeletePortfolioAsync(id);
+            _portfolios.RemoveAll(x => x.Id == id);
+
+            FilterPortfolios();
+
+            Logger.LogInformation("Portfolio {Id} deleted", id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting portfolio {Id}", id);
+        }
+    }
+
+    private Task CancelDelete()
+    {
+        _portfolioToDelete = Guid.Empty;
+        return Task.CompletedTask;
+    }
+}

@@ -1,0 +1,250 @@
+@page "/instruments/edit/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Instruments.Common
+@using PersonalHub.Application.Features.Instruments.UpdateInstrument
+@using PersonalHub.Application.Features.InstrumentTypes.Common
+@using PersonalHub.Application.Features.Currency.Common
+@using PersonalHub.Web.Services
+
+@inject InstrumentService InstrumentService
+@inject InstrumentTypeService InstrumentTypeService
+@inject CurrencyService CurrencyService
+@inject NavigationManager Navigation
+@inject ILogger<InstrumentEdit> Logger
+
+<PageTitle>Edit Instrument</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading instrument...</MudText>
+        </MudPaper>
+    }
+    else if (_instrument == null)
+    {
+        <MudAlert Severity="Severity.Error">Instrument not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-6">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Edit Instrument</MudText>
+                    <MudText Typo="Typo.body2">Update instrument information</MudText>
+                </div>
+                <MudChip T="string" Color="@(_isActive ? Color.Success : Color.Error)" Variant="Variant.Filled">
+                    @(_isActive ? "Active" : "Inactive")
+                </MudChip>
+            </MudStack>
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="InstrumentTypeDto"
+                        @bind-Value="_selectedInstrumentType"
+                        Label="Instrument Type *"
+                        Variant="Variant.Outlined"
+                        FullWidth="true"
+                        Required="true"
+                        Class="mb-4"
+                        ToStringFunc="x => x?.Name ?? string.Empty">
+                        @foreach (var instrumentType in _instrumentTypesList)
+                        {
+                            <MudSelectItem T="InstrumentTypeDto" Value="@instrumentType">@instrumentType.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudSelect T="CurrencyDto"
+                        @bind-Value="_selectedCurrency"
+                        Label="Currency *"
+                        Variant="Variant.Outlined"
+                        FullWidth="true"
+                        Required="true"
+                        Class="mb-4"
+                        ToStringFunc="x => x?.Code ?? string.Empty">
+                        @foreach (var currency in _currenciesList)
+                        {
+                            <MudSelectItem T="CurrencyDto" Value="@currency">@currency.Code - @currency.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string" @bind-Value="_name" Label="Name" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string" @bind-Value="_isin" Label="ISIN" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string" @bind-Value="_ticker" Label="Ticker" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string" @bind-Value="_issuer" Label="Issuer" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string" @bind-Value="_countryOfRisk" Label="Country of Risk" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string" @bind-Value="_sector" Label="Sector" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudCheckBox T="bool" @bind-Checked="_isActive" Label="Is Active" Class="mb-4" />
+                </MudItem>
+            </MudGrid>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+            }
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel">Cancel</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" Disabled="_isSubmitting || _selectedInstrumentType is null || _selectedCurrency is null" OnClick="HandleUpdate">
+                    @if (_isSubmitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        <span class="ms-2">Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save Changes</span>
+                    }
+                </MudButton>
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private InstrumentDto? _instrument;
+    private List<InstrumentTypeDto> _instrumentTypesList = [];
+    private List<CurrencyDto> _currenciesList = [];
+    private InstrumentTypeDto? _selectedInstrumentType;
+    private CurrencyDto? _selectedCurrency;
+    private string _name = string.Empty;
+    private string _isin = string.Empty;
+    private string? _ticker;
+    private string? _issuer;
+    private string? _countryOfRisk;
+    private string? _sector;
+    private bool _isActive = true;
+    private string _error = string.Empty;
+    private bool _isSubmitting = false;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInstrument();
+    }
+
+    private async Task LoadInstrument()
+    {
+        try
+        {
+            _instrumentTypesList = await InstrumentTypeService.GetInstrumentTypesAsync();
+            _currenciesList = await CurrencyService.GetCurrenciesAsync();
+            _instrument = await InstrumentService.GetInstrumentByIdAsync(Id);
+
+            if (_instrument != null)
+            {
+                _name = _instrument.Name;
+                _isin = _instrument.ISIN;
+                _ticker = _instrument.Ticker;
+                _issuer = _instrument.Issuer;
+                _countryOfRisk = _instrument.CountryOfRisk;
+                _sector = _instrument.Sector;
+                _isActive = _instrument.IsActive;
+                _selectedInstrumentType = _instrumentTypesList.FirstOrDefault(x => x.Id == _instrument.InstrumentTypeId);
+                _selectedCurrency = _currenciesList.FirstOrDefault(x => x.Id == _instrument.CurrencyId);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading instrument {InstrumentId}", Id);
+            _error = "An error occurred while loading the instrument.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleUpdate()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _error = "Name is required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_isin))
+        {
+            _error = "ISIN is required.";
+            return;
+        }
+
+        if (_selectedInstrumentType is null)
+        {
+            _error = "Instrument Type is required.";
+            return;
+        }
+
+        if (_selectedCurrency is null)
+        {
+            _error = "Currency is required.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = string.Empty;
+
+        try
+        {
+            var command = new UpdateInstrumentCommand(
+                Id,
+                _selectedInstrumentType.Id,
+                _selectedCurrency.Id,
+                _name,
+                _isin,
+                _ticker,
+                _issuer,
+                _countryOfRisk,
+                _sector,
+                _isActive);
+
+            await InstrumentService.UpdateInstrumentAsync(Id, command);
+            Navigation.NavigateTo($"/instruments/{Id}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating instrument");
+            _error = "An error occurred while updating the instrument.";
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo($"/instruments/{Id}");
+    }
+}

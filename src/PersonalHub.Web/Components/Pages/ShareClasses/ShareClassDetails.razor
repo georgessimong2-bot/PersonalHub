@@ -85,6 +85,7 @@
             <MudDivider Class="my-4" />
 
             <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AccountBalanceWallet" Href="@($"/portfolios?shareClassId={Id}")">Portfolios</MudButton>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Href="@($"/shareclasses/edit/{Id}")">Edit</MudButton>
                 <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="GoBack">Back</MudButton>
             </MudStack>

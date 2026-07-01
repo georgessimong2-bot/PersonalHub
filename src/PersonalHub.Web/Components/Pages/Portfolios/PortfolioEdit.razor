@@ -1,0 +1,260 @@
+@page "/portfolios/edit/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Portfolios.Common
+@using PersonalHub.Application.Features.Portfolios.UpdatePortfolio
+@using PersonalHub.Application.Features.Funds.Common
+@using PersonalHub.Application.Features.SubFunds.Common
+@using PersonalHub.Application.Features.ShareClasses.Common
+@using PersonalHub.Web.Services
+
+@inject PortfolioService PortfolioService
+@inject FundService FundService
+@inject SubFundService SubFundService
+@inject ShareClassService ShareClassService
+@inject NavigationManager Navigation
+@inject ILogger<PortfolioEdit> Logger
+
+<PageTitle>Edit Portfolio</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading portfolio...</MudText>
+        </MudPaper>
+    }
+    else if (_portfolio == null)
+    {
+        <MudAlert Severity="Severity.Error">Portfolio not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-6">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Edit Portfolio</MudText>
+                    <MudText Typo="Typo.body2">Update portfolio information</MudText>
+                </div>
+                <MudChip T="string" Color="@(_isActive ? Color.Success : Color.Error)" Variant="Variant.Filled">
+                    @(_isActive ? "Active" : "Inactive")
+                </MudChip>
+            </MudStack>
+
+            <MudGrid>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="FundDto"
+                        Value="_selectedFund"
+                        ValueChanged="OnFundChanged"
+                        Label="Fund *"
+                        Variant="Variant.Outlined"
+                        FullWidth="true"
+                        Required="true"
+                        Class="mb-4"
+                        ToStringFunc="x => x?.Name ?? string.Empty">
+                        @foreach (var fund in _fundsList)
+                        {
+                            <MudSelectItem T="FundDto" Value="@fund">@fund.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+                    <MudSelect T="SubFundDto"
+                        Value="_selectedSubFund"
+                        ValueChanged="OnSubFundChanged"
+                        Label="Sub Fund *"
+                        Variant="Variant.Outlined"
+                        FullWidth="true"
+                        Required="true"
+                        Disabled="_selectedFund is null"
+                        Class="mb-4"
+                        ToStringFunc="x => x?.Name ?? string.Empty">
+                        @foreach (var subFund in _filteredSubFunds)
+                        {
+                            <MudSelectItem T="SubFundDto" Value="@subFund">@subFund.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+                    <MudSelect T="ShareClassDto"
+                        @bind-Value="_selectedShareClass"
+                        Label="Share Class *"
+                        Variant="Variant.Outlined"
+                        FullWidth="true"
+                        Required="true"
+                        Disabled="_selectedSubFund is null"
+                        Class="mb-4"
+                        ToStringFunc="x => x?.Name ?? string.Empty">
+                        @foreach (var shareClass in _filteredShareClasses)
+                        {
+                            <MudSelectItem T="ShareClassDto" Value="@shareClass">@shareClass.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="_valuationDate" Label="Valuation Date *" Variant="Variant.Outlined" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudCheckBox T="bool" @bind-Checked="_isActive" Label="Is Active" Class="mb-4" />
+                </MudItem>
+            </MudGrid>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+            }
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel">Cancel</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" Disabled="_isSubmitting || _selectedShareClass is null" OnClick="HandleUpdate">
+                    @if (_isSubmitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        <span class="ms-2">Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save Changes</span>
+                    }
+                </MudButton>
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private PortfolioDto? _portfolio;
+    private List<FundDto> _fundsList = new();
+    private List<SubFundDto> _subFundsList = new();
+    private List<ShareClassDto> _shareClassesList = new();
+    private List<SubFundDto> _filteredSubFunds = new();
+    private List<ShareClassDto> _filteredShareClasses = new();
+
+    private FundDto? _selectedFund;
+    private SubFundDto? _selectedSubFund;
+    private ShareClassDto? _selectedShareClass;
+    private DateTime? _valuationDate;
+    private bool _isActive = true;
+    private string _error = string.Empty;
+    private bool _isSubmitting = false;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPortfolio();
+    }
+
+    private async Task LoadPortfolio()
+    {
+        try
+        {
+            _fundsList = await FundService.GetFundsAsync();
+            _subFundsList = await SubFundService.GetSubFundsAsync();
+            _shareClassesList = await ShareClassService.GetShareClassesAsync();
+            _portfolio = await PortfolioService.GetPortfolioByIdAsync(Id);
+
+            if (_portfolio != null)
+            {
+                _valuationDate = _portfolio.ValuationDate;
+                _isActive = _portfolio.IsActive;
+
+                var shareClass = _shareClassesList.FirstOrDefault(x => x.Id == _portfolio.ShareClassId);
+                var subFund = shareClass is null ? null : _subFundsList.FirstOrDefault(x => x.Id == shareClass.SubFundId);
+
+                if (shareClass is not null && subFund is not null)
+                {
+                    _selectedFund = _fundsList.FirstOrDefault(x => x.Id == subFund.FundId);
+                    _filteredSubFunds = _subFundsList.Where(x => x.FundId == subFund.FundId).ToList();
+                    _selectedSubFund = subFund;
+                    _filteredShareClasses = _shareClassesList.Where(x => x.SubFundId == subFund.Id).ToList();
+                    _selectedShareClass = shareClass;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading portfolio {PortfolioId}", Id);
+            _error = "An error occurred while loading the portfolio.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OnFundChanged(FundDto? fund)
+    {
+        _selectedFund = fund;
+        _selectedSubFund = null;
+        _selectedShareClass = null;
+        _filteredShareClasses = new();
+        _filteredSubFunds = fund is null
+            ? new()
+            : _subFundsList.Where(x => x.FundId == fund.Id).ToList();
+    }
+
+    private void OnSubFundChanged(SubFundDto? subFund)
+    {
+        _selectedSubFund = subFund;
+        _selectedShareClass = null;
+        _filteredShareClasses = subFund is null
+            ? new()
+            : _shareClassesList.Where(x => x.SubFundId == subFund.Id).ToList();
+    }
+
+    private async Task HandleUpdate()
+    {
+        if (_selectedShareClass is null)
+        {
+            _error = "Share Class is required.";
+            return;
+        }
+
+        if (_valuationDate is null)
+        {
+            _error = "Valuation Date is required.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = string.Empty;
+
+        try
+        {
+            var command = new UpdatePortfolioCommand(
+                Id,
+                _selectedShareClass.Id,
+                _valuationDate.Value,
+                _isActive);
+
+            await PortfolioService.UpdatePortfolioAsync(Id, command);
+            Navigation.NavigateTo($"/portfolios/{Id}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error updating portfolio");
+            _error = "An error occurred while updating the portfolio.";
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo($"/portfolios/{Id}");
+    }
+}
