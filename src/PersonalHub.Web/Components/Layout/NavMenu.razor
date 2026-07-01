@@ -127,6 +127,33 @@
         </Authorized>
     </AuthorizeView>   
 
-  
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/instrumenttypes"
+                        Icon="@Icons.Material.Filled.Category">
+                Instrument Types
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/instruments"
+                        Icon="@Icons.Material.Filled.ShowChart">
+                Instruments
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/portfolios"
+                        Icon="@Icons.Material.Filled.AccountBalanceWallet">
+                Portfolios
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+
 </MudNavMenu>
 

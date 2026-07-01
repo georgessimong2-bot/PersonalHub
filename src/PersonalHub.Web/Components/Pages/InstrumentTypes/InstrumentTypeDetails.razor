@@ -1,0 +1,104 @@
+@page "/instrumenttypes/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.InstrumentTypes.Common
+@using PersonalHub.Web.Services
+
+@inject ILogger<InstrumentTypeDetails> Logger
+@inject NavigationManager Navigation
+@inject InstrumentTypeService InstrumentTypeService
+
+<PageTitle>Instrument Type Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading instrument type...</MudText>
+        </MudPaper>
+    }
+    else if (_instrumentType == null)
+    {
+        <MudAlert Severity="Severity.Error">Instrument Type not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-6">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">@_instrumentType.Name</MudText>
+                    <MudText Typo="Typo.body2">Instrument Type Details</MudText>
+                </div>
+                <MudChip T="string" Color="@(_instrumentType.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled">
+                    @(_instrumentType.IsActive ? "Active" : "Inactive")
+                </MudChip>
+            </MudStack>
+
+            <MudDivider Class="my-4" />
+
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Name</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@_instrumentType.Name</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Status</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_instrumentType.IsActive ? "Active" : "Inactive")</MudText>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2">Description</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_instrumentType.Description ?? "-")</MudText>
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Href="@($"/instrumenttypes/edit/{Id}")">Edit</MudButton>
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="GoBack">Back</MudButton>
+            </MudStack>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private InstrumentTypeDto? _instrumentType;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInstrumentType();
+    }
+
+    private async Task LoadInstrumentType()
+    {
+        try
+        {
+            _instrumentType = await InstrumentTypeService.GetInstrumentTypeByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading instrument type {InstrumentTypeId}", Id);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/instrumenttypes");
+    }
+}

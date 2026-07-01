@@ -1,0 +1,368 @@
+@page "/portfolios/{Id:guid}"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Portfolios.Common
+@using PersonalHub.Application.Features.PortfolioHoldings.CreatePortfolioHolding
+@using PersonalHub.Application.Features.PortfolioHoldings.UpdatePortfolioHolding
+@using PersonalHub.Application.Features.Instruments.Common
+@using PersonalHub.Web.Services
+@using PersonalHub.Web.Components.Shared
+
+@inject ILogger<PortfolioDetails> Logger
+@inject NavigationManager Navigation
+@inject PortfolioService PortfolioService
+@inject PortfolioHoldingService PortfolioHoldingService
+@inject InstrumentService InstrumentService
+
+<PageTitle>Portfolio Details</PageTitle>
+
+<ConfirmDialog @ref="_confirmDialog"
+               Title="@_confirmTitle"
+               Message="@_confirmMessage"
+               ConfirmButtonText="Delete"
+               IsVisible="_showConfirmDialog"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading portfolio...</MudText>
+        </MudPaper>
+    }
+    else if (_portfolio == null)
+    {
+        <MudAlert Severity="Severity.Error">Portfolio not found.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-6 mb-4">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">@_portfolio.ShareClassName</MudText>
+                    <MudText Typo="Typo.body2">@_portfolio.FundName / @_portfolio.SubFundName</MudText>
+                </div>
+                <MudChip T="string" Color="@(_portfolio.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled">
+                    @(_portfolio.IsActive ? "Active" : "Inactive")
+                </MudChip>
+            </MudStack>
+
+            <MudDivider Class="my-4" />
+
+            <MudGrid>
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.subtitle2">Fund / Sub Fund</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@_portfolio.FundName / @_portfolio.SubFundName</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.subtitle2">Valuation Date</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@_portfolio.ValuationDate.ToString("yyyy-MM-dd")</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.subtitle2">Holdings</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@_portfolio.HoldingsCount</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="3">
+                    <MudText Typo="Typo.subtitle2">Total Market Value</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_portfolio.TotalMarketValue?.ToString("N2") ?? "-")</MudText>
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Href="@($"/portfolios/edit/{Id}")">Edit</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" OnClick="ShowDeletePortfolioConfirm">Delete</MudButton>
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="GoBack">Back</MudButton>
+            </MudStack>
+
+        </MudPaper>
+
+        <MudPaper Class="pa-6">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <MudText Typo="Typo.h5">Holdings</MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="ShowAddHoldingForm">
+                    Add Holding
+                </MudButton>
+            </MudStack>
+
+            @if (_showHoldingForm)
+            {
+                <MudPaper Class="pa-4 mb-4" Outlined="true">
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">@(_editingHoldingId.HasValue ? "Edit Holding" : "New Holding")</MudText>
+
+                    <MudGrid>
+                        <MudItem xs="12" md="5">
+                            <MudSelect T="InstrumentDto"
+                                @bind-Value="_selectedInstrument"
+                                Label="Instrument *"
+                                Variant="Variant.Outlined"
+                                FullWidth="true"
+                                Required="true"
+                                ToStringFunc="x => x?.Name ?? string.Empty">
+                                @foreach (var instrument in _instrumentsList)
+                                {
+                                    <MudSelectItem T="InstrumentDto" Value="@instrument">@instrument.Name (@instrument.ISIN)</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+
+                        <MudItem xs="12" md="3">
+                            <MudNumericField T="decimal" @bind-Value="_quantity" Label="Quantity *" Variant="Variant.Outlined" FullWidth="true" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="4">
+                            <MudNumericField T="decimal?" @bind-Value="_averageCost" Label="Average Cost" Variant="Variant.Outlined" FullWidth="true" />
+                        </MudItem>
+                    </MudGrid>
+
+                    @if (!string.IsNullOrWhiteSpace(_holdingError))
+                    {
+                        <MudAlert Severity="Severity.Error" Class="mt-2">@_holdingError</MudAlert>
+                    }
+
+                    <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2" Class="mt-4">
+                        <MudButton Variant="Variant.Outlined" OnClick="CancelHoldingForm">Cancel</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_isSubmittingHolding || _selectedInstrument is null" OnClick="SaveHolding">
+                            @(_editingHoldingId.HasValue ? "Save Changes" : "Add Holding")
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+            }
+
+            <MudTable Items="@_portfolio.Holdings" Hover="true" Dense="true" Striped="true" Bordered="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Instrument</MudTh>
+                    <MudTh>ISIN</MudTh>
+                    <MudTh>Quantity</MudTh>
+                    <MudTh>Average Cost</MudTh>
+                    <MudTh>Market Value</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Instrument">@context.InstrumentName</MudTd>
+                    <MudTd DataLabel="ISIN">@context.InstrumentISIN</MudTd>
+                    <MudTd DataLabel="Quantity">@context.Quantity</MudTd>
+                    <MudTd DataLabel="Average Cost">@(context.AverageCost?.ToString("N2") ?? "-")</MudTd>
+                    <MudTd DataLabel="Market Value">@(context.MarketValue?.ToString("N2") ?? "-")</MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => ShowEditHoldingForm(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => ShowDeleteHoldingConfirm(context.Id))" />
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>No holdings yet.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+
+        </MudPaper>
+    }
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private PortfolioDto? _portfolio;
+    private List<InstrumentDto> _instrumentsList = new();
+    private bool _isLoading = true;
+
+    private bool _showHoldingForm = false;
+    private Guid? _editingHoldingId;
+    private InstrumentDto? _selectedInstrument;
+    private decimal _quantity;
+    private decimal? _averageCost;
+    private string _holdingError = string.Empty;
+    private bool _isSubmittingHolding = false;
+
+    private ConfirmDialog? _confirmDialog;
+    private bool _showConfirmDialog = false;
+    private string _confirmTitle = "Confirm";
+    private string _confirmMessage = string.Empty;
+    private bool _deletingPortfolio = false;
+    private Guid _holdingToDelete = Guid.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPortfolio();
+
+        try
+        {
+            _instrumentsList = await InstrumentService.GetInstrumentsAsync() ?? new List<InstrumentDto>();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading instruments");
+        }
+    }
+
+    private async Task LoadPortfolio()
+    {
+        try
+        {
+            _isLoading = true;
+            _portfolio = await PortfolioService.GetPortfolioByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading portfolio {PortfolioId}", Id);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ShowAddHoldingForm()
+    {
+        _editingHoldingId = null;
+        _selectedInstrument = null;
+        _quantity = 0;
+        _averageCost = null;
+        _holdingError = string.Empty;
+        _showHoldingForm = true;
+    }
+
+    private void ShowEditHoldingForm(PortfolioHoldingDto holding)
+    {
+        _editingHoldingId = holding.Id;
+        _selectedInstrument = _instrumentsList.FirstOrDefault(x => x.Id == holding.InstrumentId);
+        _quantity = holding.Quantity;
+        _averageCost = holding.AverageCost;
+        _holdingError = string.Empty;
+        _showHoldingForm = true;
+    }
+
+    private void CancelHoldingForm()
+    {
+        _showHoldingForm = false;
+        _editingHoldingId = null;
+    }
+
+    private async Task SaveHolding()
+    {
+        if (_selectedInstrument is null)
+        {
+            _holdingError = "Instrument is required.";
+            return;
+        }
+
+        if (_quantity <= 0)
+        {
+            _holdingError = "Quantity must be greater than zero.";
+            return;
+        }
+
+        _isSubmittingHolding = true;
+        _holdingError = string.Empty;
+
+        try
+        {
+            if (_editingHoldingId.HasValue)
+            {
+                var command = new UpdatePortfolioHoldingCommand(
+                    _editingHoldingId.Value,
+                    _selectedInstrument.Id,
+                    _quantity,
+                    _averageCost);
+
+                await PortfolioHoldingService.UpdatePortfolioHoldingAsync(_editingHoldingId.Value, command);
+            }
+            else
+            {
+                var command = new CreatePortfolioHoldingCommand
+                {
+                    PortfolioId = Id,
+                    InstrumentId = _selectedInstrument.Id,
+                    Quantity = _quantity,
+                    AverageCost = _averageCost
+                };
+
+                await PortfolioHoldingService.CreatePortfolioHoldingAsync(command);
+            }
+
+            _showHoldingForm = false;
+            _editingHoldingId = null;
+            await LoadPortfolio();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error saving portfolio holding");
+            _holdingError = "An error occurred while saving the holding.";
+        }
+        finally
+        {
+            _isSubmittingHolding = false;
+        }
+    }
+
+    private void ShowDeletePortfolioConfirm()
+    {
+        _deletingPortfolio = true;
+        _confirmTitle = "Delete Portfolio";
+        _confirmMessage = "Are you sure you want to delete this portfolio? This action cannot be undone.";
+        _showConfirmDialog = true;
+        StateHasChanged();
+    }
+
+    private void ShowDeleteHoldingConfirm(Guid holdingId)
+    {
+        _deletingPortfolio = false;
+        _holdingToDelete = holdingId;
+        _confirmTitle = "Delete Holding";
+        _confirmMessage = "Are you sure you want to delete this holding? This action cannot be undone.";
+        _showConfirmDialog = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_deletingPortfolio)
+        {
+            try
+            {
+                await PortfolioService.DeletePortfolioAsync(Id);
+                Navigation.NavigateTo("/portfolios");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error deleting portfolio {PortfolioId}", Id);
+            }
+        }
+        else if (_holdingToDelete != Guid.Empty)
+        {
+            try
+            {
+                await PortfolioHoldingService.DeletePortfolioHoldingAsync(_holdingToDelete);
+                _holdingToDelete = Guid.Empty;
+                await LoadPortfolio();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error deleting portfolio holding");
+            }
+        }
+    }
+
+    private Task CancelDelete()
+    {
+        _deletingPortfolio = false;
+        _holdingToDelete = Guid.Empty;
+        return Task.CompletedTask;
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/portfolios");
+    }
+}

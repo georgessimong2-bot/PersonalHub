@@ -17,6 +17,9 @@ public interface IAppDbContext
     DbSet<SfdrClassification> SfdrClassifications { get; }
     DbSet<InstrumentType> InstrumentTypes { get; }
     DbSet<Instrument> Instruments { get; }
+    DbSet<InstrumentPrice> InstrumentPrices { get; }
+    DbSet<Portfolio> Portfolios { get; }
+    DbSet<PortfolioHolding> PortfolioHoldings { get; }
 
     Task<int> SaveChangesAsync(
         CancellationToken cancellationToken);

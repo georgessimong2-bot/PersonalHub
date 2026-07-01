@@ -31,4 +31,6 @@ public class ShareClass : BaseAuditableEntity
     public SubFund SubFund { get; set; } = null!;
 
     public Currency Currency { get; set; } = null!;
+
+    public ICollection<Portfolio> Portfolios { get; set; } = [];
 }

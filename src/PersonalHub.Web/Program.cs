@@ -68,6 +68,11 @@ builder.Services.AddScoped<BenchmarkService>();
 builder.Services.AddScoped<SfdrClassificationService>();
 builder.Services.AddScoped<ShareClassService>();
 builder.Services.AddScoped<SubFundService>();
+builder.Services.AddScoped<InstrumentTypeService>();
+builder.Services.AddScoped<InstrumentService>();
+builder.Services.AddScoped<InstrumentPriceService>();
+builder.Services.AddScoped<PortfolioService>();
+builder.Services.AddScoped<PortfolioHoldingService>();
 
 #endregion
 

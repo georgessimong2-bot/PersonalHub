@@ -359,6 +359,29 @@ namespace PersonalHub.Infrastructure.Migrations
                     b.ToTable("Instruments");
                 });
 
+            modelBuilder.Entity("PersonalHub.Domain.Entities.InstrumentPrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("InstrumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("PriceDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstrumentId", "PriceDate")
+                        .IsUnique();
+
+                    b.ToTable("InstrumentPrices");
+                });
+
             modelBuilder.Entity("PersonalHub.Domain.Entities.InstrumentType", b =>
                 {
                     b.Property<Guid>("Id")
@@ -428,6 +451,59 @@ namespace PersonalHub.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Notes");
+                });
+
+            modelBuilder.Entity("PersonalHub.Domain.Entities.Portfolio", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ShareClassId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ValuationDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShareClassId");
+
+                    b.ToTable("Portfolios");
+                });
+
+            modelBuilder.Entity("PersonalHub.Domain.Entities.PortfolioHolding", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("AverageCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("InstrumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("MarketValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("PortfolioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstrumentId");
+
+                    b.HasIndex("PortfolioId", "InstrumentId")
+                        .IsUnique();
+
+                    b.ToTable("PortfolioHoldings");
                 });
 
             modelBuilder.Entity("PersonalHub.Domain.Entities.SfdrClassification", b =>
@@ -733,6 +809,47 @@ namespace PersonalHub.Infrastructure.Migrations
                     b.Navigation("InstrumentType");
                 });
 
+            modelBuilder.Entity("PersonalHub.Domain.Entities.InstrumentPrice", b =>
+                {
+                    b.HasOne("PersonalHub.Domain.Entities.Instrument", "Instrument")
+                        .WithMany("Prices")
+                        .HasForeignKey("InstrumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Instrument");
+                });
+
+            modelBuilder.Entity("PersonalHub.Domain.Entities.Portfolio", b =>
+                {
+                    b.HasOne("ShareClass", "ShareClass")
+                        .WithMany("Portfolios")
+                        .HasForeignKey("ShareClassId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ShareClass");
+                });
+
+            modelBuilder.Entity("PersonalHub.Domain.Entities.PortfolioHolding", b =>
+                {
+                    b.HasOne("PersonalHub.Domain.Entities.Instrument", "Instrument")
+                        .WithMany()
+                        .HasForeignKey("InstrumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PersonalHub.Domain.Entities.Portfolio", "Portfolio")
+                        .WithMany("Holdings")
+                        .HasForeignKey("PortfolioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Instrument");
+
+                    b.Navigation("Portfolio");
+                });
+
             modelBuilder.Entity("ShareClass", b =>
                 {
                     b.HasOne("PersonalHub.Domain.Entities.Currency", "Currency")
@@ -791,9 +908,24 @@ namespace PersonalHub.Infrastructure.Migrations
                     b.Navigation("SubFunds");
                 });
 
+            modelBuilder.Entity("PersonalHub.Domain.Entities.Instrument", b =>
+                {
+                    b.Navigation("Prices");
+                });
+
             modelBuilder.Entity("PersonalHub.Domain.Entities.InstrumentType", b =>
                 {
                     b.Navigation("Instruments");
+                });
+
+            modelBuilder.Entity("PersonalHub.Domain.Entities.Portfolio", b =>
+                {
+                    b.Navigation("Holdings");
+                });
+
+            modelBuilder.Entity("ShareClass", b =>
+                {
+                    b.Navigation("Portfolios");
                 });
 
             modelBuilder.Entity("SubFund", b =>

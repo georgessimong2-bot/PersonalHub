@@ -24,5 +24,10 @@ public static class ApiExtensions
         app.MapSfdrClassificationsEndpoints();
         app.MapShareClassesEndpoints();
         app.MapSubFundsEndpoints();
+        app.MapInstrumentTypesEndpoints();
+        app.MapInstrumentsEndpoints();
+        app.MapInstrumentPricesEndpoints();
+        app.MapPortfoliosEndpoints();
+        app.MapPortfolioHoldingsEndpoints();
     }
 }
