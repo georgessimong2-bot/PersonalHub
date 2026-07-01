@@ -31,8 +31,11 @@ public class GetDashboardHandler
             FundsCount =
                 await _context.Funds.CountAsync(cancellationToken),
 
-            FundTypesCount =
-                await _context.FundTypes.CountAsync(cancellationToken)
+            SubFundsCount =
+                await _context.SubFunds.CountAsync(cancellationToken),
+
+            ShareClassesCount =
+                await _context.ShareClasses.CountAsync(cancellationToken)
         };
     }
 }
