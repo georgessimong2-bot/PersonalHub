@@ -6,6 +6,7 @@
 @using PersonalHub.Application.Features.Instruments.Common
 @using PersonalHub.Application.Features.InstrumentPrices.Common
 @using PersonalHub.Application.Features.InstrumentPrices.CreateInstrumentPrice
+@using PersonalHub.Application.Features.InstrumentPrices.UpdateInstrumentPrice
 @using PersonalHub.Web.Services
 @using PersonalHub.Web.Components.Shared
 
@@ -13,6 +14,7 @@
 @inject NavigationManager Navigation
 @inject InstrumentService InstrumentService
 @inject InstrumentPriceService InstrumentPriceService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Instrument Details</PageTitle>
 
@@ -106,7 +108,7 @@
             @if (_showPriceForm)
             {
                 <MudPaper Class="pa-4 mb-4" Outlined="true">
-                    <MudText Typo="Typo.subtitle1" Class="mb-2">New Price</MudText>
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">@(_editingPriceId is null ? "New Price" : "Edit Price")</MudText>
 
                     <MudGrid>
                         <MudItem xs="12" md="6">
@@ -126,7 +128,7 @@
                     <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2" Class="mt-4">
                         <MudButton Variant="Variant.Outlined" OnClick="CancelPriceForm">Cancel</MudButton>
                         <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_isSubmittingPrice" OnClick="SavePrice">
-                            Add Price
+                            @(_editingPriceId is null ? "Add Price" : "Update Price")
                         </MudButton>
                     </MudStack>
                 </MudPaper>
@@ -138,8 +140,8 @@
                           ChartSeries="@_priceChartSeries"
                           ChartOptions="_priceChartOptions"
                           Width="100%"
-                          Height="300px"
-                          Class="mb-4" />
+                          Height="350px"
+                          Class="mb-10" />
             }
             else if (_prices.Count == 1)
             {
@@ -156,7 +158,11 @@
                     <MudTd DataLabel="Price Date">@context.PriceDate.ToString("yyyy-MM-dd")</MudTd>
                     <MudTd DataLabel="Price">@context.Price.ToString("N2")</MudTd>
                     <MudTd DataLabel="Actions">
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => ShowDeletePriceConfirm(context.Id))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => ShowEditPriceForm(context))" />
+                        @if (_isUserAdmin)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => ShowDeletePriceConfirm(context.Id))" />
+                        }
                     </MudTd>
                 </RowTemplate>
                 <NoRecordsContent>
@@ -175,6 +181,7 @@
 
     private InstrumentDto? _instrument;
     private bool _isLoading = true;
+    private bool _isUserAdmin = false;
 
     private List<InstrumentPriceDto> _prices = new();
     private List<ChartSeries<decimal>> _priceChartSeries = new();
@@ -190,6 +197,7 @@
     };
 
     private bool _showPriceForm = false;
+    private Guid? _editingPriceId;
     private DateTime? _priceDate = DateTime.Today;
     private decimal _price;
     private string _priceError = string.Empty;
@@ -201,8 +209,23 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await CheckUserRole();
         await LoadInstrument();
         await LoadPrices();
+    }
+
+    private async Task CheckUserRole()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            _isUserAdmin = user.IsInRole("ADMIN");
+        }
+        catch
+        {
+            _isUserAdmin = false;
+        }
     }
 
     private async Task LoadInstrument()
@@ -257,8 +280,18 @@
 
     private void ShowAddPriceForm()
     {
+        _editingPriceId = null;
         _priceDate = DateTime.Today;
         _price = 0;
+        _priceError = string.Empty;
+        _showPriceForm = true;
+    }
+
+    private void ShowEditPriceForm(InstrumentPriceDto price)
+    {
+        _editingPriceId = price.Id;
+        _priceDate = price.PriceDate;
+        _price = price.Price;
         _priceError = string.Empty;
         _showPriceForm = true;
     }
@@ -266,6 +299,7 @@
     private void CancelPriceForm()
     {
         _showPriceForm = false;
+        _editingPriceId = null;
     }
 
     private async Task SavePrice()
@@ -287,17 +321,30 @@
 
         try
         {
-            var command = new CreateInstrumentPriceCommand
+            if (_editingPriceId is Guid editingPriceId)
             {
-                InstrumentId = Id,
-                Price = _price,
-                PriceDate = _priceDate.Value
-            };
+                var updateCommand = new UpdateInstrumentPriceCommand(editingPriceId, _price, _priceDate.Value);
+                await InstrumentPriceService.UpdateInstrumentPriceAsync(editingPriceId, updateCommand);
+            }
+            else
+            {
+                var command = new CreateInstrumentPriceCommand
+                {
+                    InstrumentId = Id,
+                    Price = _price,
+                    PriceDate = _priceDate.Value
+                };
 
-            await InstrumentPriceService.CreateInstrumentPriceAsync(command);
+                await InstrumentPriceService.CreateInstrumentPriceAsync(command);
+            }
 
             _showPriceForm = false;
+            _editingPriceId = null;
             await LoadPrices();
+        }
+        catch (HttpRequestException ex)
+        {
+            _priceError = ex.Message;
         }
         catch (Exception ex)
         {
