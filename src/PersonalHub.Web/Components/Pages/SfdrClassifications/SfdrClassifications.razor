@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 
 @using MudBlazor
+@using OfficeOpenXml
 @using PersonalHub.Application.Features.SfdrClassifications.Common
 @using PersonalHub.Web.Services
 @using PersonalHub.Web.Services.Auth
@@ -11,6 +12,7 @@
 @inject ILogger<SfdrClassifications> Logger
 @inject NavigationManager Navigation
 @inject AuthService AuthService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>SFDR Classifications</PageTitle>
 
@@ -40,9 +42,14 @@
                     <MudText Typo="Typo.h4">SFDR Classifications</MudText>
                     <MudText Typo="Typo.body2">@_filteredSfdrClassifications.Count classification(s)</MudText>
                 </div>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/sfdrclassifications/create" StartIcon="@Icons.Material.Filled.Add">
-                    Create Classification
-                </MudButton>
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.FileDownload" OnClick="ExportToExcel">
+                        Export Excel
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/sfdrclassifications/create" StartIcon="@Icons.Material.Filled.Add">
+                        Create Classification
+                    </MudButton>
+                </MudStack>
             </MudStack>
 
             <MudGrid Class="mb-4">
@@ -146,6 +153,37 @@
     private void ClearFilters()
     {
         SearchTerm = string.Empty;
+    }
+
+    private async Task ExportToExcel()
+    {
+        ExcelPackage.License.SetNonCommercialPersonal("Georges Simon");
+
+        using var package = new ExcelPackage();
+
+        var worksheet = package.Workbook.Worksheets.Add("SFDR Classifications");
+
+        worksheet.Cells[1, 1].Value = "Name";
+        worksheet.Cells[1, 2].Value = "Description";
+
+        var row = 2;
+
+        foreach (var classification in _filteredSfdrClassifications)
+        {
+            worksheet.Cells[row, 1].Value = classification.Name;
+            worksheet.Cells[row, 2].Value = classification.Description;
+
+            row++;
+        }
+
+        worksheet.Cells.AutoFitColumns();
+
+        var bytes = package.GetAsByteArray();
+
+        await JSRuntime.InvokeVoidAsync(
+            "downloadFile",
+            bytes,
+            "sfdr_classifications.xlsx");
     }
 
     private async Task ShowDeleteConfirm(Guid id)
