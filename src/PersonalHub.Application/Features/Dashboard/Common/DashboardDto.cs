@@ -8,5 +8,7 @@ public class DashboardDto
 
     public int FundsCount { get; set; }
 
-    public int FundTypesCount { get; set; }
+    public int SubFundsCount { get; set; }
+
+    public int ShareClassesCount { get; set; }
 }

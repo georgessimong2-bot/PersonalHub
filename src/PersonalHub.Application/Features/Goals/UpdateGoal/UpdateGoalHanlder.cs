@@ -1,5 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using PersonalHub.Application.Common.Exceptions;
 using PersonalHub.Application.Common.Interfaces;
 
 namespace PersonalHub.Application.Features.Goals.UpdateGoal;
@@ -9,29 +11,43 @@ public class UpdateGoalHandler
 {
     private readonly IAppDbContext _context;
     private readonly ICurrentUserService _currentUser;
+    private readonly ILogger<UpdateGoalHandler> _logger;
 
     public UpdateGoalHandler(
         IAppDbContext context,
-        ICurrentUserService currentUser)
+        ICurrentUserService currentUser,
+        ILogger<UpdateGoalHandler> logger)
     {
         _context = context;
         _currentUser = currentUser;
+        _logger = logger;
     }
 
     public async Task Handle(
         UpdateGoalCommand request,
         CancellationToken cancellationToken)
     {
+        var isAdmin = _currentUser.IsInRole("ADMIN");
+        var userId = _currentUser.UserId;
+
+        _logger.LogInformation(
+            "UpdateGoalHandler: GoalId={GoalId}, UserId={UserId}, IsAdmin={IsAdmin}",
+            request.Id, userId, isAdmin);
+
         var goal = await _context.Goals
             .FirstOrDefaultAsync(
                 x =>
                     x.Id == request.Id &&
-                    x.UserId == _currentUser.UserId,
+                    (isAdmin || x.UserId == userId),
                 cancellationToken);
 
         if (goal is null)
         {
-            throw new Exception(
+            _logger.LogWarning(
+                "Goal not found: GoalId={GoalId}, UserId={UserId}, IsAdmin={IsAdmin}",
+                request.Id, userId, isAdmin);
+
+            throw new BusinessException(
                 "Goal not found or access denied");
         }
 

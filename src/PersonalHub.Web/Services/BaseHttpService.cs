@@ -14,6 +14,30 @@ public abstract class BaseHttpService
     }
 
     /// <summary>
+    /// Extracts error message from HTTP error response content.
+    /// Supports both "error" and "message" fields in JSON response.
+    /// </summary>
+    private async Task<string> ExtractErrorMessageAsync(HttpContent content)
+    {
+        try
+        {
+            var errorResponse = await content.ReadFromJsonAsync<Dictionary<string, object>>();
+
+            if (errorResponse?.ContainsKey("error") == true)
+                return errorResponse["error"]?.ToString() ?? "Unknown error";
+
+            if (errorResponse?.ContainsKey("message") == true)
+                return errorResponse["message"]?.ToString() ?? "Unknown error";
+
+            return "Unknown error";
+        }
+        catch
+        {
+            return "Unknown error";
+        }
+    }
+
+    /// <summary>
     /// Gets all entities of type T from the specified endpoint.
     /// </summary>
     /// <typeparam name="T">The DTO type to deserialize</typeparam>
@@ -24,7 +48,12 @@ public abstract class BaseHttpService
         where T : class
     {
         var response = await Http.GetAsync(endpoint);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorMessage = await ExtractErrorMessageAsync(response.Content);
+            throw new HttpRequestException(errorMessage, null, response.StatusCode);
+        }
 
         return await response.Content.ReadFromJsonAsync<List<T>>() ?? [];
     }
@@ -46,7 +75,12 @@ public abstract class BaseHttpService
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 return null;
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await ExtractErrorMessageAsync(response.Content);
+                throw new HttpRequestException(errorMessage, null, response.StatusCode);
+            }
+
             return await response.Content.ReadFromJsonAsync<T>();
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -71,7 +105,12 @@ public abstract class BaseHttpService
         where TResponse : class
     {
         var response = await Http.PostAsJsonAsync(endpoint, request);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorMessage = await ExtractErrorMessageAsync(response.Content);
+            throw new HttpRequestException(errorMessage, null, response.StatusCode);
+        }
 
         return await response.Content.ReadFromJsonAsync<TResponse>();
     }
@@ -90,7 +129,12 @@ public abstract class BaseHttpService
         where TRequest : class
     {
         var response = await Http.PostAsJsonAsync(endpoint, request);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorMessage = await ExtractErrorMessageAsync(response.Content);
+            throw new HttpRequestException(errorMessage, null, response.StatusCode);
+        }
 
         return await response.Content.ReadFromJsonAsync<Guid>();
     }
@@ -108,7 +152,12 @@ public abstract class BaseHttpService
         where TRequest : class
     {
         var response = await Http.PutAsJsonAsync(endpoint, request);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorMessage = await ExtractErrorMessageAsync(response.Content);
+            throw new HttpRequestException(errorMessage, null, response.StatusCode);
+        }
     }
 
     /// <summary>
@@ -119,7 +168,12 @@ public abstract class BaseHttpService
     protected async Task DeleteAsync(string endpoint)
     {
         var response = await Http.DeleteAsync(endpoint);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorMessage = await ExtractErrorMessageAsync(response.Content);
+            throw new HttpRequestException(errorMessage, null, response.StatusCode);
+        }
     }
 
     /// <summary>
@@ -134,7 +188,12 @@ public abstract class BaseHttpService
         where TResponse : class
     {
         var response = await Http.PostAsync(endpoint, null);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorMessage = await ExtractErrorMessageAsync(response.Content);
+            throw new HttpRequestException(errorMessage, null, response.StatusCode);
+        }
 
         return await response.Content.ReadFromJsonAsync<TResponse>();
     }
@@ -155,7 +214,12 @@ public abstract class BaseHttpService
         where TResponse : class
     {
         var response = await Http.PostAsJsonAsync(endpoint, request);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorMessage = await ExtractErrorMessageAsync(response.Content);
+            throw new HttpRequestException(errorMessage, null, response.StatusCode);
+        }
 
         return await response.Content.ReadFromJsonAsync<TResponse>();
     }
@@ -172,7 +236,12 @@ public abstract class BaseHttpService
         where TResponse : class
     {
         var response = await Http.GetAsync(endpoint);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorMessage = await ExtractErrorMessageAsync(response.Content);
+            throw new HttpRequestException(errorMessage, null, response.StatusCode);
+        }
 
         return await response.Content.ReadFromJsonAsync<TResponse>();
     }

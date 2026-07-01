@@ -125,14 +125,29 @@
 
         <MudItem xs="12" sm="6" md="3">
             <MudCard Style="cursor:pointer"
-                     @onclick='() => Navigation.NavigateTo("/fundtypes")'>
+                     @onclick='() => Navigation.NavigateTo("/subfunds")'>
                 <MudCardContent>
                     <MudText Typo="Typo.h6">
-                        Fund Types
+                        SubFunds
                     </MudText>
 
                     <MudText Typo="Typo.body2">
-                        Regulatory structures
+                        Manage sub-funds
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Style="cursor:pointer"
+                     @onclick='() => Navigation.NavigateTo("/shareclasses")'>
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">
+                        Share Classes
+                    </MudText>
+
+                    <MudText Typo="Typo.body2">
+                        Manage share classes
                     </MudText>
                 </MudCardContent>
             </MudCard>

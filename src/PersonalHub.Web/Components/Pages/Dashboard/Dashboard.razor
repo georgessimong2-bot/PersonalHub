@@ -108,16 +108,38 @@
 
                 <MudCard Class="dashboard-card"
                          Style="cursor:pointer"
-                         @onclick="GoToFundTypes">
+                         @onclick="GoToSubFunds">
 
                     <MudCardContent>
 
                         <MudText Typo="Typo.h6">
-                            Fund Types
+                            Sub Funds
                         </MudText>
 
                         <MudText Typo="Typo.h3">
-                            @_dashboard.FundTypesCount
+                            @_dashboard.SubFundsCount
+                        </MudText>
+
+                    </MudCardContent>
+
+                </MudCard>
+
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+
+                <MudCard Class="dashboard-card"
+                         Style="cursor:pointer"
+                         @onclick="GoToShareClasses">
+
+                    <MudCardContent>
+
+                        <MudText Typo="Typo.h6">
+                            Share Classes
+                        </MudText>
+
+                        <MudText Typo="Typo.h3">
+                            @_dashboard.ShareClassesCount
                         </MudText>
 
                     </MudCardContent>
@@ -162,6 +184,22 @@
                            OnClick="CreateFund">
 
                     New Fund
+
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Info"
+                           OnClick="CreateSubFund">
+
+                    New SubFund
+
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Warning"
+                           OnClick="CreateShareClass">
+
+                    New ShareClass
 
                 </MudButton>
 
@@ -216,8 +254,11 @@
     private void GoToFunds()
         => Navigation.NavigateTo("/funds");
 
-    private void GoToFundTypes()
-        => Navigation.NavigateTo("/fundtypes");
+    private void GoToSubFunds()
+        => Navigation.NavigateTo("/subfunds");
+
+    private void GoToShareClasses()
+        => Navigation.NavigateTo("/shareclasses");
 
     private void CreateGoal()
         => Navigation.NavigateTo("/goals/create");
@@ -227,4 +268,10 @@
 
     private void CreateFund()
         => Navigation.NavigateTo("/funds/create");
+
+    private void CreateSubFund()
+        => Navigation.NavigateTo("/subfunds/create");
+
+    private void CreateShareClass()
+        => Navigation.NavigateTo("/shareclasses/create");
 }
