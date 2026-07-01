@@ -2,6 +2,7 @@ using MediatR;
 using PersonalHub.Application.Features.InstrumentPrices.CreateInstrumentPrice;
 using PersonalHub.Application.Features.InstrumentPrices.DeleteInstrumentPrice;
 using PersonalHub.Application.Features.InstrumentPrices.GetInstrumentPricesByInstrumentId;
+using PersonalHub.Application.Features.InstrumentPrices.UpdateInstrumentPrice;
 
 namespace PersonalHub.Api.Endpoints;
 
@@ -26,6 +27,15 @@ public static class InstrumentPricesEndpoint
         {
             var id = await mediator.Send(command);
             return Results.Created($"/api/instrument-prices/{id}", id);
+        });
+
+        group.MapPut("/{id:guid}", async (
+            Guid id,
+            UpdateInstrumentPriceCommand command,
+            IMediator mediator) =>
+        {
+            await mediator.Send(command with { Id = id });
+            return Results.NoContent();
         });
 
         group.MapDelete("/{id:guid}", async (

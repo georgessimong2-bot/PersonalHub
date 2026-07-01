@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 
 @using MudBlazor
+@using OfficeOpenXml
 @using PersonalHub.Application.Features.ShareClasses.Common
 @using PersonalHub.Web.Services
 @using PersonalHub.Web.Services.Auth
@@ -11,6 +12,7 @@
 @inject ILogger<ShareClasses> Logger
 @inject NavigationManager Navigation
 @inject AuthService AuthService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Share Classes</PageTitle>
 
@@ -40,9 +42,14 @@
                     <MudText Typo="Typo.h4">Share Classes</MudText>
                     <MudText Typo="Typo.body2">@_filteredShareClasses.Count share class(es)</MudText>
                 </div>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/shareclasses/create" StartIcon="@Icons.Material.Filled.Add">
-                    Create Share Class
-                </MudButton>
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.FileDownload" OnClick="ExportToExcel">
+                        Export Excel
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/shareclasses/create" StartIcon="@Icons.Material.Filled.Add">
+                        Create Share Class
+                    </MudButton>
+                </MudStack>
             </MudStack>
 
             <MudGrid Class="mb-4">
@@ -154,6 +161,37 @@
     private void ClearFilters()
     {
         SearchTerm = string.Empty;
+    }
+
+    private async Task ExportToExcel()
+    {
+        ExcelPackage.License.SetNonCommercialPersonal("Georges Simon");
+
+        using var package = new ExcelPackage();
+
+        var worksheet = package.Workbook.Worksheets.Add("Share Classes");
+
+        worksheet.Cells[1, 1].Value = "Name";
+        worksheet.Cells[1, 2].Value = "ISIN";
+
+        var row = 2;
+
+        foreach (var shareClass in _filteredShareClasses)
+        {
+            worksheet.Cells[row, 1].Value = shareClass.Name;
+            worksheet.Cells[row, 2].Value = shareClass.ISIN;
+
+            row++;
+        }
+
+        worksheet.Cells.AutoFitColumns();
+
+        var bytes = package.GetAsByteArray();
+
+        await JSRuntime.InvokeVoidAsync(
+            "downloadFile",
+            bytes,
+            "share_classes.xlsx");
     }
 
     private async Task ShowDeleteConfirm(Guid id)

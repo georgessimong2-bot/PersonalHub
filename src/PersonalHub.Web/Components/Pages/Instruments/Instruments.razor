@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 
 @using MudBlazor
+@using OfficeOpenXml
 @using PersonalHub.Application.Features.Instruments.Common
 @using PersonalHub.Web.Services
 @using PersonalHub.Web.Services.Auth
@@ -11,6 +12,7 @@
 @inject ILogger<Instruments> Logger
 @inject NavigationManager Navigation
 @inject AuthService AuthService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Instruments</PageTitle>
 
@@ -40,9 +42,14 @@
                     <MudText Typo="Typo.h4">Instruments</MudText>
                     <MudText Typo="Typo.body2">@_filteredInstruments.Count instrument(s)</MudText>
                 </div>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/instruments/create" StartIcon="@Icons.Material.Filled.Add">
-                    Create Instrument
-                </MudButton>
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.FileDownload" OnClick="ExportToExcel">
+                        Export Excel
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/instruments/create" StartIcon="@Icons.Material.Filled.Add">
+                        Create Instrument
+                    </MudButton>
+                </MudStack>
             </MudStack>
 
             <MudGrid Class="mb-4">
@@ -155,6 +162,41 @@
     private void ClearFilters()
     {
         SearchTerm = string.Empty;
+    }
+
+    private async Task ExportToExcel()
+    {
+        ExcelPackage.License.SetNonCommercialPersonal("Georges Simon");
+
+        using var package = new ExcelPackage();
+
+        var worksheet = package.Workbook.Worksheets.Add("Instruments");
+
+        worksheet.Cells[1, 1].Value = "Name";
+        worksheet.Cells[1, 2].Value = "ISIN";
+        worksheet.Cells[1, 3].Value = "Ticker";
+        worksheet.Cells[1, 4].Value = "Status";
+
+        var row = 2;
+
+        foreach (var instrument in _filteredInstruments)
+        {
+            worksheet.Cells[row, 1].Value = instrument.Name;
+            worksheet.Cells[row, 2].Value = instrument.ISIN;
+            worksheet.Cells[row, 3].Value = instrument.Ticker;
+            worksheet.Cells[row, 4].Value = instrument.IsActive ? "Active" : "Inactive";
+
+            row++;
+        }
+
+        worksheet.Cells.AutoFitColumns();
+
+        var bytes = package.GetAsByteArray();
+
+        await JSRuntime.InvokeVoidAsync(
+            "downloadFile",
+            bytes,
+            "instruments.xlsx");
     }
 
     private async Task ShowDeleteConfirm(Guid id)

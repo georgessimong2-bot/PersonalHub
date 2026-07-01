@@ -1,5 +1,6 @@
 using PersonalHub.Application.Features.InstrumentPrices.Common;
 using PersonalHub.Application.Features.InstrumentPrices.CreateInstrumentPrice;
+using PersonalHub.Application.Features.InstrumentPrices.UpdateInstrumentPrice;
 
 namespace PersonalHub.Web.Services;
 
@@ -18,6 +19,11 @@ public class InstrumentPriceService : BaseHttpService
     public async Task<Guid> CreateInstrumentPriceAsync(CreateInstrumentPriceCommand command)
     {
         return await CreateAsync("api/instrument-prices", command);
+    }
+
+    public async Task UpdateInstrumentPriceAsync(Guid id, UpdateInstrumentPriceCommand command)
+    {
+        await UpdateAsync($"api/instrument-prices/{id}", command);
     }
 
     public async Task DeleteInstrumentPriceAsync(Guid id)
