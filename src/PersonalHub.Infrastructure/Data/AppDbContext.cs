@@ -26,6 +26,8 @@ public class AppDbContext
     public DbSet<InvestmentStrategy> InvestmentStrategies => Set<InvestmentStrategy>();
     public DbSet<SfdrClassification> SfdrClassifications => Set<SfdrClassification>();
     public DbSet<FundType> FundTypes => Set<FundType>();
+    public DbSet<InstrumentType> InstrumentTypes => Set<InstrumentType>();
+    public DbSet<Instrument> Instruments => Set<Instrument>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -60,5 +62,21 @@ public class AppDbContext
             .HasOne(x => x.Currency)
             .WithMany()
             .HasForeignKey(x => x.CurrencyId);
+
+        builder.Entity<Instrument>()
+            .HasOne(x => x.InstrumentType)
+            .WithMany(x => x.Instruments)
+            .HasForeignKey(x => x.InstrumentTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Instrument>()
+            .HasOne(x => x.Currency)
+            .WithMany()
+            .HasForeignKey(x => x.CurrencyId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Instrument>()
+            .HasIndex(x => x.ISIN)
+            .IsUnique();
     }
 }
