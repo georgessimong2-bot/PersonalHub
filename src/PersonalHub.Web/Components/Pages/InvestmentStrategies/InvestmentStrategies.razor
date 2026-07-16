@@ -208,6 +208,9 @@
 
         await Delete(_investmentStrategyToDelete);
         _investmentStrategyToDelete = Guid.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
     }
 
     private async Task Delete(Guid id)
@@ -232,6 +235,9 @@
     private Task CancelDelete()
     {
         _investmentStrategyToDelete = Guid.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
         return Task.CompletedTask;
     }
 }

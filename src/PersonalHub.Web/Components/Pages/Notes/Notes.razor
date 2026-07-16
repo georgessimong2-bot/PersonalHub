@@ -350,11 +350,16 @@
             _noteToDelete = Guid.Empty;
             _showConfirmDialog = false;
         }
+
+        StateHasChanged();
     }
 
     private Task CancelDelete()
     {
         _noteToDelete = Guid.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
         return Task.CompletedTask;
     }
 

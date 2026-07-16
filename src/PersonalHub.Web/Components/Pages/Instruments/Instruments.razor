@@ -213,6 +213,9 @@
 
         await Delete(_instrumentToDelete);
         _instrumentToDelete = Guid.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
     }
 
     private async Task Delete(Guid id)
@@ -237,6 +240,9 @@
     private Task CancelDelete()
     {
         _instrumentToDelete = Guid.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
         return Task.CompletedTask;
     }
 }

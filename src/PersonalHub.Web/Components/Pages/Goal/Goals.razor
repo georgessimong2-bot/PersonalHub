@@ -365,12 +365,20 @@
             return;
 
         await Delete(_goalToDelete);
+
         _goalToDelete = Guid.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
     }
 
     private Task CancelDelete()
     {
         _goalToDelete = Guid.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
+
         return Task.CompletedTask;
     }
 
