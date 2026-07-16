@@ -305,6 +305,9 @@ private List<FundTypeDto> _fundTypes = [];
 
         await Delete(_fundTypeToDelete);
         _fundTypeToDelete = Guid.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
     }
 
     private async Task Delete(Guid id)
@@ -329,6 +332,9 @@ private List<FundTypeDto> _fundTypes = [];
     private Task CancelDelete()
     {
         _fundTypeToDelete = Guid.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
         return Task.CompletedTask;
     }
 

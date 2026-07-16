@@ -308,6 +308,9 @@
 
         await Delete(_userToDelete  );
         _userToDelete = string.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
     }
 
     private async Task Delete(string id)
@@ -332,6 +335,9 @@
     private Task CancelDelete()
     {
         _userToDelete = string.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
         return Task.CompletedTask;
     }
 }

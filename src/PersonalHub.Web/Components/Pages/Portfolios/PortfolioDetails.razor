@@ -352,12 +352,18 @@
                 Logger.LogError(ex, "Error deleting portfolio holding");
             }
         }
+        _showConfirmDialog = false;
+
+        StateHasChanged();
     }
 
     private Task CancelDelete()
     {
         _deletingPortfolio = false;
         _holdingToDelete = Guid.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
         return Task.CompletedTask;
     }
 

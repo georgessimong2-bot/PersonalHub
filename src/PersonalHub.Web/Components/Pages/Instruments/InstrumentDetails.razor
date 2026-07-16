@@ -362,6 +362,9 @@
         _priceToDelete = priceId;
         _showConfirmDialog = true;
         StateHasChanged();
+        _showConfirmDialog = false;
+
+        StateHasChanged();
     }
 
     private async Task ConfirmDeletePrice()
@@ -384,6 +387,9 @@
     private Task CancelDeletePrice()
     {
         _priceToDelete = Guid.Empty;
+        _showConfirmDialog = false;
+
+        StateHasChanged();
         return Task.CompletedTask;
     }
 
