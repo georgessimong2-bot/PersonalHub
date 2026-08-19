@@ -27,6 +27,7 @@ public static class ApiExtensions
         app.MapInstrumentTypesEndpoints();
         app.MapInstrumentsEndpoints();
         app.MapInstrumentPricesEndpoints();
+        app.MapBenchmarkPricesEndpoints();
         app.MapPortfoliosEndpoints();
         app.MapPortfolioHoldingsEndpoints();
     }
