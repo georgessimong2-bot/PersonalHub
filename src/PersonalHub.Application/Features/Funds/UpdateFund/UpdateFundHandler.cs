@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using PersonalHub.Application.Common.Exceptions;
 using PersonalHub.Application.Common.Interfaces;
 
 namespace PersonalHub.Application.Features.Funds.UpdateFund;
@@ -23,6 +24,15 @@ public class UpdateFundHandler
 
         if (entity is null)
             throw new Exception("Fund not found");
+
+        if (request.FundTypeId == Guid.Empty)
+            throw new BusinessException("Fund type is required.");
+
+        var fundTypeExists = await _context.FundTypes
+            .AnyAsync(x => x.Id == request.FundTypeId, cancellationToken);
+
+        if (!fundTypeExists)
+            throw new BusinessException("Selected fund type does not exist.");
 
         entity.Name = request.Name;
         entity.LegalName = request.LegalName;

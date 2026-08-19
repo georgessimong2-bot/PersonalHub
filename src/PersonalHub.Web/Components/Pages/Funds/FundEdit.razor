@@ -5,10 +5,12 @@
 @using PersonalHub.Application.Features.Funds.Common
 @using PersonalHub.Application.Features.Funds.UpdateFund
 @using PersonalHub.Application.Features.FundTypes.Common
+@using PersonalHub.Application.Features.Currency.Common
 @using PersonalHub.Web.Services
 
 @inject FundService FundService
 @inject FundTypeService FundTypeService
+@inject CurrencyService CurrencyService
 @inject NavigationManager Navigation
 @inject ILogger<FundEdit> Logger
 
@@ -213,11 +215,24 @@
 
                 <MudItem xs="12" md="4">
 
-                    <MudTextField T="string"
-                                  @bind-Value="_baseCurrency"
-                                  Label="Base Currency"
-                                  Variant="Variant.Outlined"
-                                  FullWidth="true" />
+                    <MudSelect T="string?"
+                               Label="Currency *"
+                               Variant="Variant.Outlined"
+                               FullWidth="true"
+                               Required="true"
+                               @bind-Value="_baseCurrency">
+
+                        @foreach (var currency in _currencies)
+                        {
+                            <MudSelectItem T="string?"
+                                           Value="@currency.Code">
+
+                                @currency.Code - @currency.Name
+
+                            </MudSelectItem>
+                        }
+
+                    </MudSelect>
 
                 </MudItem>
 
@@ -317,6 +332,8 @@
 
     private List<FundTypeDto> _fundTypes = [];
 
+    private List<CurrencyDto> _currencies = [];
+
     private string _name = string.Empty;
     private string? _legalName;
     private string? _fundCode;
@@ -344,11 +361,13 @@
         {
             var fundTask = FundService.GetFundByIdAsync(Id);
             var fundTypesTask = FundTypeService.GetFundTypesAsync();
+            var currenciesTask = CurrencyService.GetCurrenciesAsync();
 
-            await Task.WhenAll(fundTask, fundTypesTask);
+            await Task.WhenAll(fundTask, fundTypesTask, currenciesTask);
 
             _fund = fundTask.Result;
             _fundTypes = fundTypesTask.Result;
+            _currencies = currenciesTask.Result;
 
             if (_fund is not null)
             {
@@ -393,6 +412,12 @@
             if (_fundTypeId == Guid.Empty)
             {
                 _error = "Please select a fund type.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_baseCurrency))
+            {
+                _error = "Please select a currency.";
                 return;
             }
 

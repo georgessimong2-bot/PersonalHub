@@ -1,4 +1,6 @@
 ﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
+using PersonalHub.Application.Common.Exceptions;
 using PersonalHub.Application.Common.Interfaces;
 using PersonalHub.Domain.Entities;
 
@@ -18,6 +20,15 @@ public class CreateFundHandler
         CreateFundCommand request,
         CancellationToken cancellationToken)
     {
+        if (request.FundTypeId == Guid.Empty)
+            throw new BusinessException("Fund type is required.");
+
+        var fundTypeExists = await _context.FundTypes
+            .AnyAsync(x => x.Id == request.FundTypeId, cancellationToken);
+
+        if (!fundTypeExists)
+            throw new BusinessException("Selected fund type does not exist.");
+
         var fund = new Fund
         {
             Id = Guid.NewGuid(),
