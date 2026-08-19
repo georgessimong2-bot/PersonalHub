@@ -4,10 +4,14 @@
 @using MudBlazor
 @using PersonalHub.Application.Features.SubFunds.CreateSubFund
 @using PersonalHub.Application.Features.Funds.Common
+@using PersonalHub.Application.Features.Currency.Common
+@using PersonalHub.Application.Features.Benchmarks.Common
 @using PersonalHub.Web.Services
 
 @inject SubFundService SubFundService
 @inject FundService FundService
+@inject CurrencyService CurrencyService
+@inject BenchmarkService BenchmarkService
 @inject NavigationManager Navigation
 @inject ILogger<SubFundCreate> Logger
 
@@ -36,7 +40,7 @@
         </MudPaper>
 
         <MudGrid>
-            <MudItem xs="12">
+            <MudItem xs="12" md="6">
                 <MudSelect T="FundDto" 
                     @bind-Value="_selectedFund" 
                     Label="Fund *" 
@@ -48,6 +52,37 @@
                     @foreach (var fund in _fundsList)
                     {
                         <MudSelectItem T="FundDto" Value="@fund">@fund.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudSelect T="CurrencyDto"
+                    @bind-Value="_selectedCurrency"
+                    Label="Currency"
+                    Variant="Variant.Outlined"
+                    FullWidth="true"
+                    Class="mb-4"
+                    ToStringFunc="x => x?.Code ?? string.Empty">
+                    @foreach (var currency in _currenciesList)
+                    {
+                        <MudSelectItem T="CurrencyDto" Value="@currency">@currency.Code - @currency.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudSelect T="BenchmarkDto"
+                    @bind-Value="_selectedBenchmark"
+                    Label="Benchmark"
+                    Variant="Variant.Outlined"
+                    FullWidth="true"
+                    Clearable="true"
+                    Class="mb-4"
+                    ToStringFunc="x => x?.Name ?? string.Empty">
+                    @foreach (var benchmark in _benchmarksList)
+                    {
+                        <MudSelectItem T="BenchmarkDto" Value="@benchmark">@benchmark.Name</MudSelectItem>
                     }
                 </MudSelect>
             </MudItem>
@@ -113,7 +148,11 @@
 
 @code {
     private List<FundDto> _fundsList = [];
+    private List<CurrencyDto> _currenciesList = [];
+    private List<BenchmarkDto> _benchmarksList = [];
     private FundDto? _selectedFund;
+    private CurrencyDto? _selectedCurrency;
+    private BenchmarkDto? _selectedBenchmark;
     private string _name = string.Empty;
     private string _internalCode = string.Empty;
     private string _investmentObjective = string.Empty;
@@ -130,11 +169,13 @@
         try
         {
             _fundsList = await FundService.GetFundsAsync();
+            _currenciesList = await CurrencyService.GetCurrenciesAsync();
+            _benchmarksList = await BenchmarkService.GetBenchmarksAsync();
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error loading funds");
-            _error = "Failed to load funds.";
+            _error = "Failed to load funds or currencies.";
         }
     }
 
@@ -160,6 +201,8 @@
             var command = new CreateSubFundCommand
             {
                 FundId = _selectedFund.Id,
+                CurrencyId = _selectedCurrency?.Id,
+                BenchmarkId = _selectedBenchmark?.Id,
                 Name = _name,
                 InternalCode = _internalCode,
                 InvestmentObjective = _investmentObjective,

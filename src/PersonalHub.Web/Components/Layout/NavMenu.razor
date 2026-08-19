@@ -162,6 +162,15 @@
         </Authorized>
     </AuthorizeView>
 
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/portfolio-comparison"
+                        Icon="@Icons.Material.Filled.CompareArrows">
+                Portfolio Comparison
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
 
 </MudNavMenu>
 

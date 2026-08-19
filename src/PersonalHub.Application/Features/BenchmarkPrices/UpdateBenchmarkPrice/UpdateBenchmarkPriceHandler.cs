@@ -19,6 +19,8 @@ public class UpdateBenchmarkPriceHandler
         UpdateBenchmarkPriceCommand request,
         CancellationToken cancellationToken)
     {
+        var normalizedPriceDate = request.PriceDate.Date;
+
         var benchmarkPrice = await _context.BenchmarkPrices
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken)
             ?? throw new BusinessException("Benchmark price not found");
@@ -28,14 +30,14 @@ public class UpdateBenchmarkPriceHandler
                 x =>
                     x.Id != request.Id &&
                     x.BenchmarkId == benchmarkPrice.BenchmarkId &&
-                    x.PriceDate == request.PriceDate,
+                    x.PriceDate.Date == normalizedPriceDate,
                 cancellationToken);
 
         if (conflictingPrice)
             throw new BusinessException("A price already exists for this benchmark on the selected date");
 
         benchmarkPrice.Price = request.Price;
-        benchmarkPrice.PriceDate = request.PriceDate;
+        benchmarkPrice.PriceDate = normalizedPriceDate;
 
         await _context.SaveChangesAsync(cancellationToken);
     }

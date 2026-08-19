@@ -67,6 +67,8 @@
                 <HeaderContent>
                     <MudTh>Name</MudTh>
                     <MudTh>Internal Code</MudTh>
+                    <MudTh>Currency</MudTh>
+                    <MudTh>Benchmark</MudTh>
                     <MudTh>Investment Objective</MudTh>
                     <MudTh>Actions</MudTh>
                 </HeaderContent>
@@ -77,6 +79,8 @@
                         </MudTooltip>
                     </MudTd>
                     <MudTd DataLabel="Internal Code">@(string.IsNullOrWhiteSpace(context.InternalCode) ? "-" : context.InternalCode)</MudTd>
+                    <MudTd DataLabel="Currency">@(string.IsNullOrWhiteSpace(context.CurrencyCode) ? "-" : context.CurrencyCode)</MudTd>
+                    <MudTd DataLabel="Benchmark">@(string.IsNullOrWhiteSpace(context.BenchmarkName) ? "-" : context.BenchmarkName)</MudTd>
                     <MudTd DataLabel="Investment Objective">@(string.IsNullOrWhiteSpace(context.InvestmentObjective) ? "-" : context.InvestmentObjective.Length > 40 ? context.InvestmentObjective.Substring(0, 40) + "..." : context.InvestmentObjective)</MudTd>
                     <MudTd DataLabel="Actions">
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Href="@($"/subfunds/{context.Id}")" />
@@ -151,6 +155,8 @@
             _filteredSubFunds = _subFunds
                 .Where(s => s.Name.ToLower().Contains(searchLower) || 
                            (s.InternalCode != null && s.InternalCode.ToLower().Contains(searchLower)) ||
+                           (s.CurrencyCode != null && s.CurrencyCode.ToLower().Contains(searchLower)) ||
+                           (s.BenchmarkName != null && s.BenchmarkName.ToLower().Contains(searchLower)) ||
                            (s.InvestmentObjective != null && s.InvestmentObjective.ToLower().Contains(searchLower)))
                 .ToList();
         }
@@ -171,7 +177,9 @@
 
         worksheet.Cells[1, 1].Value = "Name";
         worksheet.Cells[1, 2].Value = "Internal Code";
-        worksheet.Cells[1, 3].Value = "Investment Objective";
+        worksheet.Cells[1, 3].Value = "Currency";
+        worksheet.Cells[1, 4].Value = "Benchmark";
+        worksheet.Cells[1, 5].Value = "Investment Objective";
 
         var row = 2;
 
@@ -179,7 +187,9 @@
         {
             worksheet.Cells[row, 1].Value = subFund.Name;
             worksheet.Cells[row, 2].Value = subFund.InternalCode;
-            worksheet.Cells[row, 3].Value = subFund.InvestmentObjective;
+            worksheet.Cells[row, 3].Value = subFund.CurrencyCode;
+            worksheet.Cells[row, 4].Value = subFund.BenchmarkName;
+            worksheet.Cells[row, 5].Value = subFund.InvestmentObjective;
 
             row++;
         }

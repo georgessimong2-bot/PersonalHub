@@ -19,14 +19,17 @@ public class CreateBenchmarkPriceHandler
         CreateBenchmarkPriceCommand request,
         CancellationToken cancellationToken)
     {
+        var normalizedPriceDate = request.PriceDate.Date;
+
         var existing = await _context.BenchmarkPrices
             .FirstOrDefaultAsync(
-                x => x.BenchmarkId == request.BenchmarkId && x.PriceDate == request.PriceDate,
+                x => x.BenchmarkId == request.BenchmarkId && x.PriceDate.Date == normalizedPriceDate,
                 cancellationToken);
 
         if (existing is not null)
         {
             existing.Price = request.Price;
+            existing.PriceDate = normalizedPriceDate;
             await _context.SaveChangesAsync(cancellationToken);
             return existing.Id;
         }
@@ -36,7 +39,7 @@ public class CreateBenchmarkPriceHandler
             Id = Guid.NewGuid(),
             BenchmarkId = request.BenchmarkId,
             Price = request.Price,
-            PriceDate = request.PriceDate
+            PriceDate = normalizedPriceDate
         };
 
         _context.BenchmarkPrices.Add(benchmarkPrice);

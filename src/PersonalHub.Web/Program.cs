@@ -77,6 +77,7 @@ builder.Services.AddScoped<BenchmarkPriceService>();
 builder.Services.AddScoped<PortfolioService>();
 builder.Services.AddScoped<PortfolioHoldingService>();
 builder.Services.AddScoped<ReportingService>();
+builder.Services.AddScoped<TimeseriesService>();
 
 #endregion
 

@@ -148,7 +148,7 @@
                     <MudTd DataLabel="Price Date">@context.PriceDate.ToString("yyyy-MM-dd")</MudTd>
                     <MudTd DataLabel="Price">@context.Price.ToString("N2")</MudTd>
                     <MudTd DataLabel="Actions">
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => ShowEditPriceForm(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => OpenEditPriceForm(context.Id))" />
                         <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeletePrice(context.Id))" />
                     </MudTd>
                 </RowTemplate>
@@ -252,21 +252,37 @@
         _price = 0;
         _priceError = string.Empty;
         _showPriceForm = true;
+        StateHasChanged();
     }
 
     private void ShowEditPriceForm(BenchmarkPriceDto price)
     {
         _editingPriceId = price.Id;
-        _priceDate = price.PriceDate;
+        _priceDate = price.PriceDate.Date;
         _price = price.Price;
         _priceError = string.Empty;
         _showPriceForm = true;
+        Logger.LogInformation("Edit benchmark price clicked for price {BenchmarkPriceId}", price.Id);
+        StateHasChanged();
+    }
+
+    private void OpenEditPriceForm(Guid priceId)
+    {
+        var price = _prices.FirstOrDefault(x => x.Id == priceId);
+        if (price is null)
+        {
+            Logger.LogWarning("Edit benchmark price requested but price {BenchmarkPriceId} was not found in local list", priceId);
+            return;
+        }
+
+        ShowEditPriceForm(price);
     }
 
     private void CancelPriceForm()
     {
         _showPriceForm = false;
         _editingPriceId = null;
+        StateHasChanged();
     }
 
     private async Task SavePrice()

@@ -62,6 +62,11 @@ public class AppDbContext
             .WithMany()
             .HasForeignKey(x => x.SfdrClassificationId);
 
+        builder.Entity<SubFund>()
+            .HasOne(x => x.Currency)
+            .WithMany()
+            .HasForeignKey(x => x.CurrencyId);
+
         builder.Entity<ShareClass>()
             .HasOne(x => x.Currency)
             .WithMany()

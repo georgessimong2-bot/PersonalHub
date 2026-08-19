@@ -48,6 +48,16 @@
                     <MudText Typo="Typo.body1" Class="mt-2">@(_subFund.InternalCode ?? "-")</MudText>
                 </MudItem>
 
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Currency</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_subFund.CurrencyCode ?? "-")</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Benchmark</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(_subFund.BenchmarkName ?? "-")</MudText>
+                </MudItem>
+
                 <MudItem xs="12">
                     <MudText Typo="Typo.subtitle2">Investment Objective</MudText>
                     <MudText Typo="Typo.body1" Class="mt-2">@(_subFund.InvestmentObjective ?? "No objective")</MudText>

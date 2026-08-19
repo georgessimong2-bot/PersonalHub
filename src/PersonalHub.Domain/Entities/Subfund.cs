@@ -12,6 +12,8 @@ public class SubFund : BaseAuditableEntity
 
     public Guid? SfdrClassificationId { get; set; }
 
+    public Guid? CurrencyId { get; set; }
+
     public string Name { get; set; } = string.Empty;
 
     public string? InternalCode { get; set; }
@@ -41,6 +43,8 @@ public class SubFund : BaseAuditableEntity
     public InvestmentStrategy? InvestmentStrategy { get; set; }
 
     public SfdrClassification? SfdrClassification { get; set; }
+
+    public Currency? Currency { get; set; }
 
     public ICollection<ShareClass> ShareClasses { get; set; } = [];
 }
