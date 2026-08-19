@@ -47,8 +47,16 @@
         </Authorized>
     </AuthorizeView>
 
-   
-     <AuthorizeView Roles="USER, ADMIN">
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/reports"
+                        Icon="@Icons.Material.Filled.Assessment">
+                Reports
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="USER, ADMIN">
         <Authorized>
             <MudDivider Class="my-2" />
             <MudText Typo="Typo.overline" Class="px-4">Fund Metadata</MudText>
@@ -150,6 +158,15 @@
             <MudNavLink Href="/portfolios"
                         Icon="@Icons.Material.Filled.AccountBalanceWallet">
                 Portfolios
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
+            <MudNavLink Href="/portfolio-comparison"
+                        Icon="@Icons.Material.Filled.CompareArrows">
+                Portfolio Comparison
             </MudNavLink>
         </Authorized>
     </AuthorizeView>

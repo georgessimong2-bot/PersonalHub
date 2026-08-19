@@ -27,6 +27,7 @@ public class GetPortfoliosHandler
         }
 
         return await query
+            .Include(x => x.Holdings)
             .OrderByDescending(x => x.ValuationDate)
             .Select(x => new PortfolioDto
             {
@@ -38,7 +39,18 @@ public class GetPortfoliosHandler
                 ValuationDate = x.ValuationDate,
                 IsActive = x.IsActive,
                 HoldingsCount = x.Holdings.Count,
-                TotalMarketValue = x.Holdings.Sum(h => h.MarketValue)
+                TotalMarketValue = x.Holdings.Sum(h => h.MarketValue),
+                Holdings = x.Holdings.Select(h => new PortfolioHoldingDto
+                {
+                    Id = h.Id,
+                    PortfolioId = h.PortfolioId,
+                    InstrumentId = h.InstrumentId,
+                    InstrumentName = h.Instrument.Name,
+                    InstrumentISIN = h.Instrument.ISIN,
+                    Quantity = h.Quantity,
+                    AverageCost = h.AverageCost,
+                    MarketValue = h.MarketValue
+                }).ToList()
             })
             .ToListAsync(cancellationToken);
     }

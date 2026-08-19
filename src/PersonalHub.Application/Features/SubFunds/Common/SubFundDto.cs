@@ -12,6 +12,8 @@ public class SubFundDto
 
     public Guid? SfdrClassificationId { get; set; }
 
+    public Guid? CurrencyId { get; set; }
+
     public string Name { get; set; } = string.Empty;
 
     public string? InternalCode { get; set; }
@@ -27,4 +29,8 @@ public class SubFundDto
     public string? RiskProfile { get; set; }
 
     public string? Description { get; set; }
+
+    public string? CurrencyCode { get; set; }
+
+    public string? BenchmarkName { get; set; }
 }

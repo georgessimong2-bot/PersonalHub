@@ -1,0 +1,217 @@
+@page "/reports"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Web.Services.Reporting
+
+@inject ReportingService ReportingService
+@inject IJSRuntime JSRuntime
+@inject ILogger<Reports> Logger
+
+<PageTitle>Reports</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+    @if (_loading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading reports...</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-4">
+            <MudStack Row="true"
+                      Justify="Justify.SpaceBetween"
+                      AlignItems="AlignItems.Center"
+                      Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Reports</MudText>
+                    <MudText Typo="Typo.body2">Select a report pack and export it to Excel or PDF.</MudText>
+                </div>
+
+                <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined">
+                    @_reports.Count report(s)
+                </MudChip>
+            </MudStack>
+
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" md="8">
+                    <MudTextField T="string"
+                                  @bind-Value="SearchTerm"
+                                  Label="Search reports"
+                                  Variant="Variant.Outlined"
+                                  Immediate="true"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search" />
+                </MudItem>
+                <MudItem xs="12" md="4" Class="d-flex align-center">
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Secondary"
+                               StartIcon="@Icons.Material.Filled.Clear"
+                               OnClick="ClearFilters">
+                        Clear Filters
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+
+            <MudTable Items="@_filteredReports"
+                      Hover="true"
+                      Dense="true"
+                      Striped="true"
+                      Bordered="true"
+                      Elevation="0">
+                <HeaderContent>
+                    <MudTh>Report</MudTh>
+                    <MudTh>Category</MudTh>
+                    <MudTh>Datasets</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Report">
+                        <MudText Typo="Typo.body1">@context.Name</MudText>
+                        <MudText Typo="Typo.caption">@context.Description</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Category">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info">
+                            @context.Category
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Datasets">
+                        <MudStack Row="true" Spacing="1" Class="flex-wrap">
+                            @foreach (var dataset in context.DatasetNames)
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">
+                                    @dataset
+                                </MudChip>
+                            }
+                        </MudStack>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudStack Row="true" Spacing="1">
+                            <MudButton Variant="Variant.Outlined"
+                                       StartIcon="@Icons.Material.Filled.FileDownload"
+                                       Disabled="_exporting"
+                                       OnClick="@(() => ExportExcelAsync(context))">
+                                Excel
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Secondary"
+                                       StartIcon="@Icons.Material.Filled.PictureAsPdf"
+                                       Disabled="_exporting"
+                                       OnClick="@(() => ExportPdfAsync(context))">
+                                PDF
+                            </MudButton>
+                        </MudStack>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+
+        }
+
+</MudContainer>
+
+@code {
+    private List<ReportDefinitionDto> _reports = new();
+    private List<ReportDefinitionDto> _filteredReports = new();
+    private bool _loading = true;
+    private bool _exporting;
+    private string _searchTerm = string.Empty;
+
+    private string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            FilterReports();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReportsAsync();
+    }
+
+    private async Task LoadReportsAsync()
+    {
+        try
+        {
+            _reports = (await ReportingService.GetReportsAsync()).ToList();
+            FilterReports();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading reports");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void FilterReports()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _filteredReports = _reports;
+            return;
+        }
+
+        var searchLower = _searchTerm.ToLowerInvariant();
+        _filteredReports = _reports
+            .Where(report =>
+                report.Name.ToLowerInvariant().Contains(searchLower) ||
+                report.Category.ToLowerInvariant().Contains(searchLower) ||
+                report.Description.ToLowerInvariant().Contains(searchLower) ||
+                report.DatasetNames.Any(dataset => dataset.ToLowerInvariant().Contains(searchLower)))
+            .ToList();
+    }
+
+    private void ClearFilters()
+    {
+        SearchTerm = string.Empty;
+    }
+
+    private async Task ExportExcelAsync(ReportDefinitionDto report)
+    {
+        await ExportAsync(report, isPdf: false);
+    }
+
+    private async Task ExportPdfAsync(ReportDefinitionDto report)
+    {
+        await ExportAsync(report, isPdf: true);
+    }
+
+    private async Task ExportAsync(ReportDefinitionDto report, bool isPdf)
+    {
+        try
+        {
+            _exporting = true;
+
+            var bytes = isPdf
+                ? await ReportingService.GeneratePdfAsync(report.Key)
+                : await ReportingService.GenerateExcelAsync(report.Key);
+
+            var fileName = isPdf
+                ? $"{report.Key}.pdf"
+                : $"{report.Key}.xlsx";
+
+            var contentType = isPdf
+                ? "application/pdf"
+                : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", bytes, fileName, contentType);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error exporting report {ReportKey}", report.Key);
+        }
+        finally
+        {
+            _exporting = false;
+        }
+    }
+}

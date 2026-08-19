@@ -25,6 +25,7 @@ public class CreateSubFundHandler
             BenchmarkId = request.BenchmarkId,
             InvestmentStrategyId = request.InvestmentStrategyId,
             SfdrClassificationId = request.SfdrClassificationId,
+            CurrencyId = request.CurrencyId,
             Name = request.Name,
             InternalCode = request.InternalCode,
             InvestmentObjective = request.InvestmentObjective,

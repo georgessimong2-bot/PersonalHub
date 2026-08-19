@@ -27,6 +27,7 @@ public class GetSubFundsHandler
                 BenchmarkId = x.BenchmarkId,
                 InvestmentStrategyId = x.InvestmentStrategyId,
                 SfdrClassificationId = x.SfdrClassificationId,
+                CurrencyId = x.CurrencyId,
                 Name = x.Name,
                 InternalCode = x.InternalCode,
                 InvestmentObjective = x.InvestmentObjective,
@@ -34,7 +35,9 @@ public class GetSubFundsHandler
                 GeographicFocus = x.GeographicFocus,
                 SectorFocus = x.SectorFocus,
                 RiskProfile = x.RiskProfile,
-                Description = x.Description
+                Description = x.Description,
+                CurrencyCode = x.Currency != null ? x.Currency.Code : null,
+                BenchmarkName = x.Benchmark != null ? x.Benchmark.Name : null
             })
             .ToListAsync(cancellationToken);
     }

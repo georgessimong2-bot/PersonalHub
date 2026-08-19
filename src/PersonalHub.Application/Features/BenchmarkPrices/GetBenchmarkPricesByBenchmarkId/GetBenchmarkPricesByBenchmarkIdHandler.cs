@@ -27,7 +27,7 @@ public class GetBenchmarkPricesByBenchmarkIdHandler
                 Id = x.Id,
                 BenchmarkId = x.BenchmarkId,
                 Price = x.Price,
-                PriceDate = x.PriceDate
+                PriceDate = x.PriceDate.Date
             })
             .ToListAsync(cancellationToken);
     }

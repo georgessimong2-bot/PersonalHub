@@ -1,0 +1,464 @@
+@page "/portfolio-comparison"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using MudBlazor.Charts
+@using PersonalHub.Application.Features.SubFunds.Common
+@using PersonalHub.Application.Features.ShareClasses.Common
+@using PersonalHub.Application.Features.Benchmarks.Common
+@using PersonalHub.Web.Services
+
+@inject SubFundService SubFundService
+@inject ShareClassService ShareClassService
+@inject BenchmarkService BenchmarkService
+@inject TimeseriesService TimeseriesService
+@inject ILogger<PortfolioComparison> Logger
+
+<PageTitle>Portfolio Comparison</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8 mb-8">
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-8 text-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="mt-4">Loading data...</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudPaper Class="pa-6 mb-4">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <div>
+                    <MudText Typo="Typo.h4">Portfolio Comparison</MudText>
+                    <MudText Typo="Typo.body2">Compare benchmark vs shareclass performance</MudText>
+                </div>
+                <MudButton Variant="Variant.Outlined" 
+                          Color="Color.Primary"
+                          StartIcon="@Icons.Material.Filled.Refresh"
+                          OnClick="RefreshData"
+                          Disabled="_isLoading">
+                    Refresh
+                </MudButton>
+            </MudStack>
+
+            <MudDivider Class="my-4" />
+
+            <!-- Step 1: Select SubFund -->
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudAutocomplete T="SubFundDto" 
+                                    Label="Sub Fund *"
+                                    Value="_selectedSubFund"
+                                    ValueChanged="OnSubFundSelected"
+                                    SearchFunc="SearchSubFunds"
+                                    ToStringFunc="@(e => e == null ? null : e.Name)"
+                                    ResetValueOnEmptyText="true"
+                                    CoerceText="true"
+                                    CoerceValue="false"
+                                    Dense="true"
+                                    Variant="Variant.Outlined"
+                                    Clearable="true"
+                                    OnClearButtonClick="ClearSubFund" />
+                </MudItem>
+            </MudGrid>
+
+            <!-- Step 2: Select ShareClass -->
+            @if (_selectedSubFund != null)
+            {
+                <MudGrid Class="mt-4">
+                    <MudItem xs="12">
+                        <MudAutocomplete T="ShareClassDto"
+                                        Label="ShareClass *"
+                                        Value="_selectedShareClass"
+                                        ValueChanged="OnShareClassSelected"
+                                        SearchFunc="SearchShareClasses"
+                                        ToStringFunc="@(e => e == null ? null : e.Name)"
+                                        ResetValueOnEmptyText="true"
+                                        CoerceText="true"
+                                        CoerceValue="false"
+                                        Dense="true"
+                                        Variant="Variant.Outlined"
+                                        Clearable="true"
+                                        OnClearButtonClick="ClearShareClass" />
+                    </MudItem>
+                </MudGrid>
+            }
+
+            <!-- Step 3: Select Benchmark -->
+            @if (_selectedSubFund != null && _selectedShareClass != null)
+            {
+                <MudGrid Class="mt-4">
+                    <MudItem xs="12">
+                        <MudAutocomplete T="BenchmarkDto" 
+                                        Label="Benchmark *"
+                                        Value="_selectedBenchmark"
+                                        ValueChanged="OnBenchmarkSelected"
+                                        SearchFunc="SearchBenchmarks"
+                                        ToStringFunc="@(e => e == null ? null : e.Name)"
+                                        ResetValueOnEmptyText="true"
+                                        CoerceText="true"
+                                        CoerceValue="false"
+                                        Dense="true"
+                                        Variant="Variant.Outlined"
+                                        Clearable="true"
+                                        OnClearButtonClick="ClearBenchmark" />
+                    </MudItem>
+                </MudGrid>
+            }
+
+            <!-- Load Chart Button -->
+            <MudStack Row="true" Class="mt-4" Spacing="2">
+                <MudButton Variant="Variant.Filled"
+                          Color="Color.Primary"
+                          StartIcon="@Icons.Material.Filled.BarChart"
+                          OnClick="LoadChart"
+                          Disabled="@(_isLoadingChart || _selectedSubFund == null || _selectedShareClass == null || _selectedBenchmark == null)">
+                    @(_isLoadingChart ? "Loading..." : "Load Comparison")
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                          Color="Color.Secondary"
+                          StartIcon="@Icons.Material.Filled.ShowChart"
+                          OnClick="ToggleNormalization"
+                          Disabled="!_chartLoaded">
+                    @(_useNormalization ? "Show Absolute Values" : "Show Normalized (Base 100)")
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+
+        <!-- Chart Section -->
+        @if (_chartLoaded && _chartSeries != null)
+        {
+            <MudPaper Class="pa-6 mb-12">
+                <MudChart ChartType="ChartType.Timeseries" 
+                         ChartSeries="@_chartSeries" 
+                         ChartOptions="@_chartOptions"
+                         Width="100%"
+                         Height="500px" />
+            </MudPaper>
+
+            <!-- Statistics -->
+            @if (_benchmarkTimeseries != null && _shareClassTimeseries != null)
+            {
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudPaper Class="pa-4">
+                            <MudText Typo="Typo.h6" Class="mb-3">Statistics</MudText>
+                            <MudGrid>
+                                <MudItem xs="12" md="3">
+                                    <div>
+                                        <MudText Typo="Typo.subtitle2">Benchmark Range</MudText>
+                                        <MudText Typo="Typo.body2">
+                                            @if (_benchmarkTimeseries.Count > 0)
+                                            {
+                                                var min = _benchmarkTimeseries.Min(x => x.Value);
+                                                var max = _benchmarkTimeseries.Max(x => x.Value);
+                                                <span>@min.ToString("F2") - @max.ToString("F2")</span>
+                                            }
+                                        </MudText>
+                                    </div>
+                                </MudItem>
+
+                                <MudItem xs="12" md="3">
+                                    <div>
+                                        <MudText Typo="Typo.subtitle2">ShareClass Range</MudText>
+                                        <MudText Typo="Typo.body2">
+                                            @if (_shareClassTimeseries.Count > 0)
+                                            {
+                                                var min = _shareClassTimeseries.Min(x => x.Value);
+                                                var max = _shareClassTimeseries.Max(x => x.Value);
+                                                <span>@min.ToString("F2") - @max.ToString("F2")</span>
+                                            }
+                                        </MudText>
+                                    </div>
+                                </MudItem>
+
+                                <MudItem xs="12" md="3">
+                                    <div>
+                                        <MudText Typo="Typo.subtitle2">Benchmark Points</MudText>
+                                        <MudText Typo="Typo.body2">@_benchmarkTimeseries.Count</MudText>
+                                    </div>
+                                </MudItem>
+
+                                <MudItem xs="12" md="3">
+                                    <div>
+                                        <MudText Typo="Typo.subtitle2">ShareClass Points</MudText>
+                                        <MudText Typo="Typo.body2">@_shareClassTimeseries.Count</MudText>
+                                    </div>
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            }
+        }
+    }
+
+</MudContainer>
+
+@code {
+    private bool _isLoading = true;
+    private bool _isLoadingChart = false;
+    private bool _chartLoaded = false;
+    private bool _useNormalization = false;
+
+    private List<SubFundDto> _subFunds = new();
+    private List<ShareClassDto> _shareClasses = new();
+    private List<BenchmarkDto> _benchmarks = new();
+
+    private SubFundDto? _selectedSubFund;
+    private ShareClassDto? _selectedShareClass;
+    private BenchmarkDto? _selectedBenchmark;
+
+    private List<TimeseriesDataPoint> _benchmarkTimeseries = new();
+    private List<TimeseriesDataPoint> _shareClassTimeseries = new();
+
+    private List<ChartSeries<decimal>> _chartSeries = new();
+    private string[] _xAxisLabels = Array.Empty<string>();
+
+    private readonly TimeSeriesChartOptions _chartOptions = new()
+    {
+        ShowDataMarkers = true,
+        YAxisRequireZeroPoint = false,
+        TimeLabelFormat = "yyyy-MM-dd",
+        TooltipTimeLabelFormat = "yyyy-MM-dd",
+        XAxisTitle = "Date",
+        YAxisTitle = "Value",
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await LoadSubFunds();
+            await LoadShareClasses();
+            await LoadBenchmarks();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error during initialization");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task LoadSubFunds()
+    {
+        try
+        {
+            _subFunds = await SubFundService.GetSubFundsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading subfunds");
+            _subFunds = new List<SubFundDto>();
+        }
+    }
+
+    private async Task LoadShareClasses()
+    {
+        try
+        {
+            _shareClasses = await ShareClassService.GetShareClassesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading share classes");
+            _shareClasses = new List<ShareClassDto>();
+        }
+    }
+
+    private async Task LoadBenchmarks()
+    {
+        try
+        {
+            _benchmarks = await BenchmarkService.GetBenchmarksAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading benchmarks");
+            _benchmarks = new List<BenchmarkDto>();
+        }
+    }
+
+    private async Task<IEnumerable<SubFundDto>> SearchSubFunds(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(value))
+            return _subFunds;
+
+        return _subFunds.Where(x => 
+            x.Name.Contains(value, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private async Task<IEnumerable<ShareClassDto>> SearchShareClasses(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(value))
+            return _shareClasses.Where(x => x.SubFundId == _selectedSubFund?.Id).ToList();
+
+        return _shareClasses.Where(x =>
+            x.SubFundId == _selectedSubFund?.Id &&
+            x.Name.Contains(value, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private async Task<IEnumerable<BenchmarkDto>> SearchBenchmarks(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(value))
+            return _benchmarks;
+
+        return _benchmarks.Where(x =>
+            x.Name.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            (x.BloombergTicker != null && x.BloombergTicker.Contains(value, StringComparison.OrdinalIgnoreCase))).ToList();
+    }
+
+    private void ClearSubFund()
+    {
+        _selectedSubFund = null;
+        _selectedShareClass = null;
+        _selectedBenchmark = null;
+        _chartLoaded = false;
+        StateHasChanged();
+    }
+
+    private void ClearShareClass()
+    {
+        _selectedShareClass = null;
+        _selectedBenchmark = null;
+        _chartLoaded = false;
+        StateHasChanged();
+    }
+
+    private void ClearBenchmark()
+    {
+        _selectedBenchmark = null;
+        _chartLoaded = false;
+        StateHasChanged();
+    }
+
+    private async Task OnSubFundSelected(SubFundDto? subFund)
+    {
+        _selectedSubFund = subFund;
+        _selectedShareClass = null;
+        _selectedBenchmark = null;
+        _chartLoaded = false;
+        StateHasChanged();
+    }
+
+    private async Task OnShareClassSelected(ShareClassDto? shareClass)
+    {
+        _selectedShareClass = shareClass;
+        _selectedBenchmark = null;
+        _chartLoaded = false;
+        StateHasChanged();
+    }
+
+    private async Task OnBenchmarkSelected(BenchmarkDto? benchmark)
+    {
+        _selectedBenchmark = benchmark;
+        _chartLoaded = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadChart()
+    {
+        if (_selectedSubFund == null || _selectedShareClass == null || _selectedBenchmark == null)
+        {
+            Logger.LogWarning("SubFund, ShareClass, or Benchmark not selected");
+            return;
+        }
+
+        _isLoadingChart = true;
+
+        try
+        {
+            Logger.LogInformation("Loading chart for ShareClass {ShareClassId} and Benchmark {BenchmarkId}", 
+                _selectedShareClass.Id, _selectedBenchmark.Id);
+
+            // Fetch timeseries data
+            _benchmarkTimeseries = await TimeseriesService.GetBenchmarkTimeseriesAsync(_selectedBenchmark.Id);
+            Logger.LogInformation("Benchmark timeseries loaded: {Count} points", _benchmarkTimeseries.Count);
+
+            _shareClassTimeseries = await TimeseriesService.GetShareClassTimeseriesAsync(_selectedShareClass.Id);
+            Logger.LogInformation("ShareClass timeseries loaded: {Count} points", _shareClassTimeseries.Count);
+
+            if (_shareClassTimeseries.Count == 0)
+            {
+                Logger.LogWarning("ShareClass timeseries is empty!");
+            }
+
+            // Keep the data as-is without alignment/interpolation
+            // This preserves the actual valuation dates for benchmark and portfolio
+            // var aligned = TimeseriesService.AlignTimeseries(_benchmarkTimeseries, _shareClassTimeseries);
+            // _benchmarkTimeseries = aligned.benchmark;
+            // _shareClassTimeseries = aligned.portfolio;
+
+            // Normalize if needed
+            if (_useNormalization)
+            {
+                _benchmarkTimeseries = TimeseriesService.NormalizeTimeseries(_benchmarkTimeseries);
+                _shareClassTimeseries = TimeseriesService.NormalizeTimeseries(_shareClassTimeseries);
+            }
+
+            // Prepare chart data
+            BuildChartSeries();
+            _chartLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading chart data");
+        }
+        finally
+        {
+            _isLoadingChart = false;
+        }
+    }
+
+    private void BuildChartSeries()
+    {
+        Logger.LogInformation("Building timeseries chart with {BenchmarkCount} benchmark and {ShareClassCount} shareclass points", 
+            _benchmarkTimeseries.Count, _shareClassTimeseries.Count);
+
+        var benchmarkData = _benchmarkTimeseries
+            .Select(x => new MudBlazor.Charts.TimeValue<decimal>(x.Date, x.Value))
+            .ToArray();
+
+        var shareClassData = _shareClassTimeseries
+            .Select(x => new MudBlazor.Charts.TimeValue<decimal>(x.Date, x.Value))
+            .ToArray();
+
+        _chartSeries = new List<ChartSeries<decimal>>
+        {
+            new ChartSeries<decimal>
+            {
+                Name = $"Benchmark: {_selectedBenchmark?.Name}",
+                Data = benchmarkData
+            },
+            new ChartSeries<decimal>
+            {
+                Name = $"ShareClass: {_selectedShareClass?.Name}",
+                Data = shareClassData
+            }
+        };
+    }
+
+    private async Task ToggleNormalization()
+    {
+        _useNormalization = !_useNormalization;
+        if (_chartLoaded)
+        {
+            await LoadChart();
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        _isLoading = true;
+        _chartLoaded = false;
+        await LoadSubFunds();
+        await LoadShareClasses();
+        await LoadBenchmarks();
+        _isLoading = false;
+    }
+}

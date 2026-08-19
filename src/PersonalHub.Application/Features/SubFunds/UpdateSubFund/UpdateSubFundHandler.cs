@@ -25,6 +25,8 @@ public class UpdateSubFundHandler
             throw new Exception("Sub Fund not found");
 
         subFund.Name = request.Name;
+        subFund.CurrencyId = request.CurrencyId;
+        subFund.BenchmarkId = request.BenchmarkId;
         subFund.InternalCode = request.InternalCode;
         subFund.InvestmentObjective = request.InvestmentObjective;
         subFund.InvestmentPolicy = request.InvestmentPolicy;

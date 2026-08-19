@@ -5,6 +5,8 @@ namespace PersonalHub.Application.Features.SubFunds.UpdateSubFund;
 public record UpdateSubFundCommand(
     Guid Id,
     string Name,
+    Guid? CurrencyId,
+    Guid? BenchmarkId,
     string? InternalCode,
     string? InvestmentObjective,
     string? InvestmentPolicy,

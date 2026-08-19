@@ -1,11 +1,13 @@
-window.downloadFile = function (bytes, fileName) {
+window.downloadFile = function (bytes, fileName, contentType) {
 
-    console.log("downloadFile called");
+    const type = contentType || (fileName && fileName.toLowerCase().endsWith(".pdf")
+        ? "application/pdf"
+        : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
     const blob = new Blob(
         [new Uint8Array(bytes)],
         {
-            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            type: type
         });
 
     const url = URL.createObjectURL(blob);

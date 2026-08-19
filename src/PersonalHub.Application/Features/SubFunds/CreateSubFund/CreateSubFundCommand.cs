@@ -12,6 +12,8 @@ public class CreateSubFundCommand : IRequest<Guid>
 
     public Guid? SfdrClassificationId { get; set; }
 
+    public Guid? CurrencyId { get; set; }
+
     public string Name { get; set; } = string.Empty;
 
     public string? InternalCode { get; set; }

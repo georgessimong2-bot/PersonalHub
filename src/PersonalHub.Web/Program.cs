@@ -7,6 +7,8 @@ using PersonalHub.Web.Configuration;
 using PersonalHub.Web.HttpHandlers;
 using PersonalHub.Web.Services;
 using PersonalHub.Web.Services.Auth;
+using PersonalHub.Web.Services.Reporting;
+using QuestPDF.Infrastructure;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -74,6 +76,8 @@ builder.Services.AddScoped<InstrumentPriceService>();
 builder.Services.AddScoped<BenchmarkPriceService>();
 builder.Services.AddScoped<PortfolioService>();
 builder.Services.AddScoped<PortfolioHoldingService>();
+builder.Services.AddScoped<ReportingService>();
+builder.Services.AddScoped<TimeseriesService>();
 
 #endregion
 
@@ -91,6 +95,8 @@ builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions
     options.DetailedErrors = true;
 });
 #endregion
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 

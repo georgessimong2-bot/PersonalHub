@@ -4,9 +4,13 @@
 @using MudBlazor
 @using PersonalHub.Application.Features.SubFunds.Common
 @using PersonalHub.Application.Features.SubFunds.UpdateSubFund
+@using PersonalHub.Application.Features.Currency.Common
+@using PersonalHub.Application.Features.Benchmarks.Common
 @using PersonalHub.Web.Services
 
 @inject SubFundService SubFundService
+@inject CurrencyService CurrencyService
+@inject BenchmarkService BenchmarkService
 @inject NavigationManager Navigation
 @inject ILogger<SubFundEdit> Logger
 
@@ -49,6 +53,37 @@
             <MudGrid>
                 <MudItem xs="12" md="6">
                     <MudTextField T="string" @bind-Value="_name" Label="Name" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudSelect T="CurrencyDto"
+                        @bind-Value="_selectedCurrency"
+                        Label="Currency"
+                        Variant="Variant.Outlined"
+                        FullWidth="true"
+                        Class="mb-4"
+                        ToStringFunc="x => x?.Code ?? string.Empty">
+                        @foreach (var currency in _currenciesList)
+                        {
+                            <MudSelectItem T="CurrencyDto" Value="@currency">@currency.Code - @currency.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudSelect T="BenchmarkDto"
+                        @bind-Value="_selectedBenchmark"
+                        Label="Benchmark"
+                        Variant="Variant.Outlined"
+                        FullWidth="true"
+                        Clearable="true"
+                        Class="mb-4"
+                        ToStringFunc="x => x?.Name ?? string.Empty">
+                        @foreach (var benchmark in _benchmarksList)
+                        {
+                            <MudSelectItem T="BenchmarkDto" Value="@benchmark">@benchmark.Name</MudSelectItem>
+                        }
+                    </MudSelect>
                 </MudItem>
 
                 <MudItem xs="12" md="6">
@@ -112,6 +147,10 @@
     public Guid Id { get; set; }
 
     private SubFundDto? _subFund;
+    private List<CurrencyDto> _currenciesList = [];
+    private List<BenchmarkDto> _benchmarksList = [];
+    private CurrencyDto? _selectedCurrency;
+    private BenchmarkDto? _selectedBenchmark;
     private string _name = string.Empty;
     private string _internalCode = string.Empty;
     private string _investmentObjective = string.Empty;
@@ -126,6 +165,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadCurrencies();
+        await LoadBenchmarks();
         await LoadSubFund();
     }
 
@@ -137,6 +178,8 @@
             if (_subFund != null)
             {
                 _name = _subFund.Name;
+                _selectedCurrency = _currenciesList.FirstOrDefault(x => x.Id == _subFund.CurrencyId);
+                _selectedBenchmark = _benchmarksList.FirstOrDefault(x => x.Id == _subFund.BenchmarkId);
                 _internalCode = _subFund.InternalCode ?? string.Empty;
                 _investmentObjective = _subFund.InvestmentObjective ?? string.Empty;
                 _investmentPolicy = _subFund.InvestmentPolicy ?? string.Empty;
@@ -157,6 +200,32 @@
         }
     }
 
+    private async Task LoadCurrencies()
+    {
+        try
+        {
+            _currenciesList = await CurrencyService.GetCurrenciesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading currencies");
+            _error = "An error occurred while loading currencies.";
+        }
+    }
+
+    private async Task LoadBenchmarks()
+    {
+        try
+        {
+            _benchmarksList = await BenchmarkService.GetBenchmarksAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading benchmarks");
+            _error = "An error occurred while loading benchmarks.";
+        }
+    }
+
     private async Task HandleUpdate()
     {
         if (string.IsNullOrWhiteSpace(_name))
@@ -173,6 +242,8 @@
             var command = new UpdateSubFundCommand(
                 Id,
                 _name,
+                _selectedCurrency?.Id,
+                _selectedBenchmark?.Id,
                 _internalCode,
                 _investmentObjective,
                 _investmentPolicy,
