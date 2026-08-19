@@ -21,4 +21,6 @@ public class Benchmark : BaseAuditableEntity
     public bool IsActive { get; set; } = true;
 
     public ICollection<SubFund> SubFunds { get; set; } = [];
+
+    public ICollection<BenchmarkPrice> Prices { get; set; } = [];
 }

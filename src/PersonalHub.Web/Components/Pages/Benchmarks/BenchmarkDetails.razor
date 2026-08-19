@@ -2,12 +2,17 @@
 @rendermode InteractiveServer
 
 @using MudBlazor
+@using MudBlazor.Charts
 @using PersonalHub.Application.Features.Benchmarks.Common
+@using PersonalHub.Application.Features.BenchmarkPrices.Common
+@using PersonalHub.Application.Features.BenchmarkPrices.CreateBenchmarkPrice
+@using PersonalHub.Application.Features.BenchmarkPrices.UpdateBenchmarkPrice
 @using PersonalHub.Web.Services
 
 @inject ILogger<BenchmarkDetails> Logger
 @inject NavigationManager Navigation
 @inject BenchmarkService BenchmarkService
+@inject BenchmarkPriceService BenchmarkPriceService
 
 <PageTitle>Benchmark Details</PageTitle>
 
@@ -80,6 +85,79 @@
             </MudStack>
 
         </MudPaper>
+
+        <MudPaper Class="pa-6 mt-4">
+
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+                <MudText Typo="Typo.h5">Price History</MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="ShowAddPriceForm">
+                    Add Price
+                </MudButton>
+            </MudStack>
+
+            @if (_showPriceForm)
+            {
+                <MudPaper Class="pa-4 mb-4" Outlined="true">
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">@(_editingPriceId is null ? "New Price" : "Edit Price")</MudText>
+
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudDatePicker @bind-Date="_priceDate" Label="Price Date *" Variant="Variant.Outlined" Class="mb-4" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudNumericField T="decimal" @bind-Value="_price" Label="Price *" Variant="Variant.Outlined" FullWidth="true" />
+                        </MudItem>
+                    </MudGrid>
+
+                    @if (!string.IsNullOrWhiteSpace(_priceError))
+                    {
+                        <MudAlert Severity="Severity.Error" Class="mt-2">@_priceError</MudAlert>
+                    }
+
+                    <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2" Class="mt-4">
+                        <MudButton Variant="Variant.Outlined" OnClick="CancelPriceForm">Cancel</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_isSubmittingPrice" OnClick="SavePrice">
+                            @(_editingPriceId is null ? "Add Price" : "Update Price")
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+            }
+
+            @if (_priceChartSeries.Count > 0)
+            {
+                <MudChart ChartType="ChartType.Timeseries"
+                          ChartSeries="@_priceChartSeries"
+                          ChartOptions="_priceChartOptions"
+                          Width="100%"
+                          Height="350px"
+                          Class="mb-10" />
+            }
+            else if (_prices.Count == 1)
+            {
+                <MudAlert Severity="Severity.Info" Class="mb-4">Add at least one more price to display the chart.</MudAlert>
+            }
+
+            <MudTable Items="@_prices" Hover="true" Dense="true" Striped="true" Bordered="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Price Date</MudTh>
+                    <MudTh>Price</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Price Date">@context.PriceDate.ToString("yyyy-MM-dd")</MudTd>
+                    <MudTd DataLabel="Price">@context.Price.ToString("N2")</MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => ShowEditPriceForm(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeletePrice(context.Id))" />
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>No price history yet.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+
+        </MudPaper>
     }
 
 </MudContainer>
@@ -91,9 +169,30 @@
     private BenchmarkDto? _benchmark;
     private bool _isLoading = true;
 
+    private List<BenchmarkPriceDto> _prices = new();
+    private List<ChartSeries<decimal>> _priceChartSeries = new();
+
+    private readonly TimeSeriesChartOptions _priceChartOptions = new()
+    {
+        ShowDataMarkers = true,
+        YAxisRequireZeroPoint = false,
+        TimeLabelFormat = "yyyy-MM-dd",
+        TooltipTimeLabelFormat = "yyyy-MM-dd",
+        XAxisTitle = "Date",
+        YAxisTitle = "Price",
+    };
+
+    private bool _showPriceForm = false;
+    private Guid? _editingPriceId;
+    private DateTime? _priceDate = DateTime.Today;
+    private decimal _price;
+    private string _priceError = string.Empty;
+    private bool _isSubmittingPrice = false;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadBenchmark();
+        await LoadPrices();
     }
 
     private async Task LoadBenchmark()
@@ -109,6 +208,132 @@
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private async Task LoadPrices()
+    {
+        try
+        {
+            _prices = await BenchmarkPriceService.GetBenchmarkPricesAsync(Id) ?? new List<BenchmarkPriceDto>();
+            BuildPriceChart();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading price history for benchmark {BenchmarkId}", Id);
+        }
+    }
+
+    private void BuildPriceChart()
+    {
+        if (_prices.Count < 2)
+        {
+            _priceChartSeries = new List<ChartSeries<decimal>>();
+            return;
+        }
+
+        var orderedPrices = _prices.OrderBy(p => p.PriceDate).ToList();
+
+        _priceChartSeries = new List<ChartSeries<decimal>>
+        {
+            new()
+            {
+                Name = _benchmark?.Name ?? "Price",
+                Data = orderedPrices.Select(p => new TimeValue<decimal>(p.PriceDate, p.Price)).ToArray(),
+                Visible = true,
+            }
+        };
+    }
+
+    private void ShowAddPriceForm()
+    {
+        _editingPriceId = null;
+        _priceDate = DateTime.Today;
+        _price = 0;
+        _priceError = string.Empty;
+        _showPriceForm = true;
+    }
+
+    private void ShowEditPriceForm(BenchmarkPriceDto price)
+    {
+        _editingPriceId = price.Id;
+        _priceDate = price.PriceDate;
+        _price = price.Price;
+        _priceError = string.Empty;
+        _showPriceForm = true;
+    }
+
+    private void CancelPriceForm()
+    {
+        _showPriceForm = false;
+        _editingPriceId = null;
+    }
+
+    private async Task SavePrice()
+    {
+        if (_priceDate is null)
+        {
+            _priceError = "Price Date is required.";
+            return;
+        }
+
+        if (_price <= 0)
+        {
+            _priceError = "Price must be greater than zero.";
+            return;
+        }
+
+        _isSubmittingPrice = true;
+        _priceError = string.Empty;
+
+        try
+        {
+            if (_editingPriceId is Guid editingPriceId)
+            {
+                var updateCommand = new UpdateBenchmarkPriceCommand(editingPriceId, _price, _priceDate.Value);
+                await BenchmarkPriceService.UpdateBenchmarkPriceAsync(editingPriceId, updateCommand);
+            }
+            else
+            {
+                var command = new CreateBenchmarkPriceCommand
+                {
+                    BenchmarkId = Id,
+                    Price = _price,
+                    PriceDate = _priceDate.Value
+                };
+
+                await BenchmarkPriceService.CreateBenchmarkPriceAsync(command);
+            }
+
+            _showPriceForm = false;
+            _editingPriceId = null;
+            await LoadPrices();
+        }
+        catch (HttpRequestException ex)
+        {
+            _priceError = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error saving benchmark price");
+            _priceError = "An error occurred while saving the price.";
+        }
+        finally
+        {
+            _isSubmittingPrice = false;
+        }
+    }
+
+    private async Task DeletePrice(Guid priceId)
+    {
+        try
+        {
+            await BenchmarkPriceService.DeleteBenchmarkPriceAsync(priceId);
+            await LoadPrices();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting benchmark price");
         }
     }
 

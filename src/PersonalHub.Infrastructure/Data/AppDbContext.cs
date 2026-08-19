@@ -29,6 +29,7 @@ public class AppDbContext
     public DbSet<InstrumentType> InstrumentTypes => Set<InstrumentType>();
     public DbSet<Instrument> Instruments => Set<Instrument>();
     public DbSet<InstrumentPrice> InstrumentPrices => Set<InstrumentPrice>();
+    public DbSet<BenchmarkPrice> BenchmarkPrices => Set<BenchmarkPrice>();
     public DbSet<Portfolio> Portfolios => Set<Portfolio>();
     public DbSet<PortfolioHolding> PortfolioHoldings => Set<PortfolioHolding>();
 
@@ -90,6 +91,16 @@ public class AppDbContext
 
         builder.Entity<InstrumentPrice>()
             .HasIndex(x => new { x.InstrumentId, x.PriceDate })
+            .IsUnique();
+
+        builder.Entity<BenchmarkPrice>()
+            .HasOne(x => x.Benchmark)
+            .WithMany(x => x.Prices)
+            .HasForeignKey(x => x.BenchmarkId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<BenchmarkPrice>()
+            .HasIndex(x => new { x.BenchmarkId, x.PriceDate })
             .IsUnique();
 
         builder.Entity<Portfolio>()

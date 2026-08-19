@@ -4,10 +4,12 @@
 @using MudBlazor
 @using PersonalHub.Application.Features.Funds.CreateFund
 @using PersonalHub.Application.Features.FundTypes.Common
+@using PersonalHub.Application.Features.Currency.Common
 @using PersonalHub.Web.Services
 
 @inject FundService FundService
 @inject FundTypeService FundTypeService
+@inject CurrencyService CurrencyService
 @inject NavigationManager Navigation
 @inject ILogger<FundCreate> Logger
 
@@ -148,13 +150,25 @@
                       FullWidth="true"
                       Class="mb-4" />
 
-        <MudTextField T="string"
-                      @bind-Value="_baseCurrency"
-                      Label="Base Currency"
-                      Placeholder="EUR"
-                      Variant="Variant.Outlined"
-                      FullWidth="true"
-                      Class="mb-4" />
+        <MudSelect T="string?"
+                   Label="Currency *"
+                   Variant="Variant.Outlined"
+                   FullWidth="true"
+                   Required="true"
+                   @bind-Value="_baseCurrency"
+                   Class="mb-4">
+
+            @foreach (var currency in _currencies)
+            {
+                <MudSelectItem T="string?"
+                               Value="@currency.Code">
+
+                    @currency.Code - @currency.Name
+
+                </MudSelectItem>
+            }
+
+        </MudSelect>
 
         <MudDatePicker Label="Launch Date"
                        Variant="Variant.Outlined"
@@ -248,14 +262,24 @@ private string _name = string.Empty;
 
     private List<FundTypeDto> _fundTypes = [];
 
+    private List<CurrencyDto> _currencies = [];
+
     private string? _error;
 
     private bool _isSubmitting;
 
     protected override async Task OnInitializedAsync()
     {
-        _fundTypes =
-            await FundTypeService.GetFundTypesAsync();
+        var fundTypesTask = FundTypeService.GetFundTypesAsync();
+        var currenciesTask = CurrencyService.GetCurrenciesAsync();
+
+        await Task.WhenAll(fundTypesTask, currenciesTask);
+
+        _fundTypes = fundTypesTask.Result;
+        _currencies = currenciesTask.Result;
+
+        if (_fundTypes.Count > 0)
+            _fundTypeId = _fundTypes[0].Id;
     }
 
     private async Task HandleCreateFund()
@@ -274,6 +298,12 @@ private string _name = string.Empty;
             if (_fundTypeId == Guid.Empty)
             {
                 _error = "Please select a fund type.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_baseCurrency))
+            {
+                _error = "Please select a currency.";
                 return;
             }
 

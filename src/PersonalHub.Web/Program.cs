@@ -71,6 +71,7 @@ builder.Services.AddScoped<SubFundService>();
 builder.Services.AddScoped<InstrumentTypeService>();
 builder.Services.AddScoped<InstrumentService>();
 builder.Services.AddScoped<InstrumentPriceService>();
+builder.Services.AddScoped<BenchmarkPriceService>();
 builder.Services.AddScoped<PortfolioService>();
 builder.Services.AddScoped<PortfolioHoldingService>();
 

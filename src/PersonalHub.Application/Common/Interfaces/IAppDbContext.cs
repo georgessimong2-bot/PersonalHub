@@ -18,6 +18,7 @@ public interface IAppDbContext
     DbSet<InstrumentType> InstrumentTypes { get; }
     DbSet<Instrument> Instruments { get; }
     DbSet<InstrumentPrice> InstrumentPrices { get; }
+    DbSet<BenchmarkPrice> BenchmarkPrices { get; }
     DbSet<Portfolio> Portfolios { get; }
     DbSet<PortfolioHolding> PortfolioHoldings { get; }
 
