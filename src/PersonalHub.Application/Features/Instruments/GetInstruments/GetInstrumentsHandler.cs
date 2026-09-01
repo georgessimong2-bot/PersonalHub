@@ -25,6 +25,7 @@ public class GetInstrumentsHandler
                 Id = x.Id,
                 InstrumentTypeId = x.InstrumentTypeId,
                 CurrencyId = x.CurrencyId,
+                CurrencyCode = x.Currency.Code,
                 Name = x.Name,
                 ISIN = x.ISIN,
                 Ticker = x.Ticker,

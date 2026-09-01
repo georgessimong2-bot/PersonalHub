@@ -72,7 +72,16 @@
 
                 <MudItem xs="12" md="3">
                     <MudText Typo="Typo.subtitle2">Total Market Value</MudText>
-                    <MudText Typo="Typo.body1" Class="mt-2">@(_portfolio.TotalMarketValue?.ToString("N2") ?? "-")</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">
+                        @if (_portfolio.TotalMarketValueInSubFundCurrency.HasValue && !string.IsNullOrEmpty(_portfolio.SubFundCurrencyCode))
+                        {
+                            @($"{_portfolio.TotalMarketValueInSubFundCurrency.Value:N2} ({_portfolio.SubFundCurrencyCode})")
+                        }
+                        else
+                        {
+                            @(_portfolio.TotalMarketValue?.ToString("N2") ?? "-")
+                        }
+                    </MudText>
                 </MudItem>
             </MudGrid>
 
@@ -143,17 +152,36 @@
                 <HeaderContent>
                     <MudTh>Instrument</MudTh>
                     <MudTh>ISIN</MudTh>
+                    <MudTh>Instrument CCY</MudTh>
                     <MudTh>Quantity</MudTh>
                     <MudTh>Average Cost</MudTh>
-                    <MudTh>Market Value</MudTh>
+                    <MudTh>Market Value (Instrument)</MudTh>
+                    <MudTh>Market Value (SubFund)</MudTh>
                     <MudTh>Actions</MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="Instrument">@context.InstrumentName</MudTd>
                     <MudTd DataLabel="ISIN">@context.InstrumentISIN</MudTd>
+                    <MudTd DataLabel="Instrument CCY">@(context.InstrumentCurrencyCode ?? "-")</MudTd>
                     <MudTd DataLabel="Quantity">@context.Quantity</MudTd>
                     <MudTd DataLabel="Average Cost">@(context.AverageCost?.ToString("N2") ?? "-")</MudTd>
-                    <MudTd DataLabel="Market Value">@(context.MarketValue?.ToString("N2") ?? "-")</MudTd>
+                    <MudTd DataLabel="Market Value (Instrument)">@(context.MarketValue?.ToString("N2") ?? "-")</MudTd>
+                    <MudTd DataLabel="Market Value (SubFund)">
+                        @if (context.MarketValueInSubFundCurrency.HasValue)
+                        {
+                            @context.MarketValueInSubFundCurrency.Value.ToString("N2")
+                            @if (!context.HasExchangeRate)
+                            {
+                                <MudTooltip Text="No exchange rate available">
+                                    <MudText Inline="true" Color="Color.Warning"> *</MudText>
+                                </MudTooltip>
+                            }
+                        }
+                        else
+                        {
+                            @("-")
+                        }
+                    </MudTd>
                     <MudTd DataLabel="Actions">
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => ShowEditHoldingForm(context))" />
                         <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => ShowDeleteHoldingConfirm(context.Id))" />

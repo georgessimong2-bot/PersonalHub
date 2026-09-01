@@ -8,6 +8,8 @@ public class InstrumentDto
 
     public Guid CurrencyId { get; set; }
 
+    public string CurrencyCode { get; set; } = string.Empty;
+
     public string Name { get; set; } = string.Empty;
 
     public string ISIN { get; set; } = string.Empty;

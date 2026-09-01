@@ -17,4 +17,10 @@ public class PortfolioHoldingDto
     public decimal? AverageCost { get; set; }
 
     public decimal? MarketValue { get; set; }
+
+    public string? InstrumentCurrencyCode { get; set; }
+
+    public decimal? MarketValueInSubFundCurrency { get; set; }
+
+    public bool HasExchangeRate { get; set; }
 }

@@ -94,7 +94,16 @@
                     </MudTd>
                     <MudTd DataLabel="Valuation Date">@context.ValuationDate.ToString("yyyy-MM-dd")</MudTd>
                     <MudTd DataLabel="Holdings">@context.HoldingsCount</MudTd>
-                    <MudTd DataLabel="Total Market Value">@(context.TotalMarketValue?.ToString("N2") ?? "-")</MudTd>
+                    <MudTd DataLabel="Total Market Value">
+                        @if (context.TotalMarketValueInSubFundCurrency.HasValue && !string.IsNullOrEmpty(context.SubFundCurrencyCode))
+                        {
+                            @($"{context.TotalMarketValueInSubFundCurrency.Value:N2} ({context.SubFundCurrencyCode})")
+                        }
+                        else
+                        {
+                            @(context.TotalMarketValue?.ToString("N2") ?? "-")
+                        }
+                    </MudTd>
                     <MudTd DataLabel="Status">
                         <MudChip T="string" Color="@(context.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">
                             @(context.IsActive ? "Active" : "Inactive")

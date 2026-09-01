@@ -92,6 +92,15 @@
 
     <AuthorizeView Roles="USER, ADMIN">
         <Authorized>
+            <MudNavLink Href="/exchange-rates"
+                        Icon="@Icons.Material.Filled.CurrencyExchange">
+                Exchange Rates
+            </MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="USER, ADMIN">
+        <Authorized>
             <MudNavLink Href="/benchmarks"
                         Icon="@Icons.Material.Filled.TrendingUp">
                 Benchmarks

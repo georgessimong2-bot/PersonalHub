@@ -32,6 +32,7 @@ public class AppDbContext
     public DbSet<BenchmarkPrice> BenchmarkPrices => Set<BenchmarkPrice>();
     public DbSet<Portfolio> Portfolios => Set<Portfolio>();
     public DbSet<PortfolioHolding> PortfolioHoldings => Set<PortfolioHolding>();
+    public DbSet<ExchangeRate> ExchangeRates => Set<ExchangeRate>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -128,6 +129,22 @@ public class AppDbContext
 
         builder.Entity<PortfolioHolding>()
             .HasIndex(x => new { x.PortfolioId, x.InstrumentId })
+            .IsUnique();
+
+        builder.Entity<ExchangeRate>()
+            .HasOne(x => x.FromCurrency)
+            .WithMany()
+            .HasForeignKey(x => x.FromCurrencyId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ExchangeRate>()
+            .HasOne(x => x.ToCurrency)
+            .WithMany()
+            .HasForeignKey(x => x.ToCurrencyId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ExchangeRate>()
+            .HasIndex(x => new { x.FromCurrencyId, x.ToCurrencyId, x.EffectiveDate })
             .IsUnique();
     }
 }
