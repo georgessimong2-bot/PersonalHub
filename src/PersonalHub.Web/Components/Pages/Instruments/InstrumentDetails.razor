@@ -72,6 +72,11 @@
                 </MudItem>
 
                 <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2">Currency</MudText>
+                    <MudText Typo="Typo.body1" Class="mt-2">@(string.IsNullOrWhiteSpace(_instrument.CurrencyCode) ? "-" : _instrument.CurrencyCode)</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
                     <MudText Typo="Typo.subtitle2">Issuer</MudText>
                     <MudText Typo="Typo.body1" Class="mt-2">@(_instrument.Issuer ?? "-")</MudText>
                 </MudItem>

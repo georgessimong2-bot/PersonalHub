@@ -68,6 +68,7 @@
                     <MudTh>Name</MudTh>
                     <MudTh>ISIN</MudTh>
                     <MudTh>Ticker</MudTh>
+                    <MudTh>Currency</MudTh>
                     <MudTh>Status</MudTh>
                     <MudTh>Actions</MudTh>
                 </HeaderContent>
@@ -79,6 +80,7 @@
                     </MudTd>
                     <MudTd DataLabel="ISIN">@(string.IsNullOrWhiteSpace(context.ISIN) ? "-" : context.ISIN)</MudTd>
                     <MudTd DataLabel="Ticker">@(context.Ticker ?? "-")</MudTd>
+                    <MudTd DataLabel="Currency">@(string.IsNullOrWhiteSpace(context.CurrencyCode) ? "-" : context.CurrencyCode)</MudTd>
                     <MudTd DataLabel="Status">
                         <MudChip T="string" Color="@(context.IsActive ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">
                             @(context.IsActive ? "Active" : "Inactive")

@@ -21,6 +21,7 @@ public interface IAppDbContext
     DbSet<BenchmarkPrice> BenchmarkPrices { get; }
     DbSet<Portfolio> Portfolios { get; }
     DbSet<PortfolioHolding> PortfolioHoldings { get; }
+    DbSet<ExchangeRate> ExchangeRates { get; }
 
     Task<int> SaveChangesAsync(
         CancellationToken cancellationToken);

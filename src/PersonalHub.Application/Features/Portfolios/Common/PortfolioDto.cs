@@ -20,5 +20,9 @@ public class PortfolioDto
 
     public decimal? TotalMarketValue { get; set; }
 
+    public string? SubFundCurrencyCode { get; set; }
+
+    public decimal? TotalMarketValueInSubFundCurrency { get; set; }
+
     public List<PortfolioHoldingDto> Holdings { get; set; } = [];
 }
