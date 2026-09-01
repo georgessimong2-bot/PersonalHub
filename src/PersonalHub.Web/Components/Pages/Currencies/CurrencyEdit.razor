@@ -51,7 +51,7 @@
 
             <MudTextField T="string" @bind-Value="_name" Label="Name" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
 
-            <MudTextField T="string" @bind-Value="_code" Label="Code" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
+            <MudTextField T="string" @bind-Value="_code" Label="Code *" Variant="Variant.Outlined" FullWidth="true" Required="true" Class="mb-4" />
 
             <MudTextField T="string" @bind-Value="_symbol" Label="Symbol" Variant="Variant.Outlined" FullWidth="true" Class="mb-4" />
 
@@ -131,6 +131,12 @@
         if (string.IsNullOrWhiteSpace(_name))
         {
             _error = "Name is required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_code))
+        {
+            _error = "Code is required.";
             return;
         }
 

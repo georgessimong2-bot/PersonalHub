@@ -1,0 +1,193 @@
+@page "/exchange-rates/create"
+@rendermode InteractiveServer
+
+@using MudBlazor
+@using PersonalHub.Application.Features.Currency.Common
+@using PersonalHub.Application.Features.ExchangeRates.CreateExchangeRate
+@using PersonalHub.Web.Services
+
+@inject ExchangeRateService ExchangeRateService
+@inject CurrencyService CurrencyService
+@inject NavigationManager Navigation
+@inject ILogger<ExchangeRateCreate> Logger
+
+<PageTitle>Create Exchange Rate</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8 mb-8">
+
+    <MudPaper Class="pa-6">
+
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+            <div>
+                <MudText Typo="Typo.h4">Create Exchange Rate</MudText>
+                <MudText Typo="Typo.body2">Create a new exchange rate</MudText>
+            </div>
+            <MudChip T="string" Color="Color.Info" Variant="Variant.Filled">New Rate</MudChip>
+        </MudStack>
+
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudSelect T="CurrencyDto"
+                           @bind-Value="_selectedFromCurrency"
+                           Label="From Currency *"
+                           Variant="Variant.Outlined"
+                           Required="true"
+                           Class="mb-4"
+                           ToStringFunc="x => x?.Code ?? string.Empty">
+                    @foreach (var currency in _currenciesList)
+                    {
+                        <MudSelectItem T="CurrencyDto" Value="@currency">@currency.Code - @currency.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudSelect T="CurrencyDto"
+                           @bind-Value="_selectedToCurrency"
+                           Label="To Currency *"
+                           Variant="Variant.Outlined"
+                           Required="true"
+                           Class="mb-4"
+                           ToStringFunc="x => x?.Code ?? string.Empty">
+                    @foreach (var currency in _currenciesList)
+                    {
+                        <MudSelectItem T="CurrencyDto" Value="@currency">@currency.Code - @currency.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudDatePicker @bind-Date="_effectiveDate"
+                               Label="Effective Date *"
+                               Variant="Variant.Outlined"
+                               Required="true"
+                               MaxDate="DateTime.Today"
+                               Class="mb-4" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudNumericField T="decimal"
+                                 @bind-Value="_rate"
+                                 Label="Rate *"
+                                 Variant="Variant.Outlined"
+                                 Required="true"
+                                 Min="0.0001m"
+                                 Format="0.0000"
+                                 Class="mb-4" />
+            </MudItem>
+        </MudGrid>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+        }
+
+        <MudDivider Class="my-4" />
+
+        <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" Disabled="_isSubmitting || _selectedFromCurrency is null || _selectedToCurrency is null || !_effectiveDate.HasValue || _rate <= 0" OnClick="HandleCreate">
+                @if (_isSubmitting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                    <span class="ms-2">Creating...</span>
+                }
+                else
+                {
+                    <span>Create Exchange Rate</span>
+                }
+            </MudButton>
+        </MudStack>
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    private List<CurrencyDto> _currenciesList = [];
+    private CurrencyDto? _selectedFromCurrency;
+    private CurrencyDto? _selectedToCurrency;
+    private DateTime? _effectiveDate;
+    private decimal _rate = 0;
+    private string _error = string.Empty;
+    private bool _isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _currenciesList = await CurrencyService.GetCurrenciesAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading currencies");
+            _error = "Failed to load currencies.";
+        }
+    }
+
+    private async Task HandleCreate()
+    {
+        if (_selectedFromCurrency is null)
+        {
+            _error = "From currency is required.";
+            return;
+        }
+
+        if (_selectedToCurrency is null)
+        {
+            _error = "To currency is required.";
+            return;
+        }
+
+        if (!_effectiveDate.HasValue)
+        {
+            _error = "Effective date is required.";
+            return;
+        }
+
+        if (_effectiveDate.Value > DateTime.Today)
+        {
+            _error = "Future dates are not allowed.";
+            return;
+        }
+
+        if (_rate <= 0)
+        {
+            _error = "Rate must be greater than 0.";
+            return;
+        }
+
+        if (_selectedFromCurrency.Id == _selectedToCurrency.Id)
+        {
+            _error = "From and To currencies must be different.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = string.Empty;
+
+        try
+        {
+            var command = new CreateExchangeRateCommand(
+                _selectedFromCurrency.Id,
+                _selectedToCurrency.Id,
+                _effectiveDate.Value,
+                _rate
+            );
+
+            var id = await ExchangeRateService.CreateExchangeRateAsync(command);
+            Navigation.NavigateTo("/exchange-rates");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating exchange rate");
+            _error = "An error occurred while creating the exchange rate.";
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/exchange-rates");
+    }
+}

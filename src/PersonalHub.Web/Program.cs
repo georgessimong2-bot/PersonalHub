@@ -65,6 +65,7 @@ builder.Services.AddScoped<FundService>();
 builder.Services.AddScoped<FundTypeService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<CurrencyService>();
+builder.Services.AddScoped<ExchangeRateService>();
 builder.Services.AddScoped<InvestmentStrategyService>();
 builder.Services.AddScoped<BenchmarkService>();
 builder.Services.AddScoped<SfdrClassificationService>();
